@@ -1,0 +1,47 @@
+<nz-modal
+  nzTitle="添加任务"
+  nzCentered
+  [nzVisible]="visible"
+  nzOkText="添加"
+  [nzOkLoading]="pending"
+  [nzOkDisabled]="formGroup.invalid"
+  [nzCancelDisabled]="pending"
+  [nzClosable]="!pending"
+  [nzMaskClosable]="!pending"
+  (nzOnOk)="handleConfirm()"
+  (nzOnCancel)="handleCancel()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="formGroup">
+      <nz-form-item>
+        <nz-form-control nzHasFeedback [nzErrorTip]="errorTip">
+          <input
+            nz-input
+            required
+            placeholder="直播间 URL 或房间号（支持多个房间号用空格隔开）"
+            [pattern]="pattern"
+            formControlName="input"
+          />
+          <ng-template #errorTip let-control>
+            <ng-container *ngIf="control.hasError('required')">
+              请输入直播间号或 URL
+            </ng-container>
+            <ng-container *ngIf="control.hasError('pattern')">
+              输入有错误
+            </ng-container>
+          </ng-template>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+
+    <div class="result-messages-container">
+      <ng-container *ngFor="let msg of resultMessages">
+        <nz-alert
+          [nzType]="msg.type"
+          [nzMessage]="msg.message"
+          nzShowIcon
+        ></nz-alert>
+      </ng-container>
+    </div>
+  </ng-container>
+</nz-modal>

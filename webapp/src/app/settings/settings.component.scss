@@ -1,0 +1,6 @@
+@use '../shared/styles/layout';
+@use './shared/styles/setting';
+
+.inner-content {
+  @extend %inner-content;
+}

@@ -1,0 +1,32 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzFor="sendkey" nzNoColon nzRequired
+      >sendkey</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control input"
+      nzHasFeedback
+      [nzErrorTip]="sendkeyErrorTip"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        sendkeyControl.valid && !syncStatus.sendkey ? 'warning' : sendkeyControl
+      "
+    >
+      <input
+        id="sendkey"
+        type="text"
+        required
+        nz-input
+        formControlName="sendkey"
+      />
+      <ng-template #sendkeyErrorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入 sendkey！
+        </ng-container>
+        <ng-container *ngIf="control.hasError('pattern')">
+          sendkey 无效
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+</form>

@@ -1,0 +1,5 @@
+@use './layout';
+
+.spinner {
+  @include layout.full-width-height;
+}

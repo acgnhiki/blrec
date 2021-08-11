@@ -1,0 +1,108 @@
+<nz-layout>
+  <ng-container *ngIf="!useDrawer" [ngTemplateOutlet]="sider"></ng-container>
+
+  <ng-template #sider>
+    <nz-sider
+      class="sidebar"
+      [nzTheme]="theme"
+      [nzTrigger]="null"
+      nzCollapsible
+      [nzCollapsedWidth]="65"
+      [(nzCollapsed)]="collapsed"
+    >
+      <a href="/" title="Home" alt="Home">
+        <div class="sidebar-header" [class.collapsed]="collapsed">
+          <div class="app-logo-container">
+            <img class="app-logo" alt="Logo" src="assets/images/logo.png" />
+          </div>
+          <h1 class="app-title">{{ title }}</h1>
+        </div>
+      </a>
+      <nav class="sidebar-menu">
+        <ul
+          nz-menu
+          nzMode="inline"
+          [nzTheme]="theme"
+          [nzInlineCollapsed]="collapsed"
+        >
+          <li
+            nz-menu-item
+            nzMatchRouter="true"
+            nz-tooltip
+            nzTooltipPlacement="right"
+            [nzTooltipTitle]="collapsed ? '任务' : ''"
+          >
+            <i nz-icon nzType="unordered-list" nzTheme="outline"></i>
+            <span><a routerLink="/tasks">任务</a></span>
+          </li>
+          <li
+            nz-menu-item
+            nzMatchRouter="true"
+            nz-tooltip
+            nzTooltipPlacement="right"
+            [nzTooltipTitle]="collapsed ? '设置' : ''"
+          >
+            <i nz-icon nzType="setting" nzTheme="outline"></i>
+            <span><a routerLink="/settings">设置</a></span>
+          </li>
+          <li
+            nz-menu-item
+            nzMatchRouter="true"
+            nz-tooltip
+            nzTooltipPlacement="right"
+            [nzTooltipTitle]="collapsed ? '关于' : ''"
+          >
+            <i nz-icon nzType="info-circle" nzTheme="outline"></i>
+            <span><a routerLink="/about">关于</a></span>
+          </li>
+        </ul>
+      </nav>
+    </nz-sider>
+  </ng-template>
+
+  <nz-layout>
+    <nz-header class="app-header">
+      <div class="sidebar-trigger">
+        <i
+          nz-icon
+          [nzType]="collapsed ? 'menu-unfold' : 'menu-fold'"
+          (click)="collapsed = !collapsed"
+        ></i>
+      </div>
+      <div class="icon-actions">
+        <a
+          class="external-link"
+          href="https://github.com/acgnhiki/blrec"
+          title="GitHub"
+          target="_blank"
+          ><i nz-icon nzType="github"></i
+        ></a>
+      </div>
+    </nz-header>
+    <nz-content class="main-content">
+      <nz-spin
+        class="spinner"
+        [nzSize]="'large'"
+        [nzSpinning]="loading"
+        *ngIf="loading"
+      ></nz-spin>
+      <router-outlet></router-outlet>
+    </nz-content>
+  </nz-layout>
+</nz-layout>
+
+<nz-drawer
+  *ngIf="useDrawer"
+  nzWidth="200px"
+  nzPlacement="left"
+  [nzBodyStyle]="{ padding: '0', overflow: 'hidden' }"
+  [nzClosable]="false"
+  [nzVisible]="!collapsed"
+  (nzOnClose)="collapsed = true"
+>
+  <ng-container *nzDrawerContent>
+    <nz-layout>
+      <ng-container [ngTemplateOutlet]="sider"></ng-container>
+    </nz-layout>
+  </ng-container>
+</nz-drawer>

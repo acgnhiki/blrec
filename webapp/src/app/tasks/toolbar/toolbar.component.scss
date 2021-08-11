@@ -1,0 +1,91 @@
+@use '../shared/styles/drawer';
+
+.controls-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2em;
+
+  width: 100%;
+  padding: 0.2em;
+  background: #eee;
+  border: 1px solid #d9d9d9;
+  border-left: none;
+  border-right: none;
+
+  nz-divider {
+    height: 1.8em;
+    top: 0;
+  }
+
+  &:not(.use-drawer) {
+    .filter {
+      max-width: 18em;
+    }
+  }
+
+  &.use-drawer {
+    .filter {
+      max-width: unset;
+      width: unset;
+      flex: auto;
+    }
+  }
+}
+
+.reverse-button {
+  padding: 0 0.5em;
+
+  i {
+    margin: 0;
+  }
+}
+
+.more-actions-button {
+  margin-left: auto;
+  border: none;
+  background: inherit;
+
+  i {
+    font-size: 20px;
+  }
+}
+
+.menu {
+  nz-divider {
+    margin: 0;
+  }
+}
+
+.drawer-header {
+  display: flex;
+}
+
+%button-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2vw;
+}
+
+.drawer-content {
+  nz-divider:first-of-type {
+    margin-top: 0;
+  }
+
+  .radio-group {
+    @extend %button-group;
+
+    label {
+      text-align: center;
+      padding: 0;
+    }
+  }
+
+  .reorder-button-wrapper {
+    @extend %button-group;
+  }
+
+  .menu {
+    @extend %drawer-menu;
+  }
+}

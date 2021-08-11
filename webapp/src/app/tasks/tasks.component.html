@@ -1,0 +1,33 @@
+<app-toolbar
+  [selection]="selection"
+  (selectionChange)="onSelectionChanged($event)"
+  [reverse]="reverse"
+  (reverseChange)="onReverseChanged($event)"
+  (filterChange)="filterTerm = $event"
+></app-toolbar>
+
+<nz-spin
+  class="spinner"
+  [nzSize]="'large'"
+  [nzSpinning]="loading"
+  *ngIf="loading; else elseBlock"
+></nz-spin>
+<ng-template #elseBlock>
+  <app-task-list
+    [dataList]="dataList | filterTasks: filterTerm"
+  ></app-task-list>
+</ng-template>
+
+<button
+  class="add-task-button"
+  nz-button
+  nzType="primary"
+  nzSize="large"
+  nzShape="circle"
+  nz-tooltip
+  nzTooltipTitle="添加任务"
+  (click)="addTaskDialog.open()"
+>
+  <i nz-icon nzType="plus"></i>
+</button>
+<app-add-task-dialog #addTaskDialog></app-add-task-dialog>

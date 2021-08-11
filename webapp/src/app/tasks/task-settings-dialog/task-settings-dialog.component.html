@@ -1,0 +1,359 @@
+<nz-modal
+  nzTitle="任务设置"
+  nzCentered
+  [nzVisible]="visible"
+  [nzOkDisabled]="ngForm?.form?.invalid"
+  (nzOnOk)="handleConfirm()"
+  (nzOnCancel)="handleCancel()"
+  (nzAfterOpen)="afterOpen.emit()"
+  (nzAfterClose)="afterClose.emit()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form ngForm>
+      <div ngModelGroup="output" class="form-group output">
+        <h2>文件</h2>
+        <nz-form-item class="setting-item input">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            nzTooltipTitle="变量说明请查看对应全局设置"
+            >路径模板</nz-form-label
+          >
+          <nz-form-control
+            class="setting-control input"
+            [nzErrorTip]="errorTip"
+          >
+            <input
+              type="text"
+              required
+              [pattern]="pathTemplatePattern"
+              nz-input
+              name="pathTemplate"
+              [(ngModel)]="model.output.pathTemplate"
+              [disabled]="options.output.pathTemplate === null"
+            />
+            <ng-template #errorTip let-control>
+              <ng-container *ngIf="control.hasError('required')">
+                请输入路径模板
+              </ng-container>
+              <ng-container *ngIf="control.hasError('pattern')">
+                路径模板有错误
+              </ng-container>
+            </ng-template>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.output.pathTemplate !== null"
+            (nzCheckedChange)="
+              options.output.pathTemplate = $event
+                ? globalSettings.output.pathTemplate
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            [nzTooltipTitle]="splitFileTip"
+            >大小限制</nz-form-label
+          >
+          <nz-form-control class="setting-control select">
+            <nz-select
+              name="filesizeLimit"
+              [(ngModel)]="model.output.filesizeLimit"
+              [disabled]="options.output.filesizeLimit === null"
+              [nzOptions]="filesizeLimitOptions"
+            >
+            </nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.output.filesizeLimit !== null"
+            (nzCheckedChange)="
+              options.output.filesizeLimit = $event
+                ? globalSettings.output.filesizeLimit
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            [nzTooltipTitle]="splitFileTip"
+            >时长限制</nz-form-label
+          >
+          <nz-form-control class="setting-control select">
+            <nz-select
+              name="durationLimit"
+              [(ngModel)]="model.output.durationLimit"
+              [disabled]="options.output.durationLimit === null"
+              [nzOptions]="durationLimitOptions"
+            >
+            </nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.output.durationLimit !== null"
+            (nzCheckedChange)="
+              options.output.durationLimit = $event
+                ? globalSettings.output.durationLimit
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+      </div>
+
+      <div ngModelGroup="recorder" class="form-group recorder">
+        <h2>录制</h2>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            nzTooltipTitle="所选画质不存在将以原画代替"
+            >画质</nz-form-label
+          >
+          <nz-form-control class="setting-control select">
+            <nz-select
+              name="qualityNumber"
+              [(ngModel)]="model.recorder.qualityNumber"
+              [disabled]="options.recorder.qualityNumber === null"
+              [nzOptions]="qualityOptions"
+            >
+            </nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.recorder.qualityNumber !== null"
+            (nzCheckedChange)="
+              options.recorder.qualityNumber = $event
+                ? globalSettings.recorder.qualityNumber
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label class="setting-label" nzNoColon
+            >数据读取超时</nz-form-label
+          >
+          <nz-form-control
+            class="setting-control select"
+            nzWarningTip="无缝拼接会失效！"
+            [nzValidateStatus]="readTimeout.value > 3 ? 'warning' : readTimeout"
+          >
+            <nz-select
+              #readTimeout="ngModel"
+              name="readTimeout"
+              [(ngModel)]="model.recorder.readTimeout"
+              [disabled]="options.recorder.readTimeout === null"
+              [nzOptions]="timeoutOptions"
+            >
+            </nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.recorder.readTimeout !== null"
+            (nzCheckedChange)="
+              options.recorder.readTimeout = $event
+                ? globalSettings.recorder.readTimeout
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label class="setting-label" nzNoColon
+            >硬盘写入缓冲</nz-form-label
+          >
+          <nz-form-control class="setting-control select">
+            <nz-select
+              name="bufferSize"
+              [(ngModel)]="model.recorder.bufferSize"
+              [disabled]="options.recorder.bufferSize === null"
+              [nzOptions]="bufferOptions"
+              [nzOptionOverflowSize]="6"
+            >
+            </nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.recorder.bufferSize !== null"
+            (nzCheckedChange)="
+              options.recorder.bufferSize = $event
+                ? globalSettings.recorder.bufferSize
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+      </div>
+
+      <div ngModelGroup="danmaku" class="form-group danmaku">
+        <h2>弹幕</h2>
+        <nz-form-item class="setting-item">
+          <nz-form-label class="setting-label" nzFor="danmuUname" nzNoColon
+            >弹幕加用户名</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <nz-switch
+              id="danmuUname"
+              name="danmuUname"
+              [(ngModel)]="model.danmaku.danmuUname"
+              [disabled]="options.danmaku.danmuUname === null"
+            ></nz-switch>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.danmaku.danmuUname !== null"
+            (nzCheckedChange)="
+              options.danmaku.danmuUname = $event
+                ? globalSettings.danmaku.danmuUname
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+      </div>
+
+      <div ngModelGroup="postprocessing" class="form-group postprocessing">
+        <h2>文件处理</h2>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            nzTooltipTitle="需要安装 FFmpeg"
+            >FLV 转 MP4</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <nz-switch
+              name="remuxToMp4"
+              [(ngModel)]="model.postprocessing.remuxToMp4"
+              [disabled]="options.postprocessing.remuxToMp4 === null"
+            ></nz-switch>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.postprocessing.remuxToMp4 !== null"
+            (nzCheckedChange)="
+              options.postprocessing.remuxToMp4 = $event
+                ? globalSettings.postprocessing.remuxToMp4
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label class="setting-label" nzNoColon
+            >源文件删除策略</nz-form-label
+          >
+          <nz-form-control class="setting-control select">
+            <nz-select
+              name="deleteSource"
+              [(ngModel)]="model.postprocessing.deleteSource"
+              [disabled]="options.postprocessing.deleteSource === null"
+              [nzOptions]="deleteStrategies"
+            ></nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.postprocessing.deleteSource !== null"
+            (nzCheckedChange)="
+              options.postprocessing.deleteSource = $event
+                ? globalSettings.postprocessing.deleteSource
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+      </div>
+
+      <div ngModelGroup="header" class="form-group header">
+        <h2>网络请求</h2>
+        <nz-form-item class="setting-item textarea">
+          <nz-form-label class="setting-label" nzFor="userAgent" nzNoColon
+            >User Agent</nz-form-label
+          >
+          <nz-form-control
+            class="setting-control textarea"
+            [nzWarningTip]="warningTip"
+            [nzValidateStatus]="
+              userAgent.valid &&
+              options.header.userAgent !== taskOptions.header.userAgent &&
+              options.header.userAgent !== globalSettings.header.userAgent
+                ? 'warning'
+                : userAgent
+            "
+            [nzErrorTip]="errorTip"
+          >
+            <textarea
+              #userAgent="ngModel"
+              nz-input
+              required
+              id="userAgent"
+              name="userAgent"
+              [rows]="3"
+              [(ngModel)]="model.header.userAgent"
+              [disabled]="options.header.userAgent === null"
+            ></textarea>
+          </nz-form-control>
+          <ng-template #errorTip let-control>
+            <ng-container *ngIf="control.hasError('required')">
+              请输入 User Agent
+            </ng-container>
+          </ng-template>
+          <label
+            nz-checkbox
+            [nzChecked]="options.header.userAgent !== null"
+            (nzCheckedChange)="
+              options.header.userAgent = $event
+                ? globalSettings.header.userAgent
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item textarea">
+          <nz-form-label class="setting-label" nzFor="cookie" nzNoColon
+            >Cookie</nz-form-label
+          >
+          <nz-form-control
+            class="setting-control textarea"
+            [nzWarningTip]="warningTip"
+            [nzValidateStatus]="
+              cookie.valid &&
+              options.header.cookie !== taskOptions.header.cookie &&
+              options.header.cookie !== globalSettings.header.cookie
+                ? 'warning'
+                : cookie
+            "
+          >
+            <textarea
+              #cookie="ngModel"
+              nz-input
+              id="cookie"
+              name="cookie"
+              [rows]="3"
+              [(ngModel)]="model.header.cookie"
+              [disabled]="options.header.cookie === null"
+            ></textarea>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.header.cookie !== null"
+            (nzCheckedChange)="
+              options.header.cookie = $event
+                ? globalSettings.header.cookie
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+      </div>
+    </form>
+  </ng-container>
+</nz-modal>

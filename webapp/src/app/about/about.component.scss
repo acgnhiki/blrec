@@ -1,0 +1,10 @@
+@use '../shared/styles/layout';
+@use '../shared/styles/list';
+
+.inner-content {
+  @extend %inner-content;
+
+  .about-page {
+    @extend %inner-page;
+  }
+}

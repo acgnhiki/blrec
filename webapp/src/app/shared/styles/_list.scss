@@ -1,0 +1,24 @@
+@mixin reset-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+%list-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  padding: 1em 2em;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+%item-label {
+  &::after {
+    content: "：";
+  }
+}

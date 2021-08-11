@@ -1,0 +1,159 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzFor="srcAddr" nzNoColon nzRequired
+      >发送邮箱</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control input"
+      nzHasFeedback
+      [nzErrorTip]="emailErrorTip"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        srcAddrControl.valid && !syncStatus.srcAddr ? 'warning' : srcAddrControl
+      "
+    >
+      <input
+        id="srcAddr"
+        type="email"
+        placeholder="发送通知的邮箱地址"
+        required
+        nz-input
+        formControlName="srcAddr"
+      />
+      <ng-template #emailErrorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入邮箱地址！
+        </ng-container>
+        <ng-container *ngIf="control.hasError('email')">
+          邮箱地址无效!
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzFor="authCode" nzNoColon nzRequired
+      >授权码</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control input"
+      nzHasFeedback
+      [nzErrorTip]="authCodeErrorTip"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        authCodeControl.valid && !syncStatus.authCode
+          ? 'warning'
+          : authCodeControl
+      "
+    >
+      <input
+        id="authCode"
+        type="text"
+        placeholder="发送邮箱的 SMTP 授权码"
+        required
+        nz-input
+        formControlName="authCode"
+      />
+      <ng-template #authCodeErrorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入授权码！
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzFor="smtpHost" nzNoColon nzRequired
+      >SMTP 主机</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control input"
+      nzHasFeedback
+      [nzErrorTip]="smtpHostErrorTip"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        smtpHostControl.valid && !syncStatus.smtpHost
+          ? 'warning'
+          : smtpHostControl
+      "
+    >
+      <input
+        id="smtpHost"
+        type="text"
+        placeholder="发送邮箱的 SMTP 主机，例如：smtp.163.com 。"
+        required
+        nz-input
+        formControlName="smtpHost"
+      />
+      <ng-template #smtpHostErrorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入 SMTP 主机！
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzFor="smtpPort" nzNoColon nzRequired
+      >SMTP 端口</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control input"
+      nzHasFeedback
+      [nzErrorTip]="smtpPortErrorTip"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        smtpPortControl.valid && !syncStatus.smtpPort
+          ? 'warning'
+          : smtpPortControl
+      "
+    >
+      <input
+        id="smtpPort"
+        type="text"
+        pattern="\d+"
+        placeholder="发送邮箱的 SMTP 主机端口，通常为 465 。"
+        required
+        nz-input
+        formControlName="smtpPort"
+      />
+      <ng-template #smtpPortErrorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入 SMTP 端口！
+        </ng-container>
+        <ng-container *ngIf="control.hasError('pattern')">
+          SMTP 端口无效！
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzFor="dstAddr" nzNoColon nzRequired
+      >接收邮箱</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control input"
+      nzHasFeedback
+      [nzErrorTip]="emailErrorTip"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        dstAddrControl.valid && !syncStatus.dstAddr ? 'warning' : dstAddrControl
+      "
+    >
+      <input
+        id="dstAddr"
+        type="email"
+        placeholder="接收通知的邮箱地址，可以和发送邮箱相同实现自发自收。"
+        required
+        nz-input
+        formControlName="dstAddr"
+      />
+      <ng-template #emailErrorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入邮箱地址！
+        </ng-container>
+        <ng-container *ngIf="control.hasError('email')">
+          邮箱地址无效!
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+</form>

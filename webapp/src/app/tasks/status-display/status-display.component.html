@@ -1,0 +1,102 @@
+<ng-container [ngSwitch]="status.running_status">
+  <div class="status-display" *ngSwitchCase="RunningStatus.RECORDING">
+    <p class="status-bar recording">
+      <span
+        class="status-indicator"
+        nz-tooltip
+        nzTooltipTitle="正在录制中"
+        nzTooltipPlacement="top"
+      >
+        <i></i>
+      </span>
+      <span
+        class="time-elapsed"
+        nz-tooltip
+        nzTooltipTitle="开始录制到现在过去的时间"
+        nzTooltipPlacement="top"
+      >
+        {{ status.elapsed | duration }}
+      </span>
+      <span
+        class="data-rate"
+        nz-tooltip
+        nzTooltipTitle="当前实时录制速度"
+        nzTooltipPlacement="top"
+      >
+        {{ status.data_rate | speed }}
+      </span>
+      <span
+        class="data-count"
+        nz-tooltip
+        nzTooltipTitle="已录制的数据"
+        nzTooltipPlacement="top"
+      >
+        {{ status.data_count | filesize: { spacer: "" } }}
+      </span>
+      <span
+        class="danmu-count"
+        nz-tooltip
+        nzTooltipTitle="弹幕数量：{{ status.danmu_count | number: '1.0-0' }}"
+        nzTooltipPlacement="top"
+      >
+        {{ status.danmu_count | number: "1.0-0" }}
+      </span>
+      <span
+        class="quality"
+        nz-tooltip
+        nzTooltipTitle="当前录制的画质"
+        nzTooltipPlacement="leftTop"
+      >
+        {{ status.real_quality_number | quality }}
+      </span>
+    </p>
+  </div>
+
+  <div class="status-display" *ngSwitchCase="RunningStatus.INJECTING">
+    <p
+      class="status-bar injecting"
+      nz-tooltip
+      nzTooltipTitle="正在注入元数据：{{
+        status.postprocessing_path ?? '' | filename
+      }}"
+      nzTooltipPlacement="top"
+    >
+      注入元数据：{{ status.postprocessing_path ?? "" | filename }}
+    </p>
+    <nz-progress
+      [nzType]="'line'"
+      [nzShowInfo]="false"
+      [nzStrokeLinecap]="'square'"
+      [nzStrokeWidth]="2"
+      [nzPercent]="
+        status.postprocessing_progress === null
+          ? 0
+          : (status.postprocessing_progress | progress)
+      "
+    ></nz-progress>
+  </div>
+
+  <div class="status-display" *ngSwitchCase="RunningStatus.REMUXING">
+    <p
+      class="status-bar remuxing"
+      nz-tooltip
+      nzTooltipTitle="正在转换格式：{{
+        status.postprocessing_path ?? '' | filename
+      }}"
+      nzTooltipPlacement="top"
+    >
+      转换格式：{{ status.postprocessing_path ?? "" | filename }}
+    </p>
+    <nz-progress
+      [nzType]="'line'"
+      [nzShowInfo]="false"
+      [nzStrokeLinecap]="'square'"
+      [nzStrokeWidth]="2"
+      [nzPercent]="
+        status.postprocessing_progress === null
+          ? 0
+          : (status.postprocessing_progress | progress)
+      "
+    ></nz-progress>
+  </div>
+</ng-container>

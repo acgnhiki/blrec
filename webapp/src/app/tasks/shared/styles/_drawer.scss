@@ -1,0 +1,9 @@
+%drawer-menu {
+  box-shadow: none;
+  padding: 0.5em 0;
+
+  *[nz-menu-item] {
+    margin: 0;
+    padding: 0.5em 2em;
+  }
+}

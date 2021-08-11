@@ -1,0 +1,24 @@
+<app-sub-page pageTitle="Webhooks">
+  <ng-template appSubPageContent>
+    <app-page-section>
+      <app-webhook-list
+        header="Webhook 列表"
+        [data]="webhooks"
+        [addable]="canAdd"
+        (add)="addWebhook()"
+        (edit)="editWebhook($event)"
+        (remove)="removeWebhook($event)"
+        (clear)="clearWebhook()"
+      ></app-webhook-list>
+    </app-page-section>
+  </ng-template>
+</app-sub-page>
+
+<app-webhook-edit-dialog
+  [title]="dialogTitle"
+  [okButtonText]="dialogOkButtonText"
+  [settings]="editingSettings"
+  [(visible)]="dialogVisible"
+  (cancel)="onDialogCanceled()"
+  (confirm)="onDialogConfirmed($event)"
+></app-webhook-edit-dialog>

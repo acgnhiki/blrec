@@ -1,0 +1,13 @@
+@mixin elide-text-overflow {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+%osd-text {
+  color: white;
+  text-shadow: 1px 1px 2px black;
+  margin: 0;
+  padding: 0 0.5rem;
+  background: rgba(0, 0, 0, 0.32);
+}

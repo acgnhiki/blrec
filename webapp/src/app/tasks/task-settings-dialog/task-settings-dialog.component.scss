@@ -1,0 +1,82 @@
+@use '../../settings/shared/styles/setting';
+
+nz-divider {
+  margin: 0 !important;
+}
+
+.form-group {
+  &:last-child {
+    .setting-item {
+      &:last-child {
+        padding-bottom: 0;
+      }
+    }
+  }
+}
+
+.setting-item {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  padding: 1em 0;
+  gap: 1em;
+  border: none;
+
+  & > * {
+    margin: 0 !important;
+  }
+
+  .setting-label {
+    justify-self: start;
+  }
+
+  .setting-control {
+    justify-self: center;
+  }
+
+  label[nz-checkbox] {
+    justify-self: end;
+
+    &::ng-deep {
+      span:last-of-type {
+        padding-right: 0;
+      }
+    }
+  }
+
+  &.input, &.textarea {
+    grid-template-columns: repeat(2, 1fr);
+
+    .setting-label {
+      grid-row: 1 / 2;
+      grid-column: 1 / 2;
+      justify-self: center;
+    }
+
+    .setting-control {
+      grid-row: 2 / 3;
+      grid-column: 1 / -1;
+      justify-self: stretch;
+    }
+
+    label[nz-checkbox] {
+      grid-row: 1 / 2;
+      grid-column: 2 / 3;
+      justify-self: center;
+    }
+  }
+}
+
+@media screen and (max-width: 450px) {
+  .setting-item {
+    grid-template-columns: repeat(2, 1fr);
+    .setting-label {
+      grid-column: 1 / -1;
+      justify-self: center;
+    }
+
+    label[nz-checkbox] {
+      justify-self: end;
+    }
+  }
+}

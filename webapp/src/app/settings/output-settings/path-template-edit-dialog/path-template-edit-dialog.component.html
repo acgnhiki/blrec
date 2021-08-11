@@ -1,0 +1,78 @@
+<nz-modal
+  nzTitle="修改文件路径模板"
+  nzCentered
+  [nzFooter]="modalFooter"
+  [(nzVisible)]="visible"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="settingsForm">
+      <nz-form-item>
+        <nz-form-control [nzErrorTip]="errorTip">
+          <input
+            type="text"
+            required
+            [pattern]="pathTemplatePattern"
+            nz-input
+            formControlName="pathTemplate"
+          />
+          <ng-template #errorTip let-control>
+            <ng-container *ngIf="control.hasError('required')">
+              请输入路径模板
+            </ng-container>
+            <ng-container *ngIf="control.hasError('pattern')">
+              路径模板有错误
+            </ng-container>
+          </ng-template>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-collapse>
+        <nz-collapse-panel nzHeader="模板变量说明">
+          <nz-table
+            #table
+            [nzData]="pathTemplateVariables"
+            [nzShowPagination]="false"
+            [nzSize]="'small'"
+          >
+            <thead>
+              <tr>
+                <th>变量</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of table.data">
+                <td>{{ item.name }}</td>
+                <td>{{ item.desc }}</td>
+              </tr>
+            </tbody>
+          </nz-table>
+          <p class="footnote">
+            <strong>
+              注意：变量名必须放在花括号中！使用日期时间变量以避免命名冲突！
+            </strong>
+          </p>
+        </nz-collapse-panel>
+      </nz-collapse>
+    </form>
+  </ng-container>
+
+  <ng-template #modalFooter>
+    <button
+      nz-button
+      nzType="default"
+      (click)="restoreDefault()"
+      [disabled]="control.value.trim() === pathTemplateDefault"
+    >
+      恢复默认
+    </button>
+    <button nz-button nzType="default" (click)="handleCancel()">取消</button>
+    <button
+      nz-button
+      nzType="default"
+      (click)="handleConfirm()"
+      [disabled]="control.invalid || control.value.trim() === value"
+    >
+      确定
+    </button>
+  </ng-template>
+</nz-modal>

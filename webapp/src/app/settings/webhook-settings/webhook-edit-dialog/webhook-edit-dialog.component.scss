@@ -1,0 +1,23 @@
+@use '../../shared/styles/setting';
+
+.setting-item {
+  padding: 1em 0;
+  border: none;
+
+  &:first-child {
+    padding-top: 0;
+
+    .setting-control {
+      flex: 1 1 auto;
+      max-width: 100% !important;
+    }
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  .check-all {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+}

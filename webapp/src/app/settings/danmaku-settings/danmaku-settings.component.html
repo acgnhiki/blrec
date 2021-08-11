@@ -1,0 +1,17 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="发送者: 弹幕内容"
+      >弹幕加用户名</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.danmuUname ? danmuUnameControl : 'warning'"
+    >
+      <nz-switch formControlName="danmuUname"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+</form>

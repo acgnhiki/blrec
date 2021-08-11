@@ -1,0 +1,136 @@
+@use './shared/styles/layout';
+@use './shared/styles/common';
+
+$app-header-height: 64px;
+$app-logo-size: 32px;
+
+:host {
+  --app-header-height: #{$app-header-height};
+  --app-logo-size: #{$app-logo-size};
+
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  & > nz-layout {
+    @include layout.full-width-height;
+  }
+}
+
+.sidebar {
+  --app-header-height: #{$app-header-height};
+  --app-logo-size: #{$app-logo-size};
+
+  @mixin transition($property) {
+    transition-property: #{$property};
+    transition-duration: 0.3s;
+    transition-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+  }
+
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  border-right: 1px solid #f0f0f0;
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    height: var(--app-header-height);
+    overflow: hidden;
+
+    .app-logo-container {
+      flex: none;
+      width: var(--app-header-height);
+      height: var(--app-header-height);
+
+      @include layout.center-content;
+
+      .app-logo {
+        width: var(--app-logo-size);
+        height: var(--app-logo-size);
+      }
+    }
+
+    .app-title {
+      font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: clip;
+      opacity: 1;
+
+      @include transition("width, opacity");
+    }
+
+    &.collapsed {
+      .app-title {
+        opacity: 0;
+      }
+    }
+  }
+
+  .sidebar-menu {
+    ul {
+      width: 100%;
+    }
+  }
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  height: var(--app-header-height);
+  margin: 0;
+  padding: 0;
+  z-index: 2;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+
+  .sidebar-trigger {
+    --icon-size: 20px;
+
+    @include layout.center-content;
+
+    height: 100%;
+    width: var(--app-header-height);
+
+    cursor: pointer;
+    transition: all 0.3s, padding 0s;
+
+    &:hover {
+      color: #1890ff;
+    }
+
+    i {
+      font-size: var(--icon-size);
+    }
+  }
+
+  .icon-actions {
+    --icon-size: 24px;
+
+    @include layout.center-content;
+
+    height: 100%;
+    margin-left: auto;
+    margin-right: calc((var(--app-header-height) - var(--icon-size)) / 2);
+
+    .external-link {
+      @include layout.center-content;
+
+      color: black;
+
+      i {
+        font-size: var(--icon-size);
+      }
+    }
+  }
+}
+
+.main-content {
+  overflow: hidden;
+}

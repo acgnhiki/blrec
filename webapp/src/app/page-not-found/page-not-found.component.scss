@@ -1,0 +1,34 @@
+@use '../shared/styles/layout';
+
+.content {
+  @include layout.full-width-height;
+  @include layout.center-content;
+
+  flex-direction: column;
+
+  img {
+    max-width: 980px;
+  }
+
+  .btn-wrapper {
+    @include layout.center-content;
+
+    .goback-btn {
+      display: inline-block;
+      padding: 0 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      line-height: 40px;
+      text-align: center;
+      vertical-align: middle;
+      color: #fff;
+      background: #00a1d6;
+      transition: 0.3s;
+      cursor: pointer;
+
+      &:hover {
+        background: #00b5e5;
+      }
+    }
+  }
+}

@@ -1,0 +1,87 @@
+<nz-modal
+  [nzTitle]="title"
+  nzCentered
+  [nzOkText]="okButtonText"
+  [nzVisible]="visible"
+  [nzOkDisabled]="settingsForm.invalid"
+  (nzOnOk)="handleConfirm()"
+  (nzOnCancel)="handleCancel()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="settingsForm">
+      <nz-form-item class="setting-item">
+        <nz-form-label class="setting-label" nzFor="url" nzNoColon
+          >URL</nz-form-label
+        >
+        <nz-form-control
+          class="setting-control input"
+          nzHasFeedback
+          [nzErrorTip]="urlErrorTip"
+        >
+          <input id="url" type="url" required nz-input formControlName="url" />
+          <ng-template #urlErrorTip let-control>
+            <ng-container *ngIf="control.hasError('required')">
+              请输入 url！
+            </ng-container>
+            <ng-container *ngIf="control.hasError('pattern')">
+              url 无效！
+            </ng-container>
+          </ng-template>
+        </nz-form-control>
+      </nz-form-item>
+
+      <div class="form-group">
+        <h2>事件</h2>
+        <nz-form-item class="setting-item">
+          <nz-form-control class="setting-control checkbox check-all">
+            <label
+              nz-checkbox
+              [nzChecked]="allChecked"
+              (nzCheckedChange)="setAllChecked($event)"
+              [nzIndeterminate]="indeterminate"
+              >全选</label
+            >
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-control class="setting-control checkbox">
+            <label nz-checkbox formControlName="liveBegan">开播</label>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-control class="setting-control checkbox">
+            <label nz-checkbox formControlName="liveEnded">下播</label>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-control class="setting-control checkbox">
+            <label nz-checkbox formControlName="roomChange"
+              >直播间信息改变</label
+            >
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-control class="setting-control checkbox">
+            <label nz-checkbox formControlName="fileCompleted"
+              >录播文件完成</label
+            >
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-control class="setting-control checkbox">
+            <label nz-checkbox formControlName="spaceNoEnough"
+              >硬盘空间不足</label
+            >
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-control class="setting-control checkbox">
+            <label nz-checkbox formControlName="errorOccurred"
+              >程序出现异常</label
+            >
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+    </form>
+  </ng-container>
+</nz-modal>

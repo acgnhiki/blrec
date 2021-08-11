@@ -1,0 +1,114 @@
+@use '../../shared/styles/layout';
+@use '../../shared/styles/text';
+@use '../shared/styles/drawer';
+
+:host {
+  &.stopped {
+    filter: grayscale(100%);
+  }
+}
+
+a {
+  color: inherit;
+
+  &:hover {
+    color: #1890ff;
+  }
+
+  &:focus-visible {
+    outline: -webkit-focus-ring-color auto 1px;
+  }
+}
+
+.cover-wrapper {
+  --cover-ratio: 264 / 470;
+  --cover-height: calc(var(--card-width) * var(--cover-ratio));
+
+  position: relative;
+  width: var(--card-width);
+  height: var(--cover-height);
+
+  .cover {
+    width: 100%;
+    max-height: var(--cover-height);
+    object-fit: cover;
+  }
+
+  .title {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+
+    font-size: 1.2rem;
+
+    width: fit-content;
+    max-width: calc(100% - 1em);
+
+    @extend %osd-text;
+    @include text.elide-text-overflow;
+  }
+}
+
+nz-card-meta {
+  margin: 0;
+}
+
+.meta-title {
+  margin: 0;
+  display: flex;
+  column-gap: 1em;
+
+  .user-name {
+    color: #fb7299;
+    font-size: 1rem;
+    font-weight: bold;
+
+    @include text.elide-text-overflow;
+  }
+
+  .live-status {
+    nz-tag {
+      margin: 0;
+      position: relative;
+      bottom: 1px;
+    }
+  }
+}
+
+.meta-desc {
+  margin: 0;
+  display: flex;
+
+  .room-id-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+
+    .short-room-id::after {
+      display: inline-block;
+      width: 1em;
+      content: ", ";
+    }
+
+    @media screen and (max-width: 320px) {
+      .room-id-label {
+        display: none;
+      }
+    }
+  }
+
+  .area-name {
+    margin-left: auto;
+
+    nz-tag {
+      margin: 0;
+      border-radius: 30px;
+      padding: 0 1em;
+    }
+  }
+}
+
+.drawer-content {
+  .menu {
+    @extend %drawer-menu;
+  }
+}

@@ -1,0 +1,17 @@
+@use '../shared/styles/layout';
+@use '../shared/styles/common';
+
+:host {
+  @extend %inner-content;
+  display: flex;
+  flex-direction: column;
+  // flex-direction: column-reverse;
+  padding: 0;
+  overflow: hidden;
+}
+
+.add-task-button {
+  position: fixed;
+  bottom: 5vh;
+  right: 5vw;
+}

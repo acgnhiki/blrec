@@ -1,0 +1,8 @@
+# Include the README
+include README.md
+
+# Include the license file
+include LICENSE
+
+# Include all package data
+graft src/blrec/data

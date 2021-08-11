@@ -1,0 +1,23 @@
+@use '../../../shared/styles/layout';
+@use '../../../shared/styles/common';
+
+:host {
+  @extend %inner-content;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.sub-page {
+  @extend %inner-page;
+
+  .page-header {
+    margin-top: 3px;
+    margin-bottom: 1em;
+  }
+
+  .page-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+}

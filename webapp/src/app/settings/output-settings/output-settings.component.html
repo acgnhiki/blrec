@@ -1,0 +1,85 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item
+    class="setting-item actionable"
+    (click)="outDirEditDialog.open()"
+  >
+    <nz-form-label class="setting-label">保存位置</nz-form-label>
+    <nz-form-control
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.outDir ? outDirControl : 'warning'"
+    >
+      <nz-form-text class="setting-value"
+        >{{ outDirControl.value }}
+      </nz-form-text>
+      <app-outdir-edit-dialog
+        #outDirEditDialog
+        [value]="outDirControl.value"
+        (confirm)="outDirControl.setValue($event)"
+      ></app-outdir-edit-dialog>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item
+    class="setting-item actionable"
+    (click)="pathTemplateEditDialog.open()"
+  >
+    <nz-form-label class="setting-label">路径模板</nz-form-label>
+    <nz-form-control
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.pathTemplate ? pathTemplateControl : 'warning'
+      "
+    >
+      <nz-form-text class="setting-value"
+        >{{ pathTemplateControl.value }}
+      </nz-form-text>
+      <app-path-template-edit-dialog
+        #pathTemplateEditDialog
+        [value]="pathTemplateControl.value"
+        (confirm)="pathTemplateControl.setValue($event)"
+      >
+      </app-path-template-edit-dialog>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      [nzTooltipTitle]="splitFileTip"
+      >大小限制</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control select"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.filesizeLimit ? filesizeLimitControl : 'warning'
+      "
+    >
+      <nz-select
+        formControlName="filesizeLimit"
+        [nzOptions]="filesizeLimitOptions"
+      >
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      [nzTooltipTitle]="splitFileTip"
+      >时长限制</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control select"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.durationLimit ? durationLimitControl : 'warning'
+      "
+    >
+      <nz-select
+        formControlName="durationLimit"
+        [nzOptions]="durationLimitOptions"
+      >
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+</form>

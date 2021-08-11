@@ -1,0 +1,21 @@
+<nz-spin
+  *ngIf="loading; else elseBlock"
+  class="spinner"
+  [nzSize]="'large'"
+  [nzSpinning]="loading"
+></nz-spin>
+
+<ng-template #elseBlock>
+  <div class="sub-page">
+    <nz-page-header
+      class="page-header"
+      nzBackIcon
+      [nzTitle]="pageTitle"
+      [nzGhost]="false"
+    >
+    </nz-page-header>
+    <div *ngIf="content" class="page-content">
+      <ng-container [ngTemplateOutlet]="content.templateRef"></ng-container>
+    </div>
+  </div>
+</ng-template>

@@ -1,0 +1,23 @@
+<app-sub-page pageTitle="pushplus 通知">
+  <ng-template appSubPageContent>
+    <app-page-section>
+      <app-notifier-settings
+        [settings]="notifierSettings"
+        keyOfSettings="pushplusNotification"
+      ></app-notifier-settings>
+    </app-page-section>
+
+    <app-page-section name="pushplus">
+      <app-pushplus-settings
+        [settings]="pushplusSettings"
+      ></app-pushplus-settings>
+    </app-page-section>
+
+    <app-page-section name="事件">
+      <app-event-settings
+        [settings]="notificationSettings"
+        keyOfSettings="pushplusNotification"
+      ></app-event-settings>
+    </app-page-section>
+  </ng-template>
+</app-sub-page>

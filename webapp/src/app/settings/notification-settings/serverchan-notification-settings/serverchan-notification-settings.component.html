@@ -1,0 +1,23 @@
+<app-sub-page pageTitle="ServerChan 通知">
+  <ng-template appSubPageContent>
+    <app-page-section>
+      <app-notifier-settings
+        [settings]="notifierSettings"
+        keyOfSettings="serverchanNotification"
+      ></app-notifier-settings>
+    </app-page-section>
+
+    <app-page-section name="ServerChan">
+      <app-serverchan-settings
+        [settings]="serverchanSettings"
+      ></app-serverchan-settings>
+    </app-page-section>
+
+    <app-page-section name="事件">
+      <app-event-settings
+        [settings]="notificationSettings"
+        keyOfSettings="serverchanNotification"
+      ></app-event-settings>
+    </app-page-section>
+  </ng-template>
+</app-sub-page>

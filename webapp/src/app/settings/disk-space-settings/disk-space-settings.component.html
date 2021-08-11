@@ -1,0 +1,49 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzNoColon
+      >硬盘空间检测间隔</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control select"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.checkInterval ? checkIntervalControl : 'warning'
+      "
+    >
+      <nz-select formControlName="checkInterval" [nzOptions]="intervalOptions">
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzNoColon
+      >硬盘空间检测阈值</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control select"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.spaceThreshold ? spaceThresholdControl : 'warning'
+      "
+    >
+      <nz-select
+        formControlName="spaceThreshold"
+        [nzOptions]="thresholdOptions"
+      >
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label class="setting-label" nzNoColon
+      >空间不足删除旧录播文件</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.recycleRecords ? recycleRecordsControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="recycleRecords"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+</form>

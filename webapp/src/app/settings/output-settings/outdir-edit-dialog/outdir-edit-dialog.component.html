@@ -1,0 +1,36 @@
+<nz-modal
+  nzTitle="修改文件保存位置"
+  nzCentered
+  [(nzVisible)]="visible"
+  [nzOkDisabled]="control.invalid || control.value.trim() === value"
+  (nzOnOk)="handleConfirm()"
+  (nzOnCancel)="handleCancel()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="settingsForm">
+      <nz-form-item>
+        <nz-form-control
+          nzHasFeedback
+          nzValidatingTip="正在校验..."
+          [nzErrorTip]="errorTip"
+        >
+          <input type="text" required nz-input formControlName="outDir" />
+          <ng-template #errorTip let-control>
+            <ng-container *ngIf="control.hasError('required')">
+              请输入保存位置
+            </ng-container>
+            <ng-container *ngIf="control.hasError('notADirectory')">
+              不是一个目录
+            </ng-container>
+            <ng-container *ngIf="control.hasError('noPermissions')">
+              没有读写权限
+            </ng-container>
+            <ng-container *ngIf="control.hasError('failedToValidate')">
+              未能进行校验
+            </ng-container>
+          </ng-template>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>

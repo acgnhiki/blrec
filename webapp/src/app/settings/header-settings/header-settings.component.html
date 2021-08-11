@@ -1,0 +1,40 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item
+    class="setting-item actionable"
+    (click)="userAgentEditDialog.open()"
+  >
+    <nz-form-label class="setting-label">User Agent</nz-form-label>
+    <nz-form-control
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.userAgent ? userAgentControl : 'warning'"
+    >
+      <nz-form-text class="setting-value"
+        >{{ userAgentControl.value }}
+      </nz-form-text>
+      <app-user-agent-edit-dialog
+        #userAgentEditDialog
+        [value]="userAgentControl.value"
+        (confirm)="userAgentControl.setValue($event)"
+      ></app-user-agent-edit-dialog>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item
+    class="setting-item actionable"
+    (click)="cookieEditDialog.open()"
+  >
+    <nz-form-label class="setting-label">Cookie</nz-form-label>
+    <nz-form-control
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.cookie ? cookieControl : 'warning'"
+    >
+      <nz-form-text class="setting-value"
+        >{{ cookieControl.value }}
+      </nz-form-text>
+      <app-cookie-edit-dialog
+        #cookieEditDialog
+        [value]="cookieControl.value"
+        (confirm)="cookieControl.setValue($event)"
+      ></app-cookie-edit-dialog>
+    </nz-form-control>
+  </nz-form-item>
+</form>

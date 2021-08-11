@@ -1,0 +1,49 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="调用 ffmpeg 进行转换，需要安装 ffmpeg 。"
+      >FLV 转 MP4</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.remuxToMp4 ? remuxToMp4Control : 'warning'"
+    >
+      <nz-switch formControlName="remuxToMp4"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      [nzTooltipTitle]="deleteSourceTip"
+      >源文件删除策略</nz-form-label
+    >
+    <ng-template #deleteSourceTip>
+      <p>
+        自动: 转换成功才会删除源文件<br />
+        从不: 转换后保留源文件<br />
+      </p>
+    </ng-template>
+    <nz-form-control
+      class="setting-control radio"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.deleteSource ? deleteSourceControl : 'warning'
+      "
+    >
+      <nz-radio-group
+        formControlName="deleteSource"
+        [nzDisabled]="!remuxToMp4Control.value"
+      >
+        <ng-container *ngFor="let strategy of deleteStrategies">
+          <label nz-radio-button [nzValue]="strategy.value">{{
+            strategy.label
+          }}</label>
+        </ng-container>
+      </nz-radio-group>
+    </nz-form-control>
+  </nz-form-item>
+</form>

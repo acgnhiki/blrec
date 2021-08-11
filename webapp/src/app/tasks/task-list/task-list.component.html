@@ -1,0 +1,12 @@
+<div class="empty-container" *ngIf="dataList.length === 0; else elseBlock">
+  <nz-empty></nz-empty>
+</div>
+
+<ng-template #elseBlock>
+  <div class="tasks-container" #tasks>
+    <app-task-item
+      *ngFor="let data of dataList; trackBy: trackByRoomId"
+      [data]="data"
+    ></app-task-item>
+  </div>
+</ng-template>

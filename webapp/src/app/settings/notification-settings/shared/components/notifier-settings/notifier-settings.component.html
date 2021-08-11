@@ -1,0 +1,12 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label class="setting-label" nzNoColon>允许通知</nz-form-label>
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.enabled ? enabledControl : 'warning'"
+    >
+      <nz-switch formControlName="enabled"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+</form>

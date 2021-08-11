@@ -1,0 +1,52 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label class="setting-label" nzNoColon>开播发送通知</nz-form-label>
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.notifyBegan ? notifyBeganControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="notifyBegan"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label class="setting-label" nzNoColon>下播发送通知</nz-form-label>
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.notifyEnded ? notifyEndedControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="notifyEnded"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label class="setting-label" nzNoColon>出错发送通知</nz-form-label>
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.notifyError ? notifyErrorControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="notifyError"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label class="setting-label" nzNoColon
+      >空间不足发送通知</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.notifySpace ? notifySpaceControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="notifySpace"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+</form>

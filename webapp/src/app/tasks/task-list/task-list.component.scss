@@ -1,0 +1,40 @@
+@use '../../shared/styles/layout';
+
+$card-width: 400px;
+$grid-gutter: 12px;
+$max-columns: 3;
+
+:host {
+  --card-width: #{$card-width};
+  --grid-gutter: #{$grid-gutter};
+  --max-columns: #{$max-columns};
+
+  @extend %inner-content;
+  padding: var(--grid-gutter);
+
+  @media screen and (max-width: $card-width) {
+    --card-width: 100%;
+    padding: var(--grid-gutter) 0;
+  }
+}
+
+.tasks-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--card-width));
+  gap: var(--grid-gutter);
+  justify-content: center;
+
+  max-width: min(
+    100%,
+    calc(
+      var(--card-width) * var(--max-columns) + var(--grid-gutter) *
+        (var(--max-columns) - 1)
+    )
+  );
+  margin: 0 auto;
+}
+
+.empty-container {
+  @include layout.full-width-height;
+  @include layout.center-content;
+}

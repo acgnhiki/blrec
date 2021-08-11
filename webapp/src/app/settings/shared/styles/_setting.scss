@@ -1,0 +1,111 @@
+@use '../../../shared/styles/layout';
+@use '../../../shared/styles/list';
+
+.settings-page {
+  @extend %inner-page;
+}
+
+.settings-page-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.form-group {
+  h2 {
+    margin: 0;
+    font-weight: bold;
+    font-size: 1.2em;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+}
+
+@mixin actionable {
+  cursor: pointer;
+
+  &:hover {
+    background-color: rgba(32, 33, 36, 0.1);
+  }
+}
+
+.setting-item {
+  @extend %list-item;
+
+  gap: 0.5em;
+
+  &.actionable {
+    @include actionable;
+  }
+}
+
+a.setting-item {
+  outline: none;
+  text-decoration: none;
+  color: inherit;
+  @include actionable;
+}
+
+.setting-label {
+  padding: 0 !important;
+  max-width: fit-content !important;
+  text-align: left;
+
+  &.align-required {
+    position: relative;
+    left: 11px;
+  }
+}
+
+.setting-control,
+.setting-value {
+  max-width: fit-content !important;
+  margin-left: auto !important;
+
+  &.input {
+    max-width: 100% !important;
+  }
+
+  &.select {
+    max-width: 8em !important;
+    width: 8em !important;
+  }
+
+  &.switch {
+    // place sync failed warning tip on the lefthand
+    flex-direction: row-reverse;
+    align-items: center;
+  }
+
+  &.checkbox {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0;
+
+    label {
+      width: 100%;
+    }
+  }
+
+  &.textarea {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0;
+  }
+
+  @media screen and (max-width: 332px) {
+    &.radio {
+      margin-left: 0 !important;
+    }
+  }
+
+  @media screen and (max-width: 319px) {
+    &.select {
+      margin-left: 0 !important;
+    }
+  }
+}
+
+.setting-value {
+  color: #5f6368;
+  font-weight: 400;
+}

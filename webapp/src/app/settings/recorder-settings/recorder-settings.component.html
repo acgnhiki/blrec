@@ -1,0 +1,58 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="所选画质不存在将以原画代替"
+      >画质</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control select"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.qualityNumber ? qualityNumberControl : 'warning'
+      "
+    >
+      <nz-select formControlName="qualityNumber" [nzOptions]="qualityOptions">
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="超时时间设置得比较长相对不容易因网络不稳定而出现流中断，但是一旦出现中断就无法实现无缝拼接且漏录时长越长。"
+      >数据读取超时</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control select"
+      [nzWarningTip]="
+        syncStatus.readTimeout ? '无缝拼接会失效！' : syncFailedWarningTip
+      "
+      [nzValidateStatus]="
+        syncStatus.readTimeout && readTimeoutControl.value <= 3
+          ? readTimeoutControl
+          : 'warning'
+      "
+    >
+      <nz-select formControlName="readTimeout" [nzOptions]="timeoutOptions">
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="硬盘写入缓冲设置得比较大可以减少对硬盘的写入，但需要占用更多的内存。"
+      >硬盘写入缓冲</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control select"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.bufferSize ? bufferSizeControl : 'warning'"
+    >
+      <nz-select formControlName="bufferSize" [nzOptions]="bufferOptions">
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+</form>

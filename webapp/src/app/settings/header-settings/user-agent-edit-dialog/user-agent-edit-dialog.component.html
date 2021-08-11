@@ -1,0 +1,37 @@
+<nz-modal
+  nzTitle="修改 User Agent"
+  nzOkDanger
+  nzCentered
+  [(nzVisible)]="visible"
+  [nzOkDisabled]="control.invalid || control.value.trim() === value"
+  (nzOnOk)="handleConfirm()"
+  (nzOnCancel)="handleCancel()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="settingsForm">
+      <nz-form-item>
+        <nz-form-control
+          [nzWarningTip]="warningTip"
+          [nzValidateStatus]="
+            control.valid && control.value.trim() !== value
+              ? 'warning'
+              : control
+          "
+          [nzErrorTip]="errorTip"
+        >
+          <textarea
+            [rows]="3"
+            required
+            nz-input
+            formControlName="userAgent"
+          ></textarea>
+          <ng-template #errorTip let-control>
+            <ng-container *ngIf="control.hasError('required')">
+              请输入 User Agent
+            </ng-container>
+          </ng-template>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>

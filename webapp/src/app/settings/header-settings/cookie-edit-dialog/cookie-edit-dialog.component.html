@@ -1,0 +1,31 @@
+<nz-modal
+  nzTitle="修改 Cookie"
+  nzOkDanger
+  nzCentered
+  [(nzVisible)]="visible"
+  [nzOkDisabled]="control.invalid || control.value.trim() === value"
+  (nzOnOk)="handleConfirm()"
+  (nzOnCancel)="handleCancel()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="settingsForm">
+      <nz-form-item>
+        <nz-form-control
+          [nzWarningTip]="warningTip"
+          [nzValidateStatus]="
+            control.valid && control.value.trim() !== value
+              ? 'warning'
+              : control
+          "
+        >
+          <textarea
+            [rows]="5"
+            wrap="soft"
+            nz-input
+            formControlName="cookie"
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>

@@ -1,0 +1,216 @@
+<nz-card
+  [nzCover]="coverTemplate"
+  [nzActions]="[actionDelete, actionSetting, actionSwitch, actionMore]"
+  [nzBodyStyle]="{ padding: '0.5rem' }"
+>
+  <nz-skeleton
+    [nzActive]="true"
+    [nzLoading]="!data"
+    [nzAvatar]="{ size: 'large' }"
+  >
+    <nz-card-meta
+      [nzAvatar]="avatarTemplate"
+      [nzTitle]="titleTemplate"
+      [nzDescription]="descTemplate"
+    ></nz-card-meta>
+  </nz-skeleton>
+</nz-card>
+
+<ng-template #coverTemplate>
+  <div class="cover-wrapper">
+    <img
+      class="cover"
+      alt="直播间封面"
+      [src]="data.room_info.cover | dataurl | async"
+    />
+
+    <h2
+      class="title"
+      nz-tooltip
+      [nzTooltipTitle]="'直播间标题：' + data.room_info.title"
+      nzTooltipPlacement="bottomLeft"
+    >
+      {{ data.room_info.title }}
+    </h2>
+
+    <app-status-display [status]="data.task_status"></app-status-display>
+  </div>
+</ng-template>
+
+<ng-template #avatarTemplate>
+  <!-- XXX $any() to workaround typing error -->
+  <nz-avatar
+    [nzShape]="'square'"
+    [nzSize]="54"
+    [nzSrc]="$any(data.user_info.face | dataurl | async)"
+  ></nz-avatar>
+</ng-template>
+
+<ng-template #titleTemplate>
+  <p class="meta-title">
+    <span
+      class="user-name"
+      nz-tooltip
+      nzTooltipTitle="打开主播个人空间页面"
+      nzTooltipPlacement="right"
+    >
+      <a
+        href="https://space.bilibili.com/{{ data.user_info.uid }}"
+        target="_blank"
+      >
+        {{ data.user_info.name }}
+      </a>
+    </span>
+    <span class="live-status">
+      <ng-container [ngSwitch]="data.room_info.live_status">
+        <nz-tag *ngSwitchCase="0" nzColor="default"
+          ><!-- grey -->
+          <i nz-icon nzType="frown"></i>
+          <span>未开播</span>
+        </nz-tag>
+        <nz-tag *ngSwitchCase="1" nzColor="red">
+          <i nz-icon nzType="fire"></i>
+          <span>直播中</span>
+        </nz-tag>
+        <nz-tag *ngSwitchCase="2" nzColor="green">
+          <i nz-icon nzType="sync" nzSpin></i>
+          <span>轮播中</span>
+        </nz-tag>
+      </ng-container>
+    </span>
+  </p>
+</ng-template>
+
+<ng-template #descTemplate>
+  <p class="meta-desc">
+    <span class="room-id-wrapper">
+      <span class="room-id-label">房间号：</span>
+      <span
+        class="short-room-id"
+        *ngIf="data.room_info.short_room_id"
+        nz-tooltip
+        nzTooltipTitle="打开直播间页面"
+        nzTooltipPlacement="bottom"
+      >
+        <a
+          href="https://live.bilibili.com/{{ data.room_info.short_room_id }}"
+          target="_blank"
+        >
+          {{ data.room_info.short_room_id }}</a
+        >
+      </span>
+      <span
+        class="real-room-id"
+        nz-tooltip
+        nzTooltipTitle="打开直播间页面"
+        nzTooltipPlacement="bottom"
+      >
+        <a
+          href="https://live.bilibili.com/{{ data.room_info.room_id }}"
+          target="_blank"
+          >{{ data.room_info.room_id }}</a
+        >
+      </span>
+    </span>
+    <span
+      class="area-name"
+      nz-tooltip
+      nzTooltipTitle="打开直播分区页面"
+      nzTooltipPlacement="leftTop"
+    >
+      <a
+        href="https://live.bilibili.com/p/eden/area-tags?parentAreaId={{
+          data.room_info.parent_area_id
+        }}&areaId={{ data.room_info.area_id }}"
+        target="_blank"
+      >
+        <nz-tag [nzColor]="'#23ade5'">
+          {{ data.room_info.area_name }}
+        </nz-tag>
+      </a>
+    </span>
+  </p>
+</ng-template>
+
+<ng-template #actionSwitch>
+  <nz-switch
+    nz-tooltip
+    nzTooltipTitle="录制开关"
+    [nzDisabled]="toggleRecorderForbidden"
+    [ngModel]="data.task_status.recorder_enabled"
+    [nzControl]="true"
+    [nzLoading]="switchPending"
+    (click)="toggleRecorder()"
+  ></nz-switch>
+</ng-template>
+
+<ng-template #actionDelete>
+  <div
+    nz-tooltip
+    nzTooltipTitle="删除任务"
+    nz-popconfirm
+    nzPopconfirmTitle="确定要删除此任务？"
+    nzPopconfirmPlacement="topLeft"
+    (nzOnConfirm)="removeTask()"
+  >
+    <i nz-icon nzType="delete"></i>
+  </div>
+</ng-template>
+
+<ng-template #actionSetting>
+  <div nz-tooltip nzTooltipTitle="任务设置" (click)="openSettingsDialog()">
+    <i nz-icon nzType="setting"></i>
+  </div>
+  <ng-container *ngIf="taskOptions && globalSettings">
+    <app-task-settings-dialog
+      [taskOptions]="taskOptions!"
+      [globalSettings]="globalSettings!"
+      [(visible)]="settingsDialogVisible"
+      (confirm)="changeTaskOptions($event)"
+      (afterClose)="cleanSettingsData()"
+    ></app-task-settings-dialog>
+  </ng-container>
+</ng-template>
+
+<ng-template #actionMore>
+  <div
+    *ngIf="!useDrawer"
+    nz-dropdown
+    nzPlacement="topRight"
+    [nzDropdownMenu]="dropdownMenu"
+  >
+    <i nz-icon nzType="more"></i>
+  </div>
+  <div *ngIf="useDrawer" (click)="menuDrawerVisible = true">
+    <i nz-icon nzType="more"></i>
+  </div>
+</ng-template>
+
+<nz-dropdown-menu #dropdownMenu="nzDropdownMenu">
+  <ng-container [ngTemplateOutlet]="menu"></ng-container>
+  <ng-template #menu>
+    <ul nz-menu class="menu">
+      <li nz-menu-item (click)="startTask()">运行任务</li>
+      <li nz-menu-item (click)="stopTask()">停止任务</li>
+      <li nz-menu-item (click)="stopTask(true)">强制停止任务</li>
+      <li nz-menu-item (click)="disableRecorder(true)">强制关闭录制</li>
+      <li nz-menu-item (click)="updateTaskInfo()">刷新数据</li>
+    </ul>
+  </ng-template>
+</nz-dropdown-menu>
+
+<nz-drawer
+  *ngIf="useDrawer"
+  nzPlacement="bottom"
+  nzHeight="auto"
+  [nzClosable]="false"
+  [nzBodyStyle]="{ padding: '0' }"
+  [(nzVisible)]="menuDrawerVisible"
+  (nzOnClose)="menuDrawerVisible = false"
+>
+  <ng-container *nzDrawerContent>
+    <div class="drawer-content" (click)="menuDrawerVisible = false">
+      <ng-container [ngTemplateOutlet]="menu"></ng-container>
+    </div>
+  </ng-container>
+</nz-drawer>

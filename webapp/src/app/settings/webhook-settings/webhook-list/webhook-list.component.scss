@@ -1,0 +1,39 @@
+@use '../../../shared/styles/text';
+
+.list {
+  background-color: white;
+
+  .list-header {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: 0.5em 1.5em;
+
+    h3 {
+      margin: 0;
+    }
+
+    .list-actions {
+      margin-left: auto;
+      position: relative;
+      left: 1em;
+    }
+  }
+
+  .list-item {
+    display: flex;
+    flex-wrap: nowrap;
+    padding: 0.5em 1.5em;
+
+    .item-content {
+      @include text.elide-text-overflow;
+    }
+
+    .more-action-button {
+      margin-left: auto;
+      flex: 0 0 auto;
+      position: relative;
+      left: 1em;
+    }
+  }
+}

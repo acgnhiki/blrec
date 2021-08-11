@@ -1,0 +1,26 @@
+@mixin full-width-height {
+  height: 100%;
+  width: 100%;
+}
+
+@mixin center-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+%inner-content {
+  @include full-width-height;
+
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 1rem;
+  background: #f1f3f4;
+  overflow: auto;
+}
+
+%inner-page {
+  max-width: 680px;
+  margin: 0 auto;
+}

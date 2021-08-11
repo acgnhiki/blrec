@@ -1,0 +1,21 @@
+<app-sub-page pageTitle="邮件通知">
+  <ng-template appSubPageContent>
+    <app-page-section>
+      <app-notifier-settings
+        [settings]="notifierSettings"
+        keyOfSettings="emailNotification"
+      ></app-notifier-settings>
+    </app-page-section>
+
+    <app-page-section name="邮箱">
+      <app-email-settings [settings]="emailSettings"></app-email-settings>
+    </app-page-section>
+
+    <app-page-section name="事件">
+      <app-event-settings
+        [settings]="notificationSettings"
+        keyOfSettings="emailNotification"
+      ></app-event-settings>
+    </app-page-section>
+  </ng-template>
+</app-sub-page>

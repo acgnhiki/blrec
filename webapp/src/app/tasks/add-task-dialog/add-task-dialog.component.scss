@@ -1,0 +1,8 @@
+$result-message-item-height: 40px;
+$max-result-message-items: 5;
+
+.result-messages-container {
+  width: 100%;
+  max-height: $result-message-item-height * $max-result-message-items;
+  overflow-y: auto;
+}

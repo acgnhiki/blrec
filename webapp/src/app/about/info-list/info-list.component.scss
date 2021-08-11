@@ -1,0 +1,13 @@
+@use '../../shared/styles/list';
+
+.info-list {
+  @include list.reset-list;
+
+  .info-item {
+    @extend %list-item;
+
+    .label {
+      @extend %item-label;
+    }
+  }
+}

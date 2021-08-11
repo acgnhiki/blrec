@@ -1,0 +1,54 @@
+<nz-list class="list" nzBordered>
+  <nz-list-header class="list-header">
+    <h3>{{ header }}</h3>
+    <div class="list-actions">
+      <button
+        class="clear-button"
+        nz-button
+        nzType="text"
+        nzSize="large"
+        nz-tooltip
+        nzTooltipTitle="清空"
+        [disabled]="data.length <= 0 || !clearable"
+        (click)="clear.emit()"
+      >
+        <i nz-icon nzType="clear"></i>
+      </button>
+      <button
+        class="add-button"
+        nz-button
+        nzType="text"
+        nzSize="large"
+        nz-tooltip
+        nzTooltipTitle="添加"
+        [disabled]="!addable"
+        (click)="add.emit()"
+      >
+        <i nz-icon nzType="plus"></i>
+      </button>
+    </div>
+  </nz-list-header>
+
+  <nz-list-empty *ngIf="data.length <= 0"></nz-list-empty>
+
+  <nz-list-item class="list-item" *ngFor="let webhook of data; index as i">
+    <span class="item-content">{{ webhook.url }}</span>
+    <button
+      class="more-action-button"
+      nz-button
+      nzType="text"
+      nzSize="default"
+      nz-dropdown
+      [nzDropdownMenu]="menu"
+      nzPlacement="bottomRight"
+    >
+      <i nz-icon nzType="more"></i>
+    </button>
+    <nz-dropdown-menu #menu="nzDropdownMenu">
+      <ul nz-menu>
+        <li nz-menu-item (click)="edit.emit(i)">修改</li>
+        <li nz-menu-item (click)="remove.emit(i)">删除</li>
+      </ul>
+    </nz-dropdown-menu>
+  </nz-list-item>
+</nz-list>

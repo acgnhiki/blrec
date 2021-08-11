@@ -1,0 +1,68 @@
+@use '../../shared/styles/layout';
+@use '../../shared/styles/text';
+
+.status-display {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+.status-bar {
+  display: flex;
+  gap: 1rem;
+
+  font-size: 1rem;
+  line-height: 1.8;
+
+  @extend %osd-text;
+
+  &.recording {
+    .status-indicator {
+      @include layout.center-content;
+
+      i {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 0.5rem;
+        color: red;
+        background: red;
+        animation: blinker 1s cubic-bezier(1, 0, 0, 1) infinite;
+      }
+
+      @keyframes blinker {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  &.injecting,
+  &.remuxing {
+    @include text.elide-text-overflow;
+  }
+
+  .danmu-count {
+    @include text.elide-text-overflow;
+  }
+
+  .quality {
+    flex: none;
+    margin-left: auto;
+  }
+}
+
+nz-progress {
+  display: flex;
+
+  &::ng-deep {
+    .ant-progress-outer {
+      display: flex;
+    }
+  }
+}

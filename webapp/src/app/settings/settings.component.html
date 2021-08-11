@@ -1,0 +1,51 @@
+<div class="inner-content" #innerContent>
+  <div class="main-settings settings-page">
+    <div class="settings-page-content">
+      <app-page-section name="文件">
+        <app-output-settings [settings]="settings.output"></app-output-settings>
+      </app-page-section>
+
+      <app-page-section name="录制">
+        <app-recorder-settings
+          [settings]="settings.recorder"
+        ></app-recorder-settings>
+      </app-page-section>
+
+      <app-page-section name="弹幕">
+        <app-danmaku-settings
+          [settings]="settings.danmaku"
+        ></app-danmaku-settings>
+      </app-page-section>
+
+      <app-page-section name="文件处理">
+        <app-post-processing-settings
+          [settings]="settings.postprocessing"
+        ></app-post-processing-settings>
+      </app-page-section>
+
+      <app-page-section name="硬盘空间">
+        <app-disk-space-settings
+          [settings]="settings.space"
+        ></app-disk-space-settings>
+      </app-page-section>
+
+      <app-page-section name="网络请求">
+        <app-header-settings [settings]="settings.header"></app-header-settings>
+      </app-page-section>
+
+      <app-page-section name="日志">
+        <app-logging-settings
+          [settings]="settings.logging"
+        ></app-logging-settings>
+      </app-page-section>
+
+      <app-page-section name="通知">
+        <app-notification-settings></app-notification-settings>
+      </app-page-section>
+
+      <app-page-section name="Webhook">
+        <app-webhook-settings></app-webhook-settings>
+      </app-page-section>
+    </div>
+  </div>
+</div>
