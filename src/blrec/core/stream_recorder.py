@@ -231,6 +231,8 @@ class StreamRecorder(
 
                 with requests.Session() as self._session:
                     self._main_loop()
+        except TryAgain:
+            pass
         except Exception as e:
             self._handle_exception(e)
         finally:
@@ -248,7 +250,6 @@ class StreamRecorder(
                 retry_if_exception(lambda e: not isinstance(e, OSError))
             ),
             wait=wait_exponential_for_same_exceptions(max=60),
-            stop=stop_after_delay(1800),
             before_sleep=before_sleep_log(logger, logging.DEBUG, 'main_loop'),
         ):
             with attempt:
