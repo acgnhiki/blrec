@@ -179,7 +179,12 @@ class StreamProcessor:
 
     def _discard_file(self) -> None:
         curr_path = self._file_manager.curr_path
+
         self._file_manager.close_file()
+
+        if self._analyse_data:
+            self._data_analyser.reset()
+
         logger.debug(f'discard file: {curr_path}')
 
     def _reset(self) -> None:
