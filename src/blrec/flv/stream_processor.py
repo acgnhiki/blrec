@@ -655,6 +655,8 @@ class FlvReaderWithTimestampFix(FlvReader):
     def __init__(self, stream: RandomIO) -> None:
         super().__init__(stream)
         self._last_tag: Optional[FlvTag] = None
+        self._last_video_tag: Optional[VideoTag] = None
+        self._last_audio_tag: Optional[AudioTag] = None
         self._delta = 0
         # 15 is probably the minimal frame rate
         self._frame_rate = 15.0
@@ -680,7 +682,7 @@ class FlvReaderWithTimestampFix(FlvReader):
 
             if self._last_tag is None:
                 if is_data_tag(tag):
-                    self._update_last_tag(tag)
+                    self._update_last_tags(tag)
                 elif is_metadata_tag(tag):
                     self._update_parameters(tag)
                 return tag
@@ -701,7 +703,7 @@ class FlvReaderWithTimestampFix(FlvReader):
                     f'current tag: {tag}'
                 )
 
-            self._update_last_tag(tag)
+            self._update_last_tags(tag)
 
             return self._correct_ts(tag)
 
@@ -721,8 +723,16 @@ class FlvReaderWithTimestampFix(FlvReader):
             return min(self._sound_sample_interval, self._video_frame_interval)
 
     def _is_ts_rebounded(self, tag: FlvTag) -> bool:
-        assert self._last_tag is not None
-        return tag.timestamp < self._last_tag.timestamp
+        if is_video_tag(tag):
+            if self._last_video_tag is None:
+                return False
+            return tag.timestamp < self._last_video_tag.timestamp
+        elif is_audio_tag(tag):
+            if self._last_audio_tag is None:
+                return False
+            return tag.timestamp < self._last_audio_tag.timestamp
+        else:
+            return False
 
     def _is_ts_jumped(self, tag: FlvTag) -> bool:
         assert self._last_tag is not None
@@ -731,8 +741,12 @@ class FlvReaderWithTimestampFix(FlvReader):
             max(self._sound_sample_interval, self._video_frame_interval)
         )
 
-    def _update_last_tag(self, tag: FlvTag) -> None:
+    def _update_last_tags(self, tag: FlvTag) -> None:
         self._last_tag = tag
+        if is_video_tag(tag):
+            self._last_video_tag = tag
+        elif is_audio_tag(tag):
+            self._last_audio_tag = tag
 
     def _update_parameters(self, tag: ScriptTag) -> None:
         metadata = parse_metadata(tag)
