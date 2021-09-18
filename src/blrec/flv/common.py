@@ -129,10 +129,15 @@ def is_metadata_tag(tag: FlvTag) -> TypeGuard[ScriptTag]:
 
 
 def is_data_tag(tag: FlvTag) -> TypeGuard[Union[AudioTag, VideoTag]]:
-    return (
-        (is_video_tag(tag) and tag.is_avc_nalu()) or
-        (is_audio_tag(tag) and tag.is_aac_raw())
-    )
+    return is_audio_data_tag(tag) or is_video_data_tag(tag)
+
+
+def is_audio_data_tag(tag: FlvTag) -> TypeGuard[AudioTag]:
+    return is_audio_tag(tag) and tag.is_aac_raw()
+
+
+def is_video_data_tag(tag: FlvTag) -> TypeGuard[VideoTag]:
+    return is_video_tag(tag) and tag.is_avc_nalu()
 
 
 def is_sequence_header(tag: FlvTag) -> TypeGuard[Union[AudioTag, VideoTag]]:

@@ -687,11 +687,15 @@ class FlvReaderWithTimestampFix(FlvReader):
                     self._update_parameters(tag)
                 return tag
 
+            if not is_data_tag(tag):
+                return tag
+
             if self._is_ts_rebounded(tag):
                 self._update_delta(tag)
                 logger.warning(
                     f'Timestamp rebounded, updated delta: {self._delta}\n'
-                    f'last tag: {self._last_tag}\n'
+                    f'last video tag: {self._last_video_tag}\n'
+                    f'last audio tag: {self._last_audio_tag}\n'
                     f'current tag: {tag}'
                 )
 

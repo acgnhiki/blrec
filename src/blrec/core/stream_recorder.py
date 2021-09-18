@@ -31,7 +31,7 @@ from tenacity import (
     TryAgain,
 )
 
-from .. import __version__, __prog__
+from .. import __version__, __prog__, __github__
 from .retry import wait_exponential_for_same_exceptions, before_sleep_log
 from .statistics import StatisticsCalculator
 from ..event.event_emitter import EventListener, EventEmitter
@@ -365,7 +365,6 @@ class StreamRecorder(
         )
 
     def _make_metadata(self) -> Dict[str, Any]:
-        github_url = 'https://github.com/acgnhiki/blrec'
         live_start_time = datetime.fromtimestamp(
             self._live.room_info.live_start_time, timezone(timedelta(hours=8))
         )
@@ -381,7 +380,7 @@ B站直播录像
 分区：{self._live.room_info.parent_area_name} - {self._live.room_info.area_name}
 房间号：{self._live.room_info.room_id}
 开播时间：{live_start_time}
-录制程序：{__prog__} v{__version__} {github_url}''',
+录制程序：{__prog__} v{__version__} {__github__}''',
             'description': OrderedDict({
                 'UserId': str(self._live.user_info.uid),
                 'UserName': self._live.user_info.name,
@@ -390,7 +389,7 @@ B站直播录像
                 'Area': self._live.room_info.area_name,
                 'ParentArea': self._live.room_info.parent_area_name,
                 'LiveStartTime': str(live_start_time),
-                'Recorder': f'{__prog__} v{__version__} {github_url}',
+                'Recorder': f'{__prog__} v{__version__} {__github__}',
             })
         }
 

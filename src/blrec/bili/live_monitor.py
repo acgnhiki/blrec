@@ -103,7 +103,11 @@ class LiveMonitor(
         ))
 
         await self._live.update_info()
-        assert self._live.room_info.live_status == current_status
+        if (s := self._live.room_info.live_status) != current_status:
+            logger.warning(
+                'Updated live status {} is inconsistent with '
+                'current live status {}'.format(s.name, current_status.name)
+            )
 
         await self._emit(
             'live_status_changed', current_status, self._previous_status

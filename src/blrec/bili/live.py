@@ -5,6 +5,13 @@ import json
 from typing import Dict, List, Optional, cast
 
 import aiohttp
+from tenacity import (
+    retry,
+    wait_exponential,
+    stop_after_delay,
+    retry_if_exception_type,
+)
+
 
 from .api import WebApi
 from .models import LiveStatus, RoomInfo, UserInfo
@@ -31,6 +38,9 @@ class Live:
         self._user_agent = user_agent
         self._cookie = cookie
         self._html_page_url = f'https://live.bilibili.com/{room_id}'
+
+        self._room_info: RoomInfo
+        self._user_info: UserInfo
 
     @property
     def user_agent(self) -> str:
@@ -103,9 +113,25 @@ class Live:
     async def update_info(self) -> None:
         await asyncio.wait([self.update_user_info(), self.update_room_info()])
 
+    @retry(
+        reraise=True,
+        retry=retry_if_exception_type((
+            asyncio.TimeoutError, aiohttp.ClientError,
+        )),
+        wait=wait_exponential(max=10),
+        stop=stop_after_delay(60),
+    )
     async def update_user_info(self) -> None:
         self._user_info = await self.get_user_info(self._room_info.uid)
 
+    @retry(
+        reraise=True,
+        retry=retry_if_exception_type((
+            asyncio.TimeoutError, aiohttp.ClientError,
+        )),
+        wait=wait_exponential(max=10),
+        stop=stop_after_delay(60),
+    )
     async def update_room_info(self) -> None:
         self._room_info = await self.get_room_info()
 

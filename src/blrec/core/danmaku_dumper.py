@@ -5,7 +5,7 @@ from contextlib import suppress
 from typing import Iterator, List
 
 
-from .. import __version__, __prog__
+from .. import __version__, __prog__, __github__
 from .danmaku_receiver import DanmakuReceiver, DanmuMsg
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 from .statistics import StatisticsCalculator
@@ -131,7 +131,7 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
             parent_area=self._live.room_info.parent_area_name,
             live_start_time=self._live.room_info.live_start_time,
             record_start_time=self._record_start_time,
-            recorder=f'{__prog__} {__version__}',
+            recorder=f'{__prog__} v{__version__} {__github__}',
         )
 
     def _make_danmu(self, msg: DanmuMsg) -> Danmu:

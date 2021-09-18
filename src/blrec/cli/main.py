@@ -44,7 +44,7 @@ def cli_main(
         '-o',
         help='path of directory to save files (overwrite setting)'
     ),
-    host: str = typer.Option('127.0.0.1', help='webapp host bind'),
+    host: str = typer.Option('localhost', help='webapp host bind'),
     port: int = typer.Option(2233, help='webapp port bind'),
     open: bool = typer.Option(False, help='open webapp in default browser'),
     key_file: Optional[str] = typer.Option(None, help='SSL key file'),
@@ -60,7 +60,7 @@ def cli_main(
         os.environ['out_dir'] = out_dir
 
     if open:
-        typer.launch(f'http://{host}:{port}')
+        typer.launch(f'http://localhost:{port}')
 
     logging_config = deepcopy(LOGGING_CONFIG)
     logging_config['handlers']['default']['stream'] = TqdmOutputStream
