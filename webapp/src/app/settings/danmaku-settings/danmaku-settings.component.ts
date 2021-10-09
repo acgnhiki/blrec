@@ -39,11 +39,31 @@ export class DanmakuSettingsComponent implements OnInit, OnChanges {
   ) {
     this.settingsForm = formBuilder.group({
       danmuUname: [''],
+      recordGiftSend: [''],
+      recordGuardBuy: [''],
+      recordSuperChat: [''],
+      saveRawDanmaku: [''],
     });
   }
 
   get danmuUnameControl() {
     return this.settingsForm.get('danmuUname') as FormControl;
+  }
+
+  get recordGiftSendControl() {
+    return this.settingsForm.get('recordGiftSend') as FormControl;
+  }
+
+  get recordGuardBuyControl() {
+    return this.settingsForm.get('recordGuardBuy') as FormControl;
+  }
+
+  get recordSuperChatControl() {
+    return this.settingsForm.get('recordSuperChat') as FormControl;
+  }
+
+  get saveRawDanmakuControl() {
+    return this.settingsForm.get('saveRawDanmaku') as FormControl;
   }
 
   ngOnChanges(): void {

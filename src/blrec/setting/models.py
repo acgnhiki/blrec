@@ -132,10 +132,18 @@ class HeaderSettings(HeaderOptions):
 
 class DanmakuOptions(BaseModel):
     danmu_uname: Optional[bool]
+    record_gift_send: Optional[bool]
+    record_guard_buy: Optional[bool]
+    record_super_chat: Optional[bool]
+    save_raw_danmaku: Optional[bool]
 
 
 class DanmakuSettings(DanmakuOptions):
     danmu_uname: bool = False
+    record_gift_send: bool = True
+    record_guard_buy: bool = True
+    record_super_chat: bool = True
+    save_raw_danmaku: bool = False
 
 
 class RecorderOptions(BaseModel):

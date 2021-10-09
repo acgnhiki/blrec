@@ -9,6 +9,10 @@ export type HeaderOptions = Nullable<HeaderSettings>;
 
 export interface DanmakuSettings {
   danmuUname: boolean;
+  recordGiftSend: boolean;
+  recordGuardBuy: boolean;
+  recordSuperChat: boolean;
+  saveRawDanmaku: boolean;
 }
 
 export type DanmakuOptions = Nullable<DanmakuSettings>;

@@ -205,6 +205,10 @@ class RecordTaskManager:
     ) -> None:
         task = self._get_task(room_id)
         task.danmu_uname = settings.danmu_uname
+        task.record_gift_send = settings.record_gift_send
+        task.record_guard_buy = settings.record_guard_buy
+        task.record_super_chat = settings.record_super_chat
+        task.save_raw_danmaku = settings.save_raw_danmaku
 
     def apply_task_recorder_settings(
         self, room_id: int, settings: RecorderSettings
@@ -236,6 +240,10 @@ class RecordTaskManager:
             user_agent=task.user_agent,
             cookie=task.cookie,
             danmu_uname=task.danmu_uname,
+            record_gift_send=task.record_gift_send,
+            record_guard_buy=task.record_guard_buy,
+            record_super_chat=task.record_super_chat,
+            save_raw_danmaku=task.save_raw_danmaku,
             quality_number=task.quality_number,
             read_timeout=task.read_timeout,
             buffer_size=task.buffer_size,

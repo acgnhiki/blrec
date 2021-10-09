@@ -1,19 +1,22 @@
 from __future__ import annotations
 import html
 import asyncio
-from typing import AsyncIterator, Final, List
+from typing import AsyncIterator, Final, List, Any
 
 from lxml import etree
 import aiofiles
+import attr
 
-from .models import Metadata, Danmu
 from .typing import Element
+from .models import (
+    Metadata, Danmu, GiftSendRecord, GuardBuyRecord, SuperChatRecord
+)
 
 
 __all__ = 'DanmakuReader', 'DanmakuWriter'
 
 
-class DanmakuReader:
+class DanmakuReader:  # TODO rewrite
     def __init__(self, path: str) -> None:
         self._path = path
 
@@ -65,7 +68,9 @@ class DanmakuReader:
             color=int(params[3]),
             date=int(params[4]),
             pool=int(params[5]),
-            uid=params[6],
+            uid_hash=params[6],
+            uid=elem.get('uid'),
+            uname=elem.get('user'),
             dmid=int(params[7]),
             text=elem.text,
         )
@@ -104,6 +109,15 @@ class DanmakuWriter:
     async def write_danmu(self, danmu: Danmu) -> None:
         await self._file.write(self._serialize_danmu(danmu))
 
+    async def write_gift_send_record(self, record: GiftSendRecord) -> None:
+        await self._file.write(self._serialize_gift_send_record(record))
+
+    async def write_guard_buy_record(self, record: GuardBuyRecord) -> None:
+        await self._file.write(self._serialize_guard_buy_record(record))
+
+    async def write_super_chat_record(self, record: SuperChatRecord) -> None:
+        await self._file.write(self._serialize_super_chat_record(record))
+
     async def complete(self) -> None:
         await self._file.write('</i>')
         await self._file.close()
@@ -123,8 +137,46 @@ class DanmakuWriter:
 """
 
     def _serialize_danmu(self, dm: Danmu) -> str:
-        return (
-            f'    <d p="{dm.stime:.5f},{dm.mode},{dm.size},{dm.color},'
-            f'{dm.date},{dm.pool},{dm.uid},{dm.dmid}">'
-            f'{html.escape(dm.text)}</d>\n'
+        attrib = {
+            'p': (
+                f'{dm.stime:.3f},{dm.mode},{dm.size},{dm.color},'
+                f'{dm.date},{dm.pool},{dm.uid_hash},{dm.dmid}'
+            ),
+            'uid': str(dm.uid),
+            'user': dm.uname,
+        }
+        elem = etree.Element('d', attrib=attrib)
+        elem.text = dm.text
+        return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
+
+    def _serialize_gift_send_record(self, record: GiftSendRecord) -> str:
+        attrib = attr.asdict(record, value_serializer=record_value_serializer)
+        elem = etree.Element('gift', attrib=attrib)
+        return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
+
+    def _serialize_guard_buy_record(self, record: GuardBuyRecord) -> str:
+        attrib = attr.asdict(record, value_serializer=record_value_serializer)
+        elem = etree.Element('guard', attrib=attrib)
+        return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
+
+    def _serialize_super_chat_record(self, record: SuperChatRecord) -> str:
+        attrib = attr.asdict(
+            record,
+            filter=lambda a, v: a.name != 'message',
+            value_serializer=record_value_serializer,
         )
+        elem = etree.Element('sc', attrib=attrib)
+        elem.text = record.message
+        return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
+
+
+def record_value_serializer(
+    instance: Any, attribute: attr.Attribute[Any], value: Any
+) -> Any:
+    if attribute.name == 'ts':
+        return f'{value:.3f}'
+    if attribute.name == 'cointype':
+        return '金瓜子' if value == 'gold' else '银瓜子'
+    if not isinstance(value, str):
+        return str(value)
+    return value

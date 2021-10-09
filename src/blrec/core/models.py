@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 import attr
 
@@ -16,12 +17,13 @@ class DanmuMsg:
     date: int  # a timestamp in miliseconds
     dmid: int
     pool: int
-    uid: str  # midHash
-    text: str
+    uid_hash: str
+    uid: int
     uname: str  # sender name
+    text: str
 
     @staticmethod
-    def from_cmd(danmu: Danmaku) -> 'DanmuMsg':
+    def from_danmu(danmu: Danmaku) -> 'DanmuMsg':
         info = danmu['info']
         return DanmuMsg(
             mode=int(info[0][1]),
@@ -30,7 +32,82 @@ class DanmuMsg:
             date=int(info[0][4]),
             dmid=int(info[0][5]),
             pool=int(info[0][6]),
-            uid=info[0][7],
-            text=info[1],
+            uid_hash=info[0][7],
+            uid=int(info[2][0]),
             uname=info[2][1],
+            text=info[1],
+        )
+
+
+@attr.s(auto_attribs=True, frozen=True, slots=True)
+class GiftSendMsg:
+    gift_name: str
+    count: int
+    coin_type: Literal['sliver', 'gold']
+    price: int
+    uid: int
+    uname: str
+    timestamp: int  # timestamp in seconds
+
+    @staticmethod
+    def from_danmu(danmu: Danmaku) -> 'GiftSendMsg':
+        data = danmu['data']
+        return GiftSendMsg(
+            gift_name=data['giftName'],
+            count=int(data['num']),
+            coin_type=data['coin_type'],
+            price=int(data['price']),
+            uid=int(data['uid']),
+            uname=data['uname'],
+            timestamp=int(data['timestamp']),
+        )
+
+
+@attr.s(auto_attribs=True, frozen=True, slots=True)
+class GuardBuyMsg:
+    gift_name: str  # TODO verify
+    count: int
+    price: int
+    uid: int
+    uname: str
+    guard_level: int  # 1 总督, 2 提督, 3 舰长
+    timestamp: int  # timestamp in seconds
+
+    @staticmethod
+    def from_danmu(danmu: Danmaku) -> 'GuardBuyMsg':
+        data = danmu['data']
+        return GuardBuyMsg(
+            gift_name=data['gift_name'],
+            count=int(data['num']),
+            price=int(data['price']),
+            uid=int(data['uid']),
+            uname=data['username'],
+            guard_level=int(data['guard_level']),
+            timestamp=int(data['start_time']),
+        )
+
+
+@attr.s(auto_attribs=True, frozen=True, slots=True)
+class SuperChatMsg:
+    gift_name: str
+    count: int
+    price: int
+    time: int  # duration in seconds
+    message: str
+    uid: int
+    uname: str
+    timestamp: int  # timestamp in seconds
+
+    @staticmethod
+    def from_danmu(danmu: Danmaku) -> 'SuperChatMsg':
+        data = danmu['data']
+        return SuperChatMsg(
+            gift_name=data['gift']['gift_name'],
+            count=int(data['gift']['num']),
+            price=int(data['price']),
+            time=int(data['time']),
+            message=data['message'],
+            uid=int(data['uid']),
+            uname=data['user_info']['uname'],
+            timestamp=int(data['ts']),
         )

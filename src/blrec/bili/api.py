@@ -20,6 +20,8 @@ class WebApi:
 
     GET_USER_INFO_URL: Final[str] = BASE_API_URL + '/x/space/acc/info'
 
+    GET_DANMU_INFO_URL: Final[str] = BASE_LIVE_API_URL + \
+        '/xlive/web-room/v1/index/getDanmuInfo'
     ROOM_INIT_URL: Final[str] = BASE_LIVE_API_URL + '/room/v1/Room/room_init'
     GET_INFO_URL: Final[str] = BASE_LIVE_API_URL + '/room/v1/Room/get_info'
     GET_INFO_BY_ROOM_URL: Final[str] = BASE_LIVE_API_URL + \
@@ -98,4 +100,11 @@ class WebApi:
             'mid': uid,
         }
         r = await self._get(self.GET_USER_INFO_URL, params=params)
+        return r['data']
+
+    async def get_danmu_info(self, room_id: int) -> ResponseData:
+        params = {
+            'id': room_id,
+        }
+        r = await self._get(self.GET_DANMU_INFO_URL, params=params)
         return r['data']

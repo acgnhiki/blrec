@@ -46,6 +46,10 @@ class TaskParam:
     cookie: str
     # DanmakuSettings
     danmu_uname: bool
+    record_gift_send: bool
+    record_guard_buy: bool
+    record_super_chat: bool
+    save_raw_danmaku: bool
     # RecorderSettings
     quality_number: QualityNumber
     read_timeout: int

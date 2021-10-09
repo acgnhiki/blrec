@@ -138,7 +138,10 @@
           >
         </nz-form-item>
         <nz-form-item class="setting-item">
-          <nz-form-label class="setting-label" nzNoColon
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            nzTooltipTitle="超时时间设置得比较长相对不容易因网络不稳定而出现流中断，但是一旦出现中断就无法实现无缝拼接且漏录较多。"
             >数据读取超时</nz-form-label
           >
           <nz-form-control
@@ -167,7 +170,10 @@
           >
         </nz-form-item>
         <nz-form-item class="setting-item">
-          <nz-form-label class="setting-label" nzNoColon
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            nzTooltipTitle="硬盘写入缓冲设置得比较大可以减少对硬盘的写入，但需要占用更多的内存。"
             >硬盘写入缓冲</nz-form-label
           >
           <nz-form-control class="setting-control select">
@@ -196,8 +202,93 @@
       <div ngModelGroup="danmaku" class="form-group danmaku">
         <h2>弹幕</h2>
         <nz-form-item class="setting-item">
-          <nz-form-label class="setting-label" nzFor="danmuUname" nzNoColon
-            >弹幕加用户名</nz-form-label
+          <nz-form-label
+            class="setting-label"
+            nzFor="recordGiftSend"
+            nzNoColon
+            nzTooltipTitle="记录送礼信息到弹幕文件里"
+            >记录送礼</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <nz-switch
+              id="recordGiftSend"
+              name="recordGiftSend"
+              [(ngModel)]="model.danmaku.recordGiftSend"
+              [disabled]="options.danmaku.recordGiftSend === null"
+            ></nz-switch>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.danmaku.recordGiftSend !== null"
+            (nzCheckedChange)="
+              options.danmaku.recordGiftSend = $event
+                ? globalSettings.danmaku.recordGiftSend
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzFor="recordGuardBuy"
+            nzNoColon
+            nzTooltipTitle="记录上舰信息到弹幕文件里"
+            >记录上舰</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <nz-switch
+              id="recordGuardBuy"
+              name="recordGuardBuy"
+              [(ngModel)]="model.danmaku.recordGuardBuy"
+              [disabled]="options.danmaku.recordGuardBuy === null"
+            ></nz-switch>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.danmaku.recordGuardBuy !== null"
+            (nzCheckedChange)="
+              options.danmaku.recordGuardBuy = $event
+                ? globalSettings.danmaku.recordGuardBuy
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzFor="recordSuperChat"
+            nzNoColon
+            nzTooltipTitle="记录 Super Chat 信息到弹幕文件里"
+            >记录 Super Chat</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <nz-switch
+              id="recordSuperChat"
+              name="recordSuperChat"
+              [(ngModel)]="model.danmaku.recordSuperChat"
+              [disabled]="options.danmaku.recordSuperChat === null"
+            ></nz-switch>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.danmaku.recordSuperChat !== null"
+            (nzCheckedChange)="
+              options.danmaku.recordSuperChat = $event
+                ? globalSettings.danmaku.recordSuperChat
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzFor="danmuUname"
+            nzNoColon
+            nzTooltipTitle="发送者: 弹幕内容"
+            >弹幕前加用户名</nz-form-label
           >
           <nz-form-control class="setting-control switch">
             <nz-switch
@@ -213,6 +304,33 @@
             (nzCheckedChange)="
               options.danmaku.danmuUname = $event
                 ? globalSettings.danmaku.danmuUname
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzFor="saveRawDanmaku"
+            nzNoColon
+            nzTooltipTitle="保存原始弹幕到 JSON lines 文件，主要用于分析调试。"
+            >保存原始弹幕</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <nz-switch
+              id="saveRawDanmaku"
+              name="saveRawDanmaku"
+              [(ngModel)]="model.danmaku.saveRawDanmaku"
+              [disabled]="options.danmaku.saveRawDanmaku === null"
+            ></nz-switch>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.danmaku.saveRawDanmaku !== null"
+            (nzCheckedChange)="
+              options.danmaku.saveRawDanmaku = $event
+                ? globalSettings.danmaku.saveRawDanmaku
                 : null
             "
             >覆盖全局设置</label
@@ -248,9 +366,18 @@
           >
         </nz-form-item>
         <nz-form-item class="setting-item">
-          <nz-form-label class="setting-label" nzNoColon
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            [nzTooltipTitle]="deleteSourceTip"
             >源文件删除策略</nz-form-label
           >
+          <ng-template #deleteSourceTip>
+            <p>
+              自动: 转换成功才删除源文件<br />
+              从不: 转换后总是保留源文件<br />
+            </p>
+          </ng-template>
           <nz-form-control class="setting-control select">
             <nz-select
               name="deleteSource"

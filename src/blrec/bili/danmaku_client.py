@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
 import json
 import struct
-import zlib
 import asyncio
 import logging
 from enum import IntEnum, Enum
@@ -10,12 +8,14 @@ from typing import Any, Dict, Final, Tuple, List, Union, cast, Optional
 
 import aiohttp
 from aiohttp import ClientSession
+import brotli
 from tenacity import (
     retry,
     wait_exponential,
     retry_if_exception_type,
 )
 
+from .api import WebApi
 from .typing import Danmaku
 from ..event.event_emitter import EventListener, EventEmitter
 from ..exception import exception_callback
@@ -47,7 +47,6 @@ class DanmakuListener(EventListener):
 
 
 class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
-    _URL: Final[str] = 'wss://broadcastlv.chat.bilibili.com:443/sub'
     _HEARTBEAT_INTERVAL: Final[int] = 30
 
     def __init__(
@@ -60,11 +59,14 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         super().__init__()
         self.session = session
         self._room_id = room_id
+        self._api = WebApi(session)
 
+        self._host_index: int = 0
         self._retry_delay: int = 0
         self._MAX_RETRIES: Final[int] = max_retries
 
     async def _do_start(self) -> None:
+        await self._update_danmu_info()
         await self._connect()
         await self._create_message_loop()
         logger.debug('Started danmaku client')
@@ -94,23 +96,31 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         await self._connect_websocket()
         await self._send_auth()
         reply = await self._recieve_auth_reply()
-        self._handle_auth_reply(reply)
+        await self._handle_auth_reply(reply)
         logger.debug('Connected to server')
         await self._emit('client_connected')
 
     async def _connect_websocket(self) -> None:
-        self._ws = await self.session.ws_connect(self._URL, timeout=5)
+        url = 'wss://{}:{}/sub'.format(
+            self._danmu_info['host_list'][self._host_index]['host'],
+            self._danmu_info['host_list'][self._host_index]['wss_port'],
+        )
+        try:
+            self._ws = await self.session.ws_connect(url, timeout=5)
+        except BaseException:
+            host_count = len(self._danmu_info['host_list'])
+            self._host_index = (self._host_index + 1) % host_count
+            raise
         logger.debug('Established WebSocket connection')
 
     async def _send_auth(self) -> None:
         auth_msg = json.dumps({
             'uid': 0,
             'roomid': self._room_id,  # must not be the short id!
-            # 'protover': WS.BODY_PROTOCOL_VERSION_NORMAL,
-            'protover': WS.BODY_PROTOCOL_VERSION_DEFLATE,
+            'protover': WS.BODY_PROTOCOL_VERSION_BROTLI,
             'platform': 'web',
-            'clientver': '1.1.031',
-            'type': 2
+            'type': 2,
+            'key': self._danmu_info['token'],
         })
         data = Frame.encode(WS.OP_USER_AUTHENTICATION, auth_msg)
         await self._ws.send_bytes(data)
@@ -123,7 +133,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         logger.debug('Recieved reply')
         return msg
 
-    def _handle_auth_reply(self, reply: aiohttp.WSMessage) -> None:
+    async def _handle_auth_reply(self, reply: aiohttp.WSMessage) -> None:
         op, msg = Frame.decode(reply.data)
         assert op == WS.OP_CONNECT_SUCCESS
         msg = cast(str, msg)
@@ -133,10 +143,15 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             logger.debug('Auth OK')
             self._create_heartbeat_task()
         elif code == WS.AUTH_TOKEN_ERROR:
-            logger.debug('Auth Token Error')
-            raise ValueError(f'Auth Token Error: {code}')
+            logger.debug('Token expired, will try to reconnect.')
+            await self._update_danmu_info()
+            raise ValueError(f'Token expired: {code}')
         else:
             raise ValueError(f'Unexpected code: {code}')
+
+    async def _update_danmu_info(self) -> None:
+        self._danmu_info = await self._api.get_danmu_info(self._room_id)
+        logger.debug('Danmu info updated')
 
     async def _disconnect(self) -> None:
         await self._cancel_heartbeat_task()
@@ -267,8 +282,8 @@ class Frame:
         body = data[hlen:]
 
         if op == WS.OP_MESSAGE:
-            if ver == WS.BODY_PROTOCOL_VERSION_DEFLATE:
-                data = zlib.decompress(body)
+            if ver == WS.BODY_PROTOCOL_VERSION_BROTLI:
+                data = brotli.decompress(body)
 
             msg_list = []
             offset = 0
@@ -293,24 +308,24 @@ class Frame:
 
 
 class WS(IntEnum):
-    AUTH_OK = 0
-    AUTH_TOKEN_ERROR = -101
-    BODY_PROTOCOL_VERSION_DEFLATE = 2
-    BODY_PROTOCOL_VERSION_NORMAL = 0
-    HEADER_DEFAULT_OPERATION = 1
-    HEADER_DEFAULT_SEQUENCE = 1
-    HEADER_DEFAULT_VERSION = 1
-    HEADER_OFFSET = 4
-    OP_CONNECT_SUCCESS = 8
     OP_HEARTBEAT = 2
     OP_HEARTBEAT_REPLY = 3
     OP_MESSAGE = 5
     OP_USER_AUTHENTICATION = 7
-    OPERATION_OFFSET = 8
+    OP_CONNECT_SUCCESS = 8
     PACKAGE_HEADER_TOTAL_LENGTH = 16
     PACKAGE_OFFSET = 0
-    SEQUENCE_OFFSET = 12
+    HEADER_OFFSET = 4
     VERSION_OFFSET = 6
+    OPERATION_OFFSET = 8
+    SEQUENCE_OFFSET = 12
+    BODY_PROTOCOL_VERSION_NORMAL = 0
+    BODY_PROTOCOL_VERSION_BROTLI = 3
+    HEADER_DEFAULT_VERSION = 1
+    HEADER_DEFAULT_OPERATION = 1
+    HEADER_DEFAULT_SEQUENCE = 1
+    AUTH_OK = 0
+    AUTH_TOKEN_ERROR = -101
 
 
 class DanmakuCommand(Enum):
@@ -395,149 +410,5 @@ class DanmakuCommand(Enum):
     WIN_ACTIVITY = 'WIN_ACTIVITY'
     WIN_ACTIVITY_USER = 'WIN_ACTIVITY_USER'
     WISH_BOTTLE = 'WISH_BOTTLE'
+    GUARD_BUY = 'GUARD_BUY'
     # ...
-
-
-if __name__ == '__main__':
-    def add_task_name(record: logging.LogRecord) -> bool:
-        try:
-            task = asyncio.current_task()
-            assert task is not None
-        except Exception:
-            name = ''
-        else:
-            name = task.get_name()
-
-        if '::' in name:
-            record.roomid = '[' + name.split('::')[-1] + '] '  # type: ignore
-        else:
-            record.roomid = ''  # type: ignore
-
-        return True
-
-    def configure_logger() -> None:
-        # config root logger
-        logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG)
-
-        # config formatter
-        fmt = '[%(asctime)s] [%(levelname)s] %(roomid)s%(message)s'
-        formatter = logging.Formatter(fmt)
-
-        # logging to console
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
-        console_handler.setFormatter(formatter)
-        console_handler.addFilter(add_task_name)
-        logger.addHandler(console_handler)
-
-    async def get_room_list(
-        session: ClientSession, count: int = 99
-    ) -> List[Dict[str, Any]]:
-        url = 'https://api.live.bilibili.com/room/v3/area/getRoomList'
-        params = {
-            'platform': 'web',
-            'parent_area_id': 1,
-            'cate_id': 0,
-            'area_id': 0,
-            'sort_type': 'online',
-            'page': 1,
-            'page_size': count,
-            'tag_version': 1,
-        }
-        async with session.get(url, params=params) as response:
-            j = await response.json()
-            return j['data']['list']
-
-    class DanmakuPrinter(DanmakuListener):
-        def __init__(
-            self, danmaku_client: DanmakuClient, room_id: int
-        ) -> None:
-            self._danmaku_client = danmaku_client
-            self._room_id = room_id
-
-        async def enable(self) -> None:
-            self._danmaku_client.add_listener(self)
-
-        async def disable(self) -> None:
-            self._danmaku_client.remove_listener(self)
-
-        async def on_danmaku_received(self, danmu: Danmaku) -> None:
-            json_string = json.dumps(danmu, ensure_ascii=False)
-            logger.info(f'{json_string}')
-
-    class DanmakuDumper(DanmakuListener):
-        def __init__(
-            self, danmaku_client: DanmakuClient, room_id: int
-        ) -> None:
-            self._danmaku_client = danmaku_client
-            from datetime import datetime
-            data_time_string = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            self._filename = f'blive_cmd_{room_id}_{data_time_string}.jsonl'
-
-        async def start(self) -> None:
-            import aiofiles
-            self._file = await aiofiles.open(
-                self._filename, mode='wt', encoding='utf8'
-            )
-            logger.debug(f'Opened file: {self._filename}')
-            self._danmaku_client.add_listener(self)
-
-        async def stop(self) -> None:
-            self._danmaku_client.remove_listener(self)
-            await self._file.close()
-            logger.debug(f'Closed file: {self._filename}')
-
-        async def on_danmaku_received(self, danmu: Danmaku) -> None:
-            json_string = json.dumps(danmu, ensure_ascii=False)
-            await self._file.write(json_string + '\n')
-
-    async def test_room(session: ClientSession, room_id: int) -> None:
-        client = DanmakuClient(session, room_id)
-        printer = DanmakuPrinter(client, room_id)
-        dumper = DanmakuDumper(client, room_id)
-
-        await printer.enable()
-        await dumper.start()
-        await client.start()
-
-        keyboard_interrupt_event = asyncio.Event()
-        try:
-            await keyboard_interrupt_event.wait()
-        finally:
-            await client.stop()
-            await dumper.stop()
-            await printer.disable()
-
-    async def test() -> None:
-        import sys
-        try:
-            # the room id must not be the short id!
-            room_ids = list(map(int, sys.argv[1:]))
-        except ValueError:
-            print('Usage: room_id, ...')
-            sys.exit(0)
-
-        configure_logger()
-
-        async with ClientSession() as session:
-            tasks = []
-
-            if not room_ids:
-                room_list = await get_room_list(session)
-                room_ids = [room['roomid'] for room in room_list]
-
-            logger.debug(f'room count: {len(room_ids)}')
-
-            for room_id in room_ids:
-                task = asyncio.create_task(
-                    test_room(session, room_id), name=f'test_room::{room_id}',
-                )
-                tasks.append(task)
-
-            await asyncio.wait(tasks)
-
-    try:
-        asyncio.run(test())
-    except KeyboardInterrupt:
-        pass

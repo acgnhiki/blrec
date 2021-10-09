@@ -9,6 +9,8 @@ import humanize
 
 from .danmaku_receiver import DanmakuReceiver
 from .danmaku_dumper import DanmakuDumper
+from .raw_danmaku_receiver import RawDanmakuReceiver
+from .raw_danmaku_dumper import RawDanmakuDumper
 from .stream_recorder import StreamRecorder
 from ..event.event_emitter import EventListener, EventEmitter
 from ..bili.live import Live
@@ -50,6 +52,10 @@ class Recorder(
         buffer_size: Optional[int] = None,
         read_timeout: Optional[int] = None,
         danmu_uname: bool = False,
+        record_gift_send: bool = False,
+        record_guard_buy: bool = False,
+        record_super_chat: bool = False,
+        save_raw_danmaku: bool = False,
         filesize_limit: int = 0,
         duration_limit: int = 0,
     ) -> None:
@@ -58,6 +64,7 @@ class Recorder(
         self._live = live
         self._danmaku_client = danmaku_client
         self._live_monitor = live_monitor
+        self.save_raw_danmaku = save_raw_danmaku
 
         self._recording: bool = False
 
@@ -70,12 +77,21 @@ class Recorder(
             filesize_limit=filesize_limit,
             duration_limit=duration_limit,
         )
+
         self._danmaku_receiver = DanmakuReceiver(danmaku_client)
         self._danmaku_dumper = DanmakuDumper(
             self._live,
             self._stream_recorder,
             self._danmaku_receiver,
             danmu_uname=danmu_uname,
+            record_gift_send=record_gift_send,
+            record_guard_buy=record_guard_buy,
+            record_super_chat=record_super_chat,
+        )
+        self._raw_danmaku_receiver = RawDanmakuReceiver(danmaku_client)
+        self._raw_danmaku_dumper = RawDanmakuDumper(
+            self._stream_recorder,
+            self._raw_danmaku_receiver,
         )
 
     @property
@@ -117,6 +133,30 @@ class Recorder(
     @danmu_uname.setter
     def danmu_uname(self, value: bool) -> None:
         self._danmaku_dumper.danmu_uname = value
+
+    @property
+    def record_gift_send(self) -> bool:
+        return self._danmaku_dumper.record_gift_send
+
+    @record_gift_send.setter
+    def record_gift_send(self, value: bool) -> None:
+        self._danmaku_dumper.record_gift_send = value
+
+    @property
+    def record_guard_buy(self) -> bool:
+        return self._danmaku_dumper.record_guard_buy
+
+    @record_guard_buy.setter
+    def record_guard_buy(self, value: bool) -> None:
+        self._danmaku_dumper.record_guard_buy = value
+
+    @property
+    def record_super_chat(self) -> bool:
+        return self._danmaku_dumper.record_super_chat
+
+    @record_super_chat.setter
+    def record_super_chat(self, value: bool) -> None:
+        self._danmaku_dumper.record_super_chat = value
 
     @property
     def elapsed(self) -> float:
@@ -217,8 +257,12 @@ class Recorder(
             return
         self._recording = True
 
+        if self.save_raw_danmaku:
+            self._raw_danmaku_dumper.enable()
+            self._raw_danmaku_receiver.start()
         self._danmaku_dumper.enable()
         self._danmaku_receiver.start()
+
         await self._prepare()
         if stream_available:
             await self._stream_recorder.start()
@@ -232,6 +276,9 @@ class Recorder(
         self._recording = False
 
         await self._stream_recorder.stop()
+        if self.save_raw_danmaku:
+            self._raw_danmaku_dumper.disable()
+            self._raw_danmaku_receiver.stop()
         self._danmaku_dumper.disable()
         self._danmaku_receiver.stop()
 

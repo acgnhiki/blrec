@@ -3,7 +3,8 @@ from asyncio import Queue, QueueFull
 from typing import Final
 
 
-from .models import DanmuMsg
+from .models import DanmuMsg, GiftSendMsg, GuardBuyMsg, SuperChatMsg
+from .typing import DanmakuMsg
 from ..bili.danmaku_client import (
     DanmakuClient, DanmakuListener, DanmakuCommand
 )
@@ -23,7 +24,7 @@ class DanmakuReceiver(DanmakuListener, StoppableMixin):
     def __init__(self, danmaku_client: DanmakuClient) -> None:
         super().__init__()
         self._danmaku_client = danmaku_client
-        self._queue: Queue[DanmuMsg] = Queue(maxsize=self._MAX_QUEUE_SIZE)
+        self._queue: Queue[DanmakuMsg] = Queue(maxsize=self._MAX_QUEUE_SIZE)
 
     def _do_start(self) -> None:
         self._danmaku_client.add_listener(self)
@@ -34,19 +35,32 @@ class DanmakuReceiver(DanmakuListener, StoppableMixin):
         self._clear_queue()
         logger.debug('Stopped danmaku receiver')
 
-    async def get_message(self) -> DanmuMsg:
+    async def get_message(self) -> DanmakuMsg:
         return await self._queue.get()
 
     async def on_danmaku_received(self, danmu: Danmaku) -> None:
-        if danmu['cmd'] != DanmakuCommand.DANMU_MSG.value:
+        cmd = danmu['cmd']
+        msg: DanmakuMsg
+
+        if cmd == DanmakuCommand.DANMU_MSG.value:
+            msg = DanmuMsg.from_danmu(danmu)
+        elif cmd == DanmakuCommand.SEND_GIFT.value:
+            msg = GiftSendMsg.from_danmu(danmu)
+        elif cmd == DanmakuCommand.SPECIAL_GIFT.value:  # TODO
+            logger.warning('SPECIAL_GIFT has unsupported yet:', repr(danmu))
+            return
+        elif cmd == DanmakuCommand.GUARD_BUY.value:
+            msg = GuardBuyMsg.from_danmu(danmu)
+        elif cmd == DanmakuCommand.SUPER_CHAT_MESSAGE.value:
+            msg = SuperChatMsg.from_danmu(danmu)
+        else:
             return
 
-        danmu_msg = DanmuMsg.from_cmd(danmu)
         try:
-            self._queue.put_nowait(danmu_msg)
+            self._queue.put_nowait(msg)
         except QueueFull:
             self._queue.get_nowait()  # discard the first item
-            self._queue.put_nowait(danmu_msg)
+            self._queue.put_nowait(msg)
 
     def _clear_queue(self) -> None:
         self._queue = Queue(maxsize=self._MAX_QUEUE_SIZE)

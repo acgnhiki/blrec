@@ -32,6 +32,10 @@ class RecordTask:
         cookie: str = '',
         user_agent: str = '',
         danmu_uname: bool = False,
+        record_gift_send: bool = False,
+        record_guard_buy: bool = False,
+        record_super_chat: bool = False,
+        save_raw_danmaku: bool = False,
         buffer_size: Optional[int] = None,
         read_timeout: Optional[int] = None,
         filesize_limit: int = 0,
@@ -49,6 +53,10 @@ class RecordTask:
         self._cookie = cookie
         self._user_agent = user_agent
         self._danmu_uname = danmu_uname
+        self._record_gift_send = record_gift_send
+        self._record_guard_buy = record_guard_buy
+        self._record_super_chat = record_super_chat
+        self._save_raw_danmaku = save_raw_danmaku
         self._buffer_size = buffer_size
         self._read_timeout = read_timeout
         self._filesize_limit = filesize_limit
@@ -148,6 +156,38 @@ class RecordTask:
     @danmu_uname.setter
     def danmu_uname(self, value: bool) -> None:
         self._recorder.danmu_uname = value
+
+    @property
+    def record_gift_send(self) -> bool:
+        return self._recorder.record_gift_send
+
+    @record_gift_send.setter
+    def record_gift_send(self, value: bool) -> None:
+        self._recorder.record_gift_send = value
+
+    @property
+    def record_guard_buy(self) -> bool:
+        return self._recorder.record_guard_buy
+
+    @record_guard_buy.setter
+    def record_guard_buy(self, value: bool) -> None:
+        self._recorder.record_guard_buy = value
+
+    @property
+    def record_super_chat(self) -> bool:
+        return self._recorder.record_super_chat
+
+    @record_super_chat.setter
+    def record_super_chat(self, value: bool) -> None:
+        self._recorder.record_super_chat = value
+
+    @property
+    def save_raw_danmaku(self) -> bool:
+        return self._recorder.save_raw_danmaku
+
+    @save_raw_danmaku.setter
+    def save_raw_danmaku(self, value: bool) -> None:
+        self._recorder.save_raw_danmaku = value
 
     @property
     def quality_number(self) -> QualityNumber:
@@ -322,6 +362,10 @@ class RecordTask:
             buffer_size=self._buffer_size,
             read_timeout=self._read_timeout,
             danmu_uname=self._danmu_uname,
+            record_gift_send=self._record_gift_send,
+            record_guard_buy=self._record_guard_buy,
+            record_super_chat=self._record_super_chat,
+            save_raw_danmaku=self._save_raw_danmaku,
             filesize_limit=self._filesize_limit,
             duration_limit=self._duration_limit,
         )

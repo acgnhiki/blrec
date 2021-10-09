@@ -4,6 +4,8 @@ import logging
 from contextlib import suppress
 from typing import Iterator, List
 
+from blrec.core.models import GiftSendMsg, GuardBuyMsg, SuperChatMsg
+
 
 from .. import __version__, __prog__, __github__
 from .danmaku_receiver import DanmakuReceiver, DanmuMsg
@@ -12,7 +14,9 @@ from .statistics import StatisticsCalculator
 from ..bili.live import Live
 from ..exception import exception_callback
 from ..path import danmaku_path
-from ..danmaku.models import Metadata, Danmu
+from ..danmaku.models import (
+    Metadata, Danmu, GiftSendRecord, GuardBuyRecord, SuperChatRecord
+)
 from ..danmaku.io import DanmakuWriter
 from ..utils.mixins import SwitchableMixin
 from ..logging.room_id import aio_task_with_room_id
@@ -32,6 +36,9 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
         danmaku_receiver: DanmakuReceiver,
         *,
         danmu_uname: bool = False,
+        record_gift_send: bool = False,
+        record_guard_buy: bool = False,
+        record_super_chat: bool = False,
     ) -> None:
         super().__init__()
 
@@ -40,6 +47,9 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
         self._receiver = danmaku_receiver
 
         self.danmu_uname = danmu_uname
+        self.record_gift_send = record_gift_send
+        self.record_guard_buy = record_guard_buy
+        self.record_super_chat = record_super_chat
 
         self._files: List[str] = []
         self._calculator = StatisticsCalculator(interval=60)
@@ -115,8 +125,29 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
 
                 while True:
                     msg = await self._receiver.get_message()
-                    await writer.write_danmu(self._make_danmu(msg))
-                    self._calculator.submit(1)
+                    if isinstance(msg, DanmuMsg):
+                        await writer.write_danmu(self._make_danmu(msg))
+                        self._calculator.submit(1)
+                    elif isinstance(msg, GiftSendMsg):
+                        if not self.record_gift_send:
+                            continue
+                        await writer.write_gift_send_record(
+                            self._make_gift_send_record(msg)
+                        )
+                    elif isinstance(msg, GuardBuyMsg):
+                        if not self.record_guard_buy:
+                            continue
+                        await writer.write_guard_buy_record(
+                            self._make_guard_buy_record(msg)
+                        )
+                    elif isinstance(msg, SuperChatMsg):
+                        if not self.record_super_chat:
+                            continue
+                        await writer.write_super_chat_record(
+                            self._make_super_chat_record(msg)
+                        )
+                    else:
+                        logger.warning('Unsupported message type:', repr(msg))
         finally:
             logger.info(f"Danmaku file completed: '{self._path}'")
             logger.debug('Stopped dumping danmaku')
@@ -135,8 +166,6 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
         )
 
     def _make_danmu(self, msg: DanmuMsg) -> Danmu:
-        stime = max((msg.date - self._record_start_time * 1000), 0) / 1000
-
         if self.danmu_uname:
             text = f'{msg.uname}: {msg.text}'
         else:
@@ -144,13 +173,50 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
         text = html.escape(text)
 
         return Danmu(
-            stime=stime,
+            stime=self._calc_stime(msg.date),
             mode=msg.mode,
             size=msg.size,
             color=msg.color,
             date=msg.date,
             pool=msg.pool,
+            uid_hash=msg.uid_hash,
             uid=msg.uid,
+            uname=msg.uname,
             dmid=msg.dmid,
             text=text,
         )
+
+    def _make_gift_send_record(self, msg: GiftSendMsg) -> GiftSendRecord:
+        return GiftSendRecord(
+            ts=self._calc_stime(msg.timestamp * 1000),
+            uid=msg.uid,
+            user=msg.uname,
+            giftname=msg.gift_name,
+            giftcount=msg.count,
+            cointype=msg.coin_type,
+            price=msg.price,
+        )
+
+    def _make_guard_buy_record(self, msg: GuardBuyMsg) -> GuardBuyRecord:
+        return GuardBuyRecord(
+            ts=self._calc_stime(msg.timestamp * 1000),
+            uid=msg.uid,
+            user=msg.uname,
+            giftname=msg.gift_name,
+            count=msg.count,
+            price=msg.price,
+            level=msg.guard_level,
+        )
+
+    def _make_super_chat_record(self, msg: SuperChatMsg) -> SuperChatRecord:
+        return SuperChatRecord(
+            ts=self._calc_stime(msg.timestamp * 1000),
+            uid=msg.uid,
+            user=msg.uname,
+            price=msg.price,
+            time=msg.time,
+            message=msg.message,
+        )
+
+    def _calc_stime(self, timestamp: int) -> float:
+        return max((timestamp - self._record_start_time * 1000), 0) / 1000

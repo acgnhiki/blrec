@@ -3,8 +3,59 @@
     <nz-form-label
       class="setting-label"
       nzNoColon
+      nzTooltipTitle="记录送礼信息到弹幕文件里"
+      >记录送礼</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.recordGiftSend ? recordGiftSendControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="recordGiftSend"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="记录上舰信息到弹幕文件里"
+      >记录上舰</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.recordGuardBuy ? recordGuardBuyControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="recordGuardBuy"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="记录 Super Chat 信息到弹幕文件里"
+      >记录 Super Chat</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.recordSuperChat ? recordSuperChatControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="recordSuperChat"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
       nzTooltipTitle="发送者: 弹幕内容"
-      >弹幕加用户名</nz-form-label
+      >弹幕前加用户名</nz-form-label
     >
     <nz-form-control
       class="setting-control switch"
@@ -12,6 +63,23 @@
       [nzValidateStatus]="syncStatus.danmuUname ? danmuUnameControl : 'warning'"
     >
       <nz-switch formControlName="danmuUname"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="保存原始弹幕到 JSON lines 文件，主要用于分析调试。"
+      >保存原始弹幕</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.saveRawDanmaku ? saveRawDanmakuControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="saveRawDanmaku"></nz-switch>
     </nz-form-control>
   </nz-form-item>
 </form>
