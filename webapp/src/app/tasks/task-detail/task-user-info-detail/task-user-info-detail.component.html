@@ -1,0 +1,19 @@
+<nz-card nzTitle="主播信息" [nzLoading]="loading">
+  <nz-descriptions nzTitle="">
+    <nz-descriptions-item nzTitle="昵称">{{
+      userInfo.name
+    }}</nz-descriptions-item>
+    <nz-descriptions-item nzTitle="性别">{{
+      userInfo.gender
+    }}</nz-descriptions-item>
+    <nz-descriptions-item nzTitle="UID">{{
+      userInfo.uid
+    }}</nz-descriptions-item>
+    <nz-descriptions-item nzTitle="等级">{{
+      userInfo.level
+    }}</nz-descriptions-item>
+    <nz-descriptions-item nzTitle="签名">
+      {{ userInfo.sign }}
+    </nz-descriptions-item>
+  </nz-descriptions>
+</nz-card>

@@ -6,7 +6,7 @@
 ></nz-spin>
 
 <ng-template #elseBlock>
-  <div class="sub-page">
+  <div class="sub-page" [ngStyle]="pageStyles">
     <nz-page-header
       class="page-header"
       nzBackIcon
@@ -14,7 +14,7 @@
       [nzGhost]="false"
     >
     </nz-page-header>
-    <div *ngIf="content" class="page-content">
+    <div *ngIf="content" class="page-content" [ngStyle]="contentStyles">
       <ng-container [ngTemplateOutlet]="content.templateRef"></ng-container>
     </div>
   </div>

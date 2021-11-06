@@ -9,8 +9,9 @@ import {
   TaskData,
   DataSelection,
   TaskParam,
-  FileDetail,
   AddTaskResult,
+  VideoFileDetail,
+  DanmakuFileDetail,
 } from '../task.model';
 
 const apiUrl = environment.apiUrl;
@@ -33,9 +34,14 @@ export class TaskService {
     return this.http.get<TaskData>(url);
   }
 
-  getTaskFileDetails(roomId: number): Observable<FileDetail[]> {
-    const url = apiUrl + `/api/v1/tasks/${roomId}/files`;
-    return this.http.get<FileDetail[]>(url);
+  getVideoFileDetails(roomId: number): Observable<VideoFileDetail[]> {
+    const url = apiUrl + `/api/v1/tasks/${roomId}/videos`;
+    return this.http.get<VideoFileDetail[]>(url);
+  }
+
+  getDanmakuFileDetails(roomId: number): Observable<DanmakuFileDetail[]> {
+    const url = apiUrl + `/api/v1/tasks/${roomId}/danmakus`;
+    return this.http.get<DanmakuFileDetail[]>(url);
   }
 
   getTaskParam(roomId: number): Observable<TaskParam> {
@@ -143,5 +149,10 @@ export class TaskService {
   ): Observable<ResponseMessage> {
     const url = apiUrl + `/api/v1/tasks/recorder/disable`;
     return this.http.post<ResponseMessage>(url, { force, background });
+  }
+
+  cutStream(roomId: number) {
+    const url = apiUrl + `/api/v1/tasks/${roomId}/cut`;
+    return this.http.post<null>(url, null);
   }
 }

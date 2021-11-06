@@ -17,7 +17,7 @@ from .routers import (
 from .schemas import ResponseMessage
 from ..setting import EnvSettings, Settings
 from ..application import Application
-from ..exception import NotFoundError, ExistsError
+from ..exception import NotFoundError, ExistsError, ForbiddenError
 
 
 logger = logging.getLogger(__name__)
@@ -72,6 +72,19 @@ async def not_found_error_handler(
         status_code=status.HTTP_404_NOT_FOUND,
         content=dict(ResponseMessage(
             code=status.HTTP_404_NOT_FOUND,
+            message=str(exc),
+        )),
+    )
+
+
+@api.exception_handler(ForbiddenError)
+async def forbidden_error_handler(
+    request: Request, exc: ForbiddenError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content=dict(ResponseMessage(
+            code=status.HTTP_403_FORBIDDEN,
             message=str(exc),
         )),
     )

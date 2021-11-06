@@ -1,13 +1,21 @@
 from .task_manager import RecordTaskManager
-from .models import TaskStatus, TaskParam, FileDetail, RunningStatus, TaskData
+from .models import (
+    TaskData,
+    TaskStatus,
+    TaskParam,
+    RunningStatus,
+    VideoFileDetail,
+    DanmakuFileDetail,
+)
 
 
 __all__ = (
     'RecordTaskManager',
 
+    'TaskData',
     'TaskStatus',
     'TaskParam',
-    'TaskData',
-    'FileDetail',
     'RunningStatus',
+    'VideoFileDetail',
+    'DanmakuFileDetail',
 )

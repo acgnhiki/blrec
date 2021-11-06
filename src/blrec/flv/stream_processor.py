@@ -15,6 +15,7 @@ from rx.core import Observable
 
 from .models import FlvHeader, FlvTag, ScriptTag, VideoTag, AudioTag
 from .data_analyser import DataAnalyser
+from .stream_cutter import StreamCutter
 from .limit_checker import LimitChecker
 from .parameters_checker import ParametersChecker
 from .io import FlvReader, FlvWriter
@@ -26,6 +27,7 @@ from .exceptions import (
     VideoParametersChanged,
     FileSizeOverLimit,
     DurationOverLimit,
+    CutStream,
 )
 from .common import (
     is_audio_tag, is_metadata_tag, is_video_tag, parse_metadata, rpeek_tags,
@@ -61,6 +63,7 @@ class StreamProcessor:
     ) -> None:
         self._file_manager = file_manager
         self._parameters_checker = ParametersChecker()
+        self._stream_cutter = StreamCutter()
         if not disable_limit:
             self._limit_checker = LimitChecker(filesize_limit, duration_limit)
         if analyse_data:
@@ -138,6 +141,12 @@ class StreamProcessor:
         self._stream_count += 1
         self._process_stream(stream)
 
+    def can_cut_stream(self) -> bool:
+        return self._stream_cutter.can_cut_stream()
+
+    def cut_stream(self) -> bool:
+        return self._stream_cutter.cut_stream()
+
     def finalize(self) -> None:
         assert not self._finalized, \
             'should not be called after the processing finalized'
@@ -154,6 +163,7 @@ class StreamProcessor:
         return self._stream_count > 0 and len(self._last_tags) > 0
 
     def _new_file(self) -> None:
+        self._stream_cutter.reset()
         if not self._disable_limit:
             self._limit_checker.reset()
 
@@ -208,7 +218,7 @@ class StreamProcessor:
                 self._process_subsequent_stream(first_data_tag)
         except (
             AudioParametersChanged, VideoParametersChanged,
-            FileSizeOverLimit, DurationOverLimit,
+            FileSizeOverLimit, DurationOverLimit, CutStream,
         ):
             self._process_split_stream(flv_header)
 
@@ -263,7 +273,13 @@ class StreamProcessor:
         self._complete_file()
 
         first_data_tag: FlvTag
-        if (
+
+        if self._stream_cutter.is_cutting():
+            assert self._stream_cutter.last_keyframe_tag is not None
+            last_keyframe_tag = self._stream_cutter.last_keyframe_tag
+            original_ts = last_keyframe_tag.timestamp - self._delta
+            first_data_tag = last_keyframe_tag.evolve(timestamp=original_ts)
+        elif (
             not self._disable_limit and (
                 self._limit_checker.is_filesize_over_limit() or
                 self._limit_checker.is_duration_over_limit()
@@ -280,7 +296,7 @@ class StreamProcessor:
             self._process_initial_stream(flv_header, first_data_tag)
         except (
             AudioParametersChanged, VideoParametersChanged,
-            FileSizeOverLimit, DurationOverLimit,
+            FileSizeOverLimit, DurationOverLimit, CutStream,
         ):
             self._process_split_stream(flv_header)
 
@@ -461,9 +477,9 @@ class StreamProcessor:
 
         self._last_ts = tag.timestamp
 
+        self._stream_cutter.check_tag(tag)
         if not self._disable_limit:
             self._limit_checker.check_tag(tag)
-
         if self._analyse_data:
             self._data_analyser.analyse_tag(tag)
 
@@ -547,6 +563,7 @@ class StreamProcessor:
             map(lambda p: p.to_metadata_value(), self._join_points)
         )
 
+        assert self._file_manager.curr_path is not None
         path = extra_metadata_path(self._file_manager.curr_path)
         with open(path, 'wt', encoding='utf8') as file:
             json.dump(metadata, file)
@@ -591,7 +608,7 @@ class JoinPointData(TypedDict):
 
 class OutputFileManager(Protocol):
     @property
-    def curr_path(self) -> str:
+    def curr_path(self) -> Optional[str]:
         ...
 
     @property
@@ -610,11 +627,11 @@ class BaseOutputFileManager(ABC):
         super().__init__()
         self.buffer_size = buffer_size or io.DEFAULT_BUFFER_SIZE  # bytes
         self._paths: List[str] = []
-        self._curr_path = ''
+        self._curr_path: Optional[str] = None
         self._curr_file: Optional[BinaryIO] = None
 
     @property
-    def curr_path(self) -> str:
+    def curr_path(self) -> Optional[str]:
         return self._curr_path
 
     @property
@@ -643,7 +660,7 @@ class BaseOutputFileManager(ABC):
     def close_file(self) -> None:
         assert self._curr_file is not None
         self._curr_file.close()
-        self._curr_path = ''
+        self._curr_path = None
         self._curr_file = None
 
     @abstractmethod

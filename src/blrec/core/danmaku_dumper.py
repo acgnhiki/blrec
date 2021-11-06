@@ -2,7 +2,7 @@ import html
 import asyncio
 import logging
 from contextlib import suppress
-from typing import Iterator, List
+from typing import Iterator, List, Optional
 
 from blrec.core.models import GiftSendMsg, GuardBuyMsg, SuperChatMsg
 
@@ -13,6 +13,7 @@ from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 from .statistics import StatisticsCalculator
 from ..bili.live import Live
 from ..exception import exception_callback
+from ..event.event_emitter import EventListener, EventEmitter
 from ..path import danmaku_path
 from ..danmaku.models import (
     Metadata, Danmu, GiftSendRecord, GuardBuyRecord, SuperChatRecord
@@ -22,13 +23,25 @@ from ..utils.mixins import SwitchableMixin
 from ..logging.room_id import aio_task_with_room_id
 
 
-__all__ = 'DanmakuDumper',
+__all__ = 'DanmakuDumper', 'DanmakuDumperEventListener'
 
 
 logger = logging.getLogger(__name__)
 
 
-class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
+class DanmakuDumperEventListener(EventListener):
+    async def on_danmaku_file_created(self, path: str) -> None:
+        ...
+
+    async def on_danmaku_file_completed(self, path: str) -> None:
+        ...
+
+
+class DanmakuDumper(
+    EventEmitter[DanmakuDumperEventListener],
+    StreamRecorderEventListener,
+    SwitchableMixin,
+):
     def __init__(
         self,
         live: Live,
@@ -51,6 +64,7 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
         self.record_guard_buy = record_guard_buy
         self.record_super_chat = record_super_chat
 
+        self._path: Optional[str] = None
         self._files: List[str] = []
         self._calculator = StatisticsCalculator(interval=60)
 
@@ -65,6 +79,10 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
     @property
     def elapsed(self) -> float:
         return self._calculator.elapsed
+
+    @property
+    def dumping_path(self) -> Optional[str]:
+        return self._path
 
     def _do_enable(self) -> None:
         self._stream_recorder.add_listener(self)
@@ -97,6 +115,7 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
 
     async def on_video_file_completed(self, video_path: str) -> None:
         await self._stop_dumping()
+        self._path = None
 
     def _start_dumping(self) -> None:
         self._create_dump_task()
@@ -115,12 +134,14 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
 
     @aio_task_with_room_id
     async def _dump(self) -> None:
+        assert self._path is not None
         logger.debug('Started dumping danmaku')
         self._calculator.reset()
 
         try:
             async with DanmakuWriter(self._path) as writer:
                 logger.info(f"Danmaku file created: '{self._path}'")
+                await self._emit('danmaku_file_created', self._path)
                 await writer.write_metadata(self._make_metadata())
 
                 while True:
@@ -150,6 +171,7 @@ class DanmakuDumper(StreamRecorderEventListener, SwitchableMixin):
                         logger.warning('Unsupported message type:', repr(msg))
         finally:
             logger.info(f"Danmaku file completed: '{self._path}'")
+            await self._emit('danmaku_file_completed', self._path)
             logger.debug('Stopped dumping danmaku')
             self._calculator.freeze()
 

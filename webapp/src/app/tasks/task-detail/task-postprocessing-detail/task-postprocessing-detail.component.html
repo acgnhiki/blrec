@@ -1,0 +1,13 @@
+<nz-card [nzTitle]="title" [nzLoading]="loading">
+  <p [title]="taskStatus.postprocessing_path">
+    {{ taskStatus.postprocessing_path ?? "" | filename }}
+  </p>
+  <nz-progress
+    nzStatus="active"
+    [nzPercent]="
+      taskStatus.postprocessing_progress === null
+        ? 0
+        : (taskStatus.postprocessing_progress | progress)
+    "
+  ></nz-progress>
+</nz-card>

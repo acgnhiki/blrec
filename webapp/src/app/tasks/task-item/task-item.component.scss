@@ -1,6 +1,6 @@
-@use '../../shared/styles/layout';
-@use '../../shared/styles/text';
-@use '../shared/styles/drawer';
+@use "../../shared/styles/layout";
+@use "../../shared/styles/text";
+@use "../shared/styles/drawer";
 
 :host {
   &.stopped {
@@ -86,7 +86,7 @@ nz-card-meta {
     .short-room-id::after {
       display: inline-block;
       width: 1em;
-      content: ", ";
+      content: ",";
     }
 
     @media screen and (max-width: 320px) {
@@ -111,4 +111,12 @@ nz-card-meta {
   .menu {
     @extend %drawer-menu;
   }
+}
+
+.action-icon {
+  font-size: 16px;
+}
+
+.not-allowed {
+  cursor: not-allowed;
 }

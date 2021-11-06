@@ -2,10 +2,9 @@ from __future__ import annotations
 import asyncio
 from typing import Dict, Iterator, TYPE_CHECKING
 
-from blrec.setting.models import OutputSettings
 
 from .task import RecordTask
-from .models import TaskData, TaskParam, FileDetail
+from .models import TaskData, TaskParam, VideoFileDetail, DanmakuFileDetail
 from ..exception import NotFoundError
 if TYPE_CHECKING:
     from ..setting import SettingsManager
@@ -15,6 +14,7 @@ from ..setting import (
     RecorderSettings,
     PostprocessingSettings,
     TaskSettings,
+    OutputSettings,
 )
 
 
@@ -154,10 +154,25 @@ class RecordTaskManager:
         task = self._get_task(room_id)
         return self._make_task_param(task)
 
-    def get_task_file_details(self, room_id: int) -> Iterator[FileDetail]:
+    def get_task_video_file_details(
+        self, room_id: int
+    ) -> Iterator[VideoFileDetail]:
         task = self._get_task(room_id)
-        for path in task.files:
-            yield FileDetail.from_path(path)
+        yield from task.video_file_details
+
+    def get_task_danmaku_file_details(
+        self, room_id: int
+    ) -> Iterator[DanmakuFileDetail]:
+        task = self._get_task(room_id)
+        yield from task.danmaku_file_details
+
+    def can_cut_stream(self, room_id: int) -> bool:
+        task = self._get_task(room_id)
+        return task.can_cut_stream()
+
+    def cut_stream(self, room_id: int) -> bool:
+        task = self._get_task(room_id)
+        return task.cut_stream()
 
     async def update_task_info(self, room_id: int) -> None:
         task = self._get_task(room_id)

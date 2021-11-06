@@ -1,0 +1,35 @@
+<nz-card nzTitle="文件详情" [nzLoading]="loading">
+  <nz-table
+    #fileDetailsTable
+    [nzLoading]="loading"
+    [nzData]="fileDetails"
+    [nzPageSize]="8"
+    [nzHideOnSinglePage]="true"
+  >
+    <thead>
+      <tr>
+        <th
+          *ngFor="let column of columns"
+          [nzSortOrder]="column.sortOrder"
+          [nzSortFn]="column.sortFn"
+          [nzSortDirections]="column.sortDirections"
+          [nzFilters]="column.listOfFilter"
+          [nzFilterFn]="column.filterFn"
+          [nzFilterMultiple]="column.filterMultiple"
+          [nzShowFilter]="column.listOfFilter.length > 0"
+        >
+          {{ column.name }}
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let data of fileDetailsTable.data; trackBy: trackByPath">
+        <td title="{{ data.path }}">{{ data.path | filename }}</td>
+        <td title="{{ data.size | number }}">{{ data.size | filesize }}</td>
+        <td title="{{ data.status }}" class="status {{ data.status }}">
+          {{ data.status | filestatus }}
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+</nz-card>

@@ -1,5 +1,4 @@
 from __future__ import annotations
-import os
 from enum import Enum
 from typing import Optional
 
@@ -7,7 +6,7 @@ import attr
 
 from ..bili.models import RoomInfo, UserInfo
 from ..bili.typing import QualityNumber
-from ..postprocess import DeleteStrategy
+from ..postprocess import DeleteStrategy, PostprocessorStatus
 from ..postprocess.typing import Progress
 
 
@@ -30,6 +29,7 @@ class TaskStatus:
     danmu_count: int  # Number of Danmu in total
     danmu_rate: float  # Number of Danmu per minutes
     real_quality_number: QualityNumber
+    postprocessor_status: PostprocessorStatus = PostprocessorStatus.WAITING
     postprocessing_path: Optional[str] = None
     postprocessing_progress: Optional[Progress] = None
 
@@ -66,15 +66,31 @@ class TaskData:
     task_status: TaskStatus
 
 
+class VideoFileStatus(str, Enum):
+    RECORDING = 'recording'
+    REMUXING = 'remuxing'
+    INJECTING = 'injecting'
+    COMPLETED = 'completed'
+    MISSING = 'missing'
+    BROKEN = 'broken'
+
+
+class DanmukuFileStatus(str, Enum):
+    RECORDING = 'recording'
+    COMPLETED = 'completed'
+    MISSING = 'missing'
+    BROKEN = 'broken'
+
+
 @attr.s(auto_attribs=True, slots=True, frozen=True)
-class FileDetail:
-    exists: bool
+class VideoFileDetail:
     path: str
     size: int
+    status: VideoFileStatus
 
-    @classmethod
-    def from_path(cls, path: str) -> FileDetail:
-        try:
-            return cls(True, path, os.path.getsize(path))
-        except FileNotFoundError:
-            return cls(False, path, 0)
+
+@attr.s(auto_attribs=True, slots=True, frozen=True)
+class DanmakuFileDetail:
+    path: str
+    size: int
+    status: DanmukuFileStatus

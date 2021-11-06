@@ -56,12 +56,12 @@
     <p
       class="status-bar injecting"
       nz-tooltip
-      nzTooltipTitle="正在注入元数据：{{
+      nzTooltipTitle="正在更新 FLV 元数据：{{
         status.postprocessing_path ?? '' | filename
       }}"
       nzTooltipPlacement="top"
     >
-      注入元数据：{{ status.postprocessing_path ?? "" | filename }}
+      {{ status.postprocessing_path ?? "" | filename }}
     </p>
     <nz-progress
       [nzType]="'line'"
@@ -80,12 +80,12 @@
     <p
       class="status-bar remuxing"
       nz-tooltip
-      nzTooltipTitle="正在转换格式：{{
+      nzTooltipTitle="正在转换 FLV 为 MP4：{{
         status.postprocessing_path ?? '' | filename
       }}"
       nzTooltipPlacement="top"
     >
-      转换格式：{{ status.postprocessing_path ?? "" | filename }}
+      {{ status.postprocessing_path ?? "" | filename }}
     </p>
     <nz-progress
       [nzType]="'line'"

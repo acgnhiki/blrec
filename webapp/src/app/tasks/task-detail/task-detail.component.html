@@ -1,0 +1,38 @@
+<app-sub-page
+  pageTitle="任务详情"
+  [loading]="loading"
+  [pageStyles]="{ 'max-width': 'unset' }"
+  [contentStyles]="{ 'row-gap': '1em' }"
+>
+  <ng-template appSubPageContent>
+    <app-task-user-info-detail
+      *ngIf="taskData"
+      [loading]="loading"
+      [userInfo]="taskData.user_info"
+    ></app-task-user-info-detail>
+
+    <app-task-room-info-detail
+      *ngIf="taskData"
+      [loading]="loading"
+      [roomInfo]="taskData.room_info"
+    ></app-task-room-info-detail>
+
+    <app-task-recording-detail
+      *ngIf="taskData"
+      [loading]="loading"
+      [taskStatus]="taskData.task_status"
+    ></app-task-recording-detail>
+
+    <app-task-postprocessing-detail
+      *ngIf="taskData?.task_status?.postprocessing_path"
+      [loading]="loading"
+      [taskStatus]="taskData.task_status"
+    ></app-task-postprocessing-detail>
+
+    <app-task-file-detail
+      [loading]="loading"
+      [videoFileDetails]="videoFileDetails"
+      [danmakuFileDetails]="danmakuFileDetails"
+    ></app-task-file-detail>
+  </ng-template>
+</app-sub-page>

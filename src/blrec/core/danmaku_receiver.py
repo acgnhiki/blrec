@@ -46,9 +46,6 @@ class DanmakuReceiver(DanmakuListener, StoppableMixin):
             msg = DanmuMsg.from_danmu(danmu)
         elif cmd == DanmakuCommand.SEND_GIFT.value:
             msg = GiftSendMsg.from_danmu(danmu)
-        elif cmd == DanmakuCommand.SPECIAL_GIFT.value:  # TODO
-            logger.warning('SPECIAL_GIFT has unsupported yet:', repr(danmu))
-            return
         elif cmd == DanmakuCommand.GUARD_BUY.value:
             msg = GuardBuyMsg.from_danmu(danmu)
         elif cmd == DanmakuCommand.SUPER_CHAT_MESSAGE.value:

@@ -65,7 +65,7 @@ class GiftSendMsg:
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class GuardBuyMsg:
-    gift_name: str  # TODO verify
+    gift_name: str
     count: int
     price: int
     uid: int

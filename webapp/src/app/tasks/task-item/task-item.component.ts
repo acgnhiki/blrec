@@ -213,4 +213,10 @@ export class TaskItemComponent implements OnChanges, OnDestroy {
         }
       );
   }
+
+  cutStream(): void {
+    if (this.data.task_status.running_status === RunningStatus.RECORDING) {
+      this.taskManager.cutStream(this.roomId).subscribe();
+    }
+  }
 }

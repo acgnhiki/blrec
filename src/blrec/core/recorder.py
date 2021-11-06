@@ -1,6 +1,4 @@
 from __future__ import annotations
-import re
-import html
 import logging
 from datetime import datetime
 from typing import Iterator, Optional
@@ -8,10 +6,10 @@ from typing import Iterator, Optional
 import humanize
 
 from .danmaku_receiver import DanmakuReceiver
-from .danmaku_dumper import DanmakuDumper
+from .danmaku_dumper import DanmakuDumper, DanmakuDumperEventListener
 from .raw_danmaku_receiver import RawDanmakuReceiver
 from .raw_danmaku_dumper import RawDanmakuDumper
-from .stream_recorder import StreamRecorder
+from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 from ..event.event_emitter import EventListener, EventEmitter
 from ..bili.live import Live
 from ..bili.models import RoomInfo
@@ -37,9 +35,27 @@ class RecorderEventListener(EventListener):
     async def on_recording_cancelled(self, recorder: Recorder) -> None:
         ...
 
+    async def on_video_file_created(
+        self, path: str, record_start_time: int
+    ) -> None:
+        ...
+
+    async def on_video_file_completed(self, path: str) -> None:
+        ...
+
+    async def on_danmaku_file_created(self, path: str) -> None:
+        ...
+
+    async def on_danmaku_file_completed(self, path: str) -> None:
+        ...
+
 
 class Recorder(
-    EventEmitter[RecorderEventListener], LiveEventListener, AsyncStoppableMixin
+    EventEmitter[RecorderEventListener],
+    LiveEventListener,
+    AsyncStoppableMixin,
+    DanmakuDumperEventListener,
+    StreamRecorderEventListener,
 ):
     def __init__(
         self,
@@ -212,6 +228,8 @@ class Recorder(
 
     async def _do_start(self) -> None:
         self._live_monitor.add_listener(self)
+        self._danmaku_dumper.add_listener(self)
+        self._stream_recorder.add_listener(self)
         logger.debug('Started recorder')
 
         self._print_live_info()
@@ -223,13 +241,27 @@ class Recorder(
     async def _do_stop(self) -> None:
         await self._stop_recording()
         self._live_monitor.remove_listener(self)
+        self._danmaku_dumper.remove_listener(self)
+        self._stream_recorder.remove_listener(self)
         logger.debug('Stopped recorder')
+
+    def get_recording_files(self) -> Iterator[str]:
+        if self._stream_recorder.recording_path is not None:
+            yield self._stream_recorder.recording_path
+        if self._danmaku_dumper.dumping_path is not None:
+            yield self._danmaku_dumper.dumping_path
 
     def get_video_files(self) -> Iterator[str]:
         yield from self._stream_recorder.get_files()
 
     def get_danmaku_files(self) -> Iterator[str]:
         yield from self._danmaku_dumper.get_files()
+
+    def can_cut_stream(self) -> bool:
+        return self._stream_recorder.can_cut_stream()
+
+    def cut_stream(self) -> bool:
+        return self._stream_recorder.cut_stream()
 
     async def on_live_began(self, live: Live) -> None:
         logger.info('The live has began')
@@ -251,6 +283,20 @@ class Recorder(
     async def on_room_changed(self, room_info: RoomInfo) -> None:
         self._print_changed_room_info(room_info)
         self._stream_recorder.update_progress_bar_info()
+
+    async def on_video_file_created(
+        self, path: str, record_start_time: int
+    ) -> None:
+        await self._emit('video_file_created', path, record_start_time)
+
+    async def on_video_file_completed(self, path: str) -> None:
+        await self._emit('video_file_completed', path)
+
+    async def on_danmaku_file_created(self, path: str) -> None:
+        await self._emit('danmaku_file_created', path)
+
+    async def on_danmaku_file_completed(self, path: str) -> None:
+        await self._emit('danmaku_file_completed', path)
 
     async def _start_recording(self, stream_available: bool = False) -> None:
         if self._recording:
@@ -309,12 +355,6 @@ class Recorder(
         else:
             live_start_time = 'NULL'
 
-        desc = re.sub(
-            r'</?[a-zA-Z][a-zA-Z\d]*[^<>]*>',
-            '',
-            re.sub(r'<br\s*/?>', '\n', html.unescape(room_info.description))
-        ).strip()
-
         msg = f"""
 ================================== User Info ==================================
 user name        : {user_info.name}
@@ -336,7 +376,7 @@ parent area id   : {room_info.parent_area_id}
 parent area name : {room_info.parent_area_name}
 tags             : {room_info.tags}
 description      :
-{desc}
+{room_info.description}
 ===============================================================================
 """
         logger.info(msg)

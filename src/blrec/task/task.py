@@ -1,15 +1,26 @@
+import os
 import logging
-from typing import List, Optional
+from pathlib import Path
+from typing import Iterator, Optional
 
 
-from .models import RunningStatus, TaskStatus
+from .models import (
+    TaskStatus,
+    RunningStatus,
+    VideoFileStatus,
+    VideoFileDetail,
+    DanmukuFileStatus,
+    DanmakuFileDetail,
+)
 from ..bili.live import Live
 from ..bili.models import RoomInfo, UserInfo
 from ..bili.danmaku_client import DanmakuClient
 from ..bili.live_monitor import LiveMonitor
 from ..bili.typing import QualityNumber
 from ..core import Recorder
-from ..postprocess import Postprocessor, ProcessStatus, DeleteStrategy
+from ..postprocess import Postprocessor, PostprocessorStatus, DeleteStrategy
+from ..postprocess.remuxer import RemuxProgress
+from ..flv.metadata_injector import InjectProgress
 from ..event.event_submitters import (
     LiveEventSubmitter, PostprocessorEventSubmitter
 )
@@ -86,9 +97,9 @@ class RecordTask:
             return RunningStatus.STOPPED
         elif self._recorder.recording:
             return RunningStatus.RECORDING
-        elif self._postprocessor.status == ProcessStatus.REMUXING:
+        elif self._postprocessor.status == PostprocessorStatus.REMUXING:
             return RunningStatus.REMUXING
-        elif self._postprocessor.status == ProcessStatus.INJECTING:
+        elif self._postprocessor.status == PostprocessorStatus.INJECTING:
             return RunningStatus.INJECTING
         else:
             return RunningStatus.WAITING
@@ -113,6 +124,7 @@ class RecordTask:
             danmu_count=self._recorder.danmu_count,
             danmu_rate=self._recorder.danmu_rate,
             real_quality_number=self._recorder.real_quality_number,
+            postprocessor_status=self._postprocessor.status,
             postprocessing_path=self._postprocessor.postprocessing_path,
             postprocessing_progress=(
                 self._postprocessor.postprocessing_progress
@@ -120,18 +132,74 @@ class RecordTask:
         )
 
     @property
-    def files(self) -> List[str]:
-        if self.running_status == RunningStatus.STOPPED:
-            return []
-        if (
-            self.running_status == RunningStatus.RECORDING or
-            not self._postprocessor.enabled
-        ):
-            return [
-                *self._recorder.get_video_files(),
-                *self._recorder.get_danmaku_files(),
-            ]
-        return [*self._postprocessor.get_final_files()]
+    def video_file_details(self) -> Iterator[VideoFileDetail]:
+        recording_paths = set(self._recorder.get_recording_files())
+        completed_paths = set(self._postprocessor.get_completed_files())
+
+        for path in self._recorder.get_video_files():
+            try:
+                size = os.path.getsize(path)
+                exists = True
+            except FileNotFoundError:
+                mp4_path = str(Path(path).with_suffix('.mp4'))
+                try:
+                    size = os.path.getsize(mp4_path)
+                    exists = True
+                    path = mp4_path
+                except FileNotFoundError:
+                    size = 0
+                    exists = False
+
+            if not exists:
+                status = VideoFileStatus.MISSING
+            elif path in completed_paths:
+                status = VideoFileStatus.COMPLETED
+            elif path in recording_paths:
+                status = VideoFileStatus.RECORDING
+            elif path == self._postprocessor.postprocessing_path:
+                progress = self._postprocessor.postprocessing_progress
+                if isinstance(progress, RemuxProgress):
+                    status = VideoFileStatus.REMUXING
+                elif isinstance(progress, InjectProgress):
+                    status = VideoFileStatus.INJECTING
+            else:
+                # disabling recorder by force or stoping task by force
+                status = VideoFileStatus.BROKEN
+
+            yield VideoFileDetail(
+                path=path,
+                size=size,
+                status=status,
+            )
+
+    @property
+    def danmaku_file_details(self) -> Iterator[DanmakuFileDetail]:
+        recording_paths = set(self._recorder.get_recording_files())
+        completed_paths = set(self._postprocessor.get_completed_files())
+
+        for path in self._recorder.get_danmaku_files():
+            try:
+                size = os.path.getsize(path)
+                exists = True
+            except FileNotFoundError:
+                size = 0
+                exists = False
+
+            if not exists:
+                status = DanmukuFileStatus.MISSING
+            elif path in completed_paths:
+                status = DanmukuFileStatus.COMPLETED
+            elif path in recording_paths:
+                status = DanmukuFileStatus.RECORDING
+            else:
+                # disabling recorder by force or stoping task by force
+                status = DanmukuFileStatus.BROKEN
+
+            yield DanmakuFileDetail(
+                path=path,
+                size=size,
+                status=status,
+            )
 
     @property
     def user_agent(self) -> str:
@@ -265,6 +333,12 @@ class RecordTask:
     def delete_source(self, value: DeleteStrategy) -> None:
         self._postprocessor.delete_source = value
 
+    def can_cut_stream(self) -> bool:
+        return self._recorder.can_cut_stream()
+
+    def cut_stream(self) -> bool:
+        return self._recorder.cut_stream()
+
     @aio_task_with_room_id
     async def setup(self) -> None:
         await self._live.init()
@@ -301,7 +375,7 @@ class RecordTask:
             return
         self._recorder_enabled = True
 
-        self._postprocessor.enable()
+        await self._postprocessor.start()
         await self._recorder.start()
 
     @aio_task_with_room_id
@@ -311,12 +385,11 @@ class RecordTask:
         self._recorder_enabled = False
 
         if force:
-            self._postprocessor.disable()
+            await self._postprocessor.stop()
             await self._recorder.stop()
         else:
             await self._recorder.stop()
-            await self._postprocessor.wait()
-            self._postprocessor.disable()
+            await self._postprocessor.stop()
 
     async def update_info(self) -> None:
         await self._live.update_info()
@@ -329,6 +402,7 @@ class RecordTask:
         await self._live.deinit()
         await self._live.init()
         self._danmaku_client.session = self._live.session
+        self._danmaku_client.api = self._live.api
 
         if self._monitor_enabled:
             await self._danmaku_client.start()
@@ -343,7 +417,7 @@ class RecordTask:
 
     def _setup_danmaku_client(self) -> None:
         self._danmaku_client = DanmakuClient(
-            self._live.session, self._live.room_id
+            self._live.session, self._live.api, self._live.room_id
         )
 
     def _setup_live_monitor(self) -> None:
@@ -384,7 +458,6 @@ class RecordTask:
 
     async def _destroy(self) -> None:
         self._destroy_postprocessor_event_submitter()
-        self._destroy_postprocessor()
         self._destroy_recorder()
         self._destroy_live_event_submitter()
         self._destroy_live_monitor()

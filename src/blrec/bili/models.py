@@ -1,8 +1,11 @@
+import re
 from enum import IntEnum
 from datetime import datetime
 from typing import cast
 
 import attr
+from lxml import html
+from lxml.html.clean import clean_html
 
 from .typing import ResponseData
 
@@ -46,6 +49,11 @@ class RoomInfo:
         else:
             raise ValueError(f'Failed to init live_start_time: {data}')
 
+        if (description := data['description']):
+            description = re.sub(r'<br\s*/?>', '\n', description)
+            tree = html.fromstring(description)
+            description = clean_html(tree).text_content().strip()
+
         return RoomInfo(
             uid=data['uid'],
             room_id=int(data['room_id']),
@@ -60,7 +68,7 @@ class RoomInfo:
             title=data['title'],
             cover=data.get('cover', None) or data.get('user_cover', None),
             tags=data['tags'],
-            description=data['description'],
+            description=description,
         )
 
 

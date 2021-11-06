@@ -18,7 +18,7 @@ from ..responses import (
     accepted_responses,
     created_responses,
 )
-from ...exception import NotFoundError
+from ...exception import NotFoundError, ForbiddenError
 from ...application import Application
 
 
@@ -54,11 +54,19 @@ async def get_task_param(room_id: int) -> Dict[str, Any]:
 
 
 @router.get(
-    '/{room_id}/files',
+    '/{room_id}/videos',
     responses={**not_found_responses},
 )
-async def get_task_file_details(room_id: int) -> List[Dict[str, Any]]:
-    return [attr.asdict(d) for d in app.get_task_file_details(room_id)]
+async def get_task_video_file_details(room_id: int) -> List[Dict[str, Any]]:
+    return [attr.asdict(d) for d in app.get_task_video_file_details(room_id)]
+
+
+@router.get(
+    '/{room_id}/danmakus',
+    responses={**not_found_responses},
+)
+async def get_task_danmaku_file_details(room_id: int) -> List[Dict[str, Any]]:
+    return [attr.asdict(d) for d in app.get_task_danmaku_file_details(room_id)]
 
 
 @router.post(
@@ -79,6 +87,36 @@ async def update_all_task_infos() -> ResponseMessage:
 async def update_task_info(room_id: int) -> ResponseMessage:
     await app.update_task_info(room_id)
     return ResponseMessage(message='The task info has been updated')
+
+
+@router.get(
+    '/{room_id}/cut',
+    response_model=ResponseMessage,
+    responses={**not_found_responses},
+)
+async def can_cut_stream(room_id: int) -> ResponseMessage:
+    if app.can_cut_stream(room_id):
+        return ResponseMessage(
+            message='The stream can been cut',
+            data={'result': True},
+        )
+    else:
+        return ResponseMessage(
+            message='The stream cannot been cut',
+            data={'result': False},
+        )
+
+
+@router.post(
+    '/{room_id}/cut',
+    response_model=ResponseMessage,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={**not_found_responses, **forbidden_responses},
+)
+async def cut_stream(room_id: int) -> ResponseMessage:
+    if not app.cut_stream(room_id):
+        raise ForbiddenError('The stream cannot been cut')
+    return ResponseMessage(message='The stream cutting have been triggered')
 
 
 @router.post(

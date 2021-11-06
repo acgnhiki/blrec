@@ -72,6 +72,10 @@ class Live:
         return self._session
 
     @property
+    def api(self) -> WebApi:
+        return self._api
+
+    @property
     def room_id(self) -> int:
         return self._room_id
 

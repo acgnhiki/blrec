@@ -66,6 +66,12 @@ export enum RunningStatus {
   INJECTING = 'injecting',
 }
 
+export enum PostprocessorStatus {
+  WAITING = 'waiting',
+  REMUXING = 'remuxing',
+  INJECTING = 'injecting',
+}
+
 export interface Progress {
   time: number;
   duration: number;
@@ -81,6 +87,7 @@ export interface TaskStatus {
   readonly danmu_count: number;
   readonly danmu_rate: number;
   readonly real_quality_number: QualityNumber;
+  readonly postprocessor_status: PostprocessorStatus;
   readonly postprocessing_path: string | null;
   readonly postprocessing_progress: Progress | null;
 }
@@ -104,10 +111,32 @@ export interface TaskParam {
   readonly delete_source: DeleteStrategy;
 }
 
-export interface FileDetail {
-  readonly exists: boolean;
+export enum VideoFileStatus {
+  RECORDING = 'recording',
+  REMUXING = 'remuxing',
+  INJECTING = 'injecting',
+  COMPLETED = 'completed',
+  MISSING = 'missing',
+  BROKEN = 'broken',
+}
+
+export enum DanmakuFileStatus {
+  RECORDING = 'recording',
+  COMPLETED = 'completed',
+  MISSING = 'missing',
+  BROKEN = 'broken',
+}
+
+export interface VideoFileDetail {
   readonly path: string;
   readonly size: number;
+  readonly status: VideoFileStatus;
+}
+
+export interface DanmakuFileDetail {
+  readonly path: string;
+  readonly size: number;
+  readonly status: DanmakuFileStatus;
 }
 
 export interface AddTaskResult extends ResponseMessage {

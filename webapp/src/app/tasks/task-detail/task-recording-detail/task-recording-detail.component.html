@@ -1,0 +1,24 @@
+<nz-card nzTitle="录制详情" [nzLoading]="loading">
+  <div class="statistics">
+    <nz-statistic
+      [nzTitle]="'录制用时'"
+      [nzValue]="taskStatus.elapsed | duration"
+    ></nz-statistic>
+    <nz-statistic
+      [nzTitle]="'录制速度'"
+      [nzValue]="taskStatus.data_rate | speed"
+    ></nz-statistic>
+    <nz-statistic
+      [nzTitle]="'已录数据'"
+      [nzValue]="taskStatus.data_count | filesize: { spacer: '' }"
+    ></nz-statistic>
+    <nz-statistic
+      [nzTitle]="'弹幕数量'"
+      [nzValue]="(taskStatus.danmu_count | number: '1.0-2')!"
+    ></nz-statistic>
+    <nz-statistic
+      [nzTitle]="'所录画质'"
+      [nzValue]="(taskStatus.real_quality_number | quality)!"
+    ></nz-statistic>
+  </div>
+</nz-card>

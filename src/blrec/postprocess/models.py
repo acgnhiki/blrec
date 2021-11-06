@@ -2,7 +2,7 @@
 from enum import Enum
 
 
-class ProcessStatus(Enum):
+class PostprocessorStatus(Enum):
     WAITING = 'waiting'
     REMUXING = 'remuxing'
     INJECTING = 'injecting'

@@ -1,0 +1,44 @@
+<nz-card nzTitle="直播间信息" [nzLoading]="loading">
+  <nz-descriptions nzTitle="">
+    <nz-descriptions-item nzTitle="标题">{{
+      roomInfo.title
+    }}</nz-descriptions-item>
+    <nz-descriptions-item nzTitle="分区">
+      {{ roomInfo.parent_area_name }} - {{ roomInfo.area_name }}
+    </nz-descriptions-item>
+    <nz-descriptions-item nzTitle="房间号">
+      <span class="room-id-wrapper">
+        <span class="short-room-id" *ngIf="roomInfo.short_room_id"
+          >{{ roomInfo.short_room_id }}
+        </span>
+        <span class="real-room-id">
+          {{ roomInfo.room_id }}
+        </span>
+      </span>
+    </nz-descriptions-item>
+    <nz-descriptions-item nzTitle="状态">
+      <ng-container [ngSwitch]="roomInfo.live_status">
+        <ng-container *ngSwitchCase="0">闲置</ng-container>
+        <ng-container *ngSwitchCase="1">直播中</ng-container>
+        <ng-container *ngSwitchCase="2">轮播中</ng-container>
+      </ng-container>
+    </nz-descriptions-item>
+    <nz-descriptions-item nzTitle="开播时间">
+      <ng-container *ngIf="roomInfo.live_start_time !== 0">
+        {{ roomInfo.live_start_time * 1000 | date: "YYYY-MM-dd HH:mm:ss":"+8" }}
+      </ng-container>
+    </nz-descriptions-item>
+    <nz-descriptions-item nzTitle="标签">
+      <div class="tags">
+        <nz-tag *ngFor="let tag of roomInfo.tags.split(',')">
+          {{ tag }}
+        </nz-tag>
+      </div>
+    </nz-descriptions-item>
+    <nz-descriptions-item nzTitle="简介">
+      <div class="introduction">
+        <p *ngFor="let line of roomInfo.description.split('\n')">{{ line }}</p>
+      </div>
+    </nz-descriptions-item>
+  </nz-descriptions>
+</nz-card>

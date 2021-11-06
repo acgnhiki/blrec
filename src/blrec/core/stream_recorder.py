@@ -175,6 +175,10 @@ class StreamRecorder(
         if self._stream_processor is not None:
             self._stream_processor.duration_limit = value
 
+    @property
+    def recording_path(self) -> Optional[str]:
+        return self._file_manager.curr_path
+
     def has_file(self) -> bool:
         return self._file_manager.has_file()
 
@@ -183,6 +187,16 @@ class StreamRecorder(
 
     def clear_files(self) -> None:
         self._file_manager.clear_files()
+
+    def can_cut_stream(self) -> bool:
+        if self._stream_processor is None:
+            return False
+        return self._stream_processor.can_cut_stream()
+
+    def cut_stream(self) -> bool:
+        if self._stream_processor is None:
+            return False
+        return self._stream_processor.cut_stream()
 
     def update_progress_bar_info(self) -> None:
         if self._progress_bar is not None:

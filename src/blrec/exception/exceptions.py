@@ -6,3 +6,7 @@ class NotFoundError(ValueError):
 
 class ExistsError(ValueError):
     pass
+
+
+class ForbiddenError(Exception):
+    pass

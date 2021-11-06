@@ -52,14 +52,15 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
     def __init__(
         self,
         session: ClientSession,
+        api: WebApi,
         room_id: int,
         *,
         max_retries: int = 10,
     ) -> None:
         super().__init__()
         self.session = session
+        self.api = api
         self._room_id = room_id
-        self._api = WebApi(session)
 
         self._host_index: int = 0
         self._retry_delay: int = 0
@@ -150,7 +151,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             raise ValueError(f'Unexpected code: {code}')
 
     async def _update_danmu_info(self) -> None:
-        self._danmu_info = await self._api.get_danmu_info(self._room_id)
+        self._danmu_info = await self.api.get_danmu_info(self._room_id)
         logger.debug('Danmu info updated')
 
     async def _disconnect(self) -> None:

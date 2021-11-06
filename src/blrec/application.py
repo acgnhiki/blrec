@@ -11,9 +11,10 @@ from .disk_space import SpaceMonitor, SpaceReclaimer
 from .bili.helpers import ensure_room_id
 from .task import (
     RecordTaskManager,
-    TaskParam,
     TaskData,
-    FileDetail,
+    TaskParam,
+    VideoFileDetail,
+    DanmakuFileDetail,
 )
 from .exception import ExistsError, ExceptionHandler
 from .event.event_submitters import SpaceEventSubmitter
@@ -189,8 +190,21 @@ class Application:
     def get_task_param(self, room_id: int) -> TaskParam:
         return self._task_manager.get_task_param(room_id)
 
-    def get_task_file_details(self, room_id: int) -> Iterator[FileDetail]:
-        yield from self._task_manager.get_task_file_details(room_id)
+    def get_task_video_file_details(
+        self, room_id: int
+    ) -> Iterator[VideoFileDetail]:
+        yield from self._task_manager.get_task_video_file_details(room_id)
+
+    def get_task_danmaku_file_details(
+        self, room_id: int
+    ) -> Iterator[DanmakuFileDetail]:
+        yield from self._task_manager.get_task_danmaku_file_details(room_id)
+
+    def can_cut_stream(self, room_id: int) -> bool:
+        return self._task_manager.can_cut_stream(room_id)
+
+    def cut_stream(self, room_id: int) -> bool:
+        return self._task_manager.cut_stream(room_id)
 
     async def update_task_info(self, room_id: int) -> None:
         await self._task_manager.update_task_info(room_id)

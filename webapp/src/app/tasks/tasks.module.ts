@@ -27,6 +27,9 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzDrawerModule } from 'ng-zorro-antd/drawer';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
+import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzStatisticModule } from 'ng-zorro-antd/statistic';
+import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 import { SharedModule } from '../shared/shared.module';
 import { TasksRoutingModule } from './tasks-routing.module';
@@ -38,6 +41,12 @@ import { FilterTasksPipe } from './shared/pipes/filter-tasks.pipe';
 import { AddTaskDialogComponent } from './add-task-dialog/add-task-dialog.component';
 import { TaskSettingsDialogComponent } from './task-settings-dialog/task-settings-dialog.component';
 import { StatusDisplayComponent } from './status-display/status-display.component';
+import { TaskDetailComponent } from './task-detail/task-detail.component';
+import { TaskFileDetailComponent } from './task-detail/task-file-detail/task-file-detail.component';
+import { TaskUserInfoDetailComponent } from './task-detail/task-user-info-detail/task-user-info-detail.component';
+import { TaskRoomInfoDetailComponent } from './task-detail/task-room-info-detail/task-room-info-detail.component';
+import { TaskPostprocessingDetailComponent } from './task-detail/task-postprocessing-detail/task-postprocessing-detail.component';
+import { TaskRecordingDetailComponent } from './task-detail/task-recording-detail/task-recording-detail.component';
 
 @NgModule({
   declarations: [
@@ -49,6 +58,12 @@ import { StatusDisplayComponent } from './status-display/status-display.componen
     AddTaskDialogComponent,
     TaskSettingsDialogComponent,
     StatusDisplayComponent,
+    TaskDetailComponent,
+    TaskFileDetailComponent,
+    TaskUserInfoDetailComponent,
+    TaskRoomInfoDetailComponent,
+    TaskPostprocessingDetailComponent,
+    TaskRecordingDetailComponent,
   ],
   imports: [
     CommonModule,
@@ -81,6 +96,9 @@ import { StatusDisplayComponent } from './status-display/status-display.componen
     NzDrawerModule,
     NzSelectModule,
     NzProgressModule,
+    NzTableModule,
+    NzStatisticModule,
+    NzDescriptionsModule,
 
     TasksRoutingModule,
     SharedModule,

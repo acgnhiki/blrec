@@ -1,6 +1,7 @@
 from .exceptions import (
     ExistsError,
     NotFoundError,
+    ForbiddenError,
 )
 from .exception_center import ExceptionCenter
 from .exception_handler import ExceptionHandler
@@ -15,6 +16,7 @@ from .helpers import format_exception
 __all__ = (
     'ExistsError',
     'NotFoundError',
+    'ForbiddenError',
 
     'ExceptionCenter',
     'ExceptionSubmitter',

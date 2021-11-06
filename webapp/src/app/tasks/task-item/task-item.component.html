@@ -1,5 +1,6 @@
 <nz-card
   [nzCover]="coverTemplate"
+  [nzHoverable]="true"
   [nzActions]="[actionDelete, actionSetting, actionSwitch, actionMore]"
   [nzBodyStyle]="{ padding: '0.5rem' }"
 >
@@ -17,24 +18,26 @@
 </nz-card>
 
 <ng-template #coverTemplate>
-  <div class="cover-wrapper">
-    <img
-      class="cover"
-      alt="直播间封面"
-      [src]="data.room_info.cover | dataurl | async"
-    />
+  <a [routerLink]="[data.room_info.room_id, 'detail']">
+    <div class="cover-wrapper">
+      <img
+        class="cover"
+        alt="直播间封面"
+        [src]="data.room_info.cover | dataurl | async"
+      />
 
-    <h2
-      class="title"
-      nz-tooltip
-      [nzTooltipTitle]="'直播间标题：' + data.room_info.title"
-      nzTooltipPlacement="bottomLeft"
-    >
-      {{ data.room_info.title }}
-    </h2>
+      <h2
+        class="title"
+        nz-tooltip
+        [nzTooltipTitle]="'直播间标题：' + data.room_info.title"
+        nzTooltipPlacement="bottomLeft"
+      >
+        {{ data.room_info.title }}
+      </h2>
 
-    <app-status-display [status]="data.task_status"></app-status-display>
-  </div>
+      <app-status-display [status]="data.task_status"></app-status-display>
+    </div>
+  </a>
 </ng-template>
 
 <ng-template #avatarTemplate>
@@ -147,19 +150,19 @@
 <ng-template #actionDelete>
   <div
     nz-tooltip
-    nzTooltipTitle="删除任务"
-    nz-popconfirm
-    nzPopconfirmTitle="确定要删除此任务？"
-    nzPopconfirmPlacement="topLeft"
-    (nzOnConfirm)="removeTask()"
+    nzTooltipTitle="切割文件"
+    [class.not-allowed]="
+      data.task_status.running_status !== RunningStatus.RECORDING
+    "
+    (click)="cutStream()"
   >
-    <i nz-icon nzType="delete"></i>
+    <i nz-icon nzType="scissor" class="action-icon"></i>
   </div>
 </ng-template>
 
 <ng-template #actionSetting>
   <div nz-tooltip nzTooltipTitle="任务设置" (click)="openSettingsDialog()">
-    <i nz-icon nzType="setting"></i>
+    <i nz-icon nzType="setting" class="action-icon"></i>
   </div>
   <ng-container *ngIf="taskOptions && globalSettings">
     <app-task-settings-dialog
@@ -179,10 +182,10 @@
     nzPlacement="topRight"
     [nzDropdownMenu]="dropdownMenu"
   >
-    <i nz-icon nzType="more"></i>
+    <i nz-icon nzType="more" class="action-icon"></i>
   </div>
   <div *ngIf="useDrawer" (click)="menuDrawerVisible = true">
-    <i nz-icon nzType="more"></i>
+    <i nz-icon nzType="more" class="action-icon"></i>
   </div>
 </ng-template>
 
@@ -192,6 +195,7 @@
     <ul nz-menu class="menu">
       <li nz-menu-item (click)="startTask()">运行任务</li>
       <li nz-menu-item (click)="stopTask()">停止任务</li>
+      <li nz-menu-item (click)="removeTask()">删除任务</li>
       <li nz-menu-item (click)="stopTask(true)">强制停止任务</li>
       <li nz-menu-item (click)="disableRecorder(true)">强制关闭录制</li>
       <li nz-menu-item (click)="updateTaskInfo()">刷新数据</li>

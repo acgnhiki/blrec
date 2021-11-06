@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1633590494074,
+  "timestamp": 1635958155081,
   "index": "/index.html",
   "assetGroups": [
     {
@@ -11,18 +11,18 @@
         "ignoreVary": true
       },
       "urls": [
-        "/198.20d927ba29c55516dd2e.js",
-        "/51.c3a1708dc40a5461eaf3.js",
-        "/659.902c1857789597c9f3d8.js",
-        "/80.5aa4b3e3c4fcada93334.js",
-        "/954.05cbcc74da25eb3ef2a9.js",
-        "/common.fa68e1b34f0baff6ccad.js",
+        "/124.04d3ada75a9a6f4119c0.js",
+        "/481.2bc447cad2b7421383e8.js",
+        "/659.1d4258dba20472847e0d.js",
+        "/945.29b73cfac30295070168.js",
+        "/954.2fa849ff06b4bc2543e7.js",
+        "/common.1cef351b0cc7ea051261.js",
         "/index.html",
-        "/main.59cb7d8427d901ad6225.js",
+        "/main.1cfa15ba47a0ebad32e6.js",
         "/manifest.webmanifest",
         "/polyfills.a427f031f0f7196ffda1.js",
-        "/runtime.984b6246826f9f569f66.js",
-        "/styles.45ceee0fc92e0f47588f.css"
+        "/runtime.4f3f03ac4847b0cd3a3a.js",
+        "/styles.2e25f4678bcb2c0682d5.css"
       ],
       "patterns": []
     },
@@ -1631,11 +1631,11 @@
   ],
   "dataGroups": [],
   "hashTable": {
-    "/198.20d927ba29c55516dd2e.js": "93bf87b6cc89e0a67c508c5c232d50d73c659057",
-    "/51.c3a1708dc40a5461eaf3.js": "ef412bf0029f9923b62af368c185815503143c54",
-    "/659.902c1857789597c9f3d8.js": "eb0a200adbc8a60e97d96a5d9cd76054df561bdf",
-    "/80.5aa4b3e3c4fcada93334.js": "05503d5710b6b971c8117535de3839e37a23c149",
-    "/954.05cbcc74da25eb3ef2a9.js": "38c071c377d3a6d98902e679340d6a609996b717",
+    "/124.04d3ada75a9a6f4119c0.js": "3be768c03ab30a02a3b9758ee4f58d8cc50bcbf4",
+    "/481.2bc447cad2b7421383e8.js": "64382466eafa92b4cf91d0a26f9d884c3c93c73b",
+    "/659.1d4258dba20472847e0d.js": "eb0a200adbc8a60e97d96a5d9cd76054df561bdf",
+    "/945.29b73cfac30295070168.js": "5cd3bbe72718f68a49f84f2ce4d98e637f80c57d",
+    "/954.2fa849ff06b4bc2543e7.js": "38c071c377d3a6d98902e679340d6a609996b717",
     "/assets/animal/panda.js": "fec2868bb3053dd2da45f96bbcb86d5116ed72b1",
     "/assets/animal/panda.svg": "bebd302cdc601e0ead3a6d2710acf8753f3d83b1",
     "/assets/fill/.gitkeep": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -3227,13 +3227,13 @@
     "/assets/twotone/wallet.svg": "11e915efff832b47aa4bd5885af72e55014f59e6",
     "/assets/twotone/warning.js": "fb2d7ea232f3a99bf8f080dbc94c65699232ac01",
     "/assets/twotone/warning.svg": "8c7a2d3e765a2e7dd58ac674870c6655cecb0068",
-    "/common.fa68e1b34f0baff6ccad.js": "8e62b9aa49dde6486f74c6c94b97054743f1cc1b",
-    "/index.html": "feb7701a39ae28cb67aa8ec434fe2b35131f47a3",
-    "/main.59cb7d8427d901ad6225.js": "b35082dc068c552c032bb62c2d6dfa53a6d6532f",
+    "/common.1cef351b0cc7ea051261.js": "8e62b9aa49dde6486f74c6c94b97054743f1cc1b",
+    "/index.html": "b4dc046b52af23f23dc312e7d55853cba3e57471",
+    "/main.1cfa15ba47a0ebad32e6.js": "f1fb8a45535eab8b91e27bc1f0e62c88e5613e92",
     "/manifest.webmanifest": "0c4534b4c868d756691b1b4372cecb2efce47c6d",
     "/polyfills.a427f031f0f7196ffda1.js": "3e4560be48cd30e30bcbf51ca131a37d8c224fdc",
-    "/runtime.984b6246826f9f569f66.js": "9ef7243554b6cd1d20e1cc9eac2c5ce0c714082a",
-    "/styles.45ceee0fc92e0f47588f.css": "ebb9976bf7ee0e6443a627303522dd7c4ac1cff0"
+    "/runtime.4f3f03ac4847b0cd3a3a.js": "fa9236c1156c10fff78efd3b11f731219ec4a9f4",
+    "/styles.2e25f4678bcb2c0682d5.css": "690a2053c128c1bfea1edbc5552f2427a73d4baa"
   },
   "navigationUrls": [
     {
@@ -3251,6 +3251,14 @@
     {
       "positive": false,
       "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?docs$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?redoc$"
     }
   ],
   "navigationRequestStrategy": "performance"

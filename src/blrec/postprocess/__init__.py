@@ -1,10 +1,10 @@
 from .postprocessor import Postprocessor, PostprocessorEventListener
-from .models import ProcessStatus, DeleteStrategy
+from .models import PostprocessorStatus, DeleteStrategy
 
 
 __all__ = (
     'Postprocessor',
     'PostprocessorEventListener',
-    'ProcessStatus',
+    'PostprocessorStatus',
     'DeleteStrategy',
 )

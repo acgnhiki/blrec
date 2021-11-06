@@ -40,7 +40,7 @@ def make_comment_for_joinpoints(join_points: Iterable[JoinPoint]) -> str:
     )
 
 
-def is_valid(path: str) -> bool:
+def is_valid_flv_file(path: str) -> bool:
     with open(path, mode='rb') as file:
         reader = FlvReader(file)
 

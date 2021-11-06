@@ -22,3 +22,7 @@ class FileSizeOverLimit(Exception):
 
 class DurationOverLimit(Exception):
     ...
+
+
+class CutStream(Exception):
+    ...

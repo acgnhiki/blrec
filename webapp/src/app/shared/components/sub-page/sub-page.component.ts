@@ -16,6 +16,8 @@ import { SubPageContentDirective } from '../../directives/sub-page-content.direc
 export class SubPageComponent {
   @Input() pageTitle = '';
   @Input() loading = false;
+  @Input() pageStyles = {};
+  @Input() contentStyles = {};
 
   @ContentChild(SubPageContentDirective)
   content?: SubPageContentDirective;

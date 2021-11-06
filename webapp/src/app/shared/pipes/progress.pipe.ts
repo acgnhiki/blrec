@@ -10,6 +10,6 @@ export class ProgressPipe implements PipeTransform {
     if (!progress || progress.duration === 0) {
       return 0;
     }
-    return (progress.time / progress.duration) * 100;
+    return Math.round((progress.time / progress.duration) * 100);
   }
 }

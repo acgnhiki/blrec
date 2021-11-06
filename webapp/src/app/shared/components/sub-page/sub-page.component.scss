@@ -1,10 +1,9 @@
-@use '../../../shared/styles/layout';
-@use '../../../shared/styles/common';
+@use "../../../shared/styles/layout";
+@use "../../../shared/styles/common";
 
 :host {
   @extend %inner-content;
   padding-top: 0;
-  padding-bottom: 0;
 }
 
 .sub-page {

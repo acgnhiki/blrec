@@ -14,6 +14,7 @@ import { FilenamePipe } from './pipes/filename.pipe';
 import { PageSectionComponent } from './components/page-section/page-section.component';
 import { SubPageComponent } from './components/sub-page/sub-page.component';
 import { SubPageContentDirective } from './directives/sub-page-content.directive';
+import { FilestatusPipe } from './pipes/filestatus.pipe';
 
 @NgModule({
   declarations: [
@@ -27,6 +28,7 @@ import { SubPageContentDirective } from './directives/sub-page-content.directive
     PageSectionComponent,
     ProgressPipe,
     FilenamePipe,
+    FilestatusPipe,
   ],
   imports: [
     CommonModule,
@@ -45,6 +47,7 @@ import { SubPageContentDirective } from './directives/sub-page-content.directive
     SubPageComponent,
     SubPageContentDirective,
     PageSectionComponent,
+    FilestatusPipe,
   ]
 })
 export class SharedModule { }

@@ -282,4 +282,21 @@ export class TaskManagerService {
       )
     );
   }
+
+  cutStream(roomId: number) {
+    return this.taskService.cutStream(roomId).pipe(
+      tap(
+        () => {
+          this.message.success('文件切割已触发');
+        },
+        (error: HttpErrorResponse) => {
+          if (error.status == 403) {
+            this.message.warning('时长太短不能切割，请稍后再试。');
+          } else {
+            this.message.error(`切割文件出错: ${error.message}`);
+          }
+        }
+      )
+    );
+  }
 }

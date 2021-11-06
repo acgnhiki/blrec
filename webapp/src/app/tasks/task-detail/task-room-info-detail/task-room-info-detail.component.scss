@@ -1,0 +1,23 @@
+.room-id-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+
+  .short-room-id::after {
+    display: inline-block;
+    width: 1em;
+    content: ",";
+  }
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 0.5em;
+}
+
+.introduction {
+  p {
+    margin: 0;
+    padding: 0;
+  }
+}

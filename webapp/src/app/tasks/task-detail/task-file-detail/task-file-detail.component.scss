@@ -1,0 +1,22 @@
+.status {
+  &.recording {
+    color: red;
+  }
+
+  &.injecting,
+  &.remuxing {
+    color: blue;
+  }
+
+  &.completed {
+    color: green;
+  }
+
+  &.missing {
+    color: grey;
+  }
+
+  &.broken {
+    color: orange;
+  }
+}
