@@ -146,8 +146,14 @@
 
 [CHANGELOG](CHANGELOG.md)
 
+---
+
 ## 赞助 & 支持
 
 如果觉得这个工具好用，对你有所帮助，可以投喂支持亿下哦~
 
 投喂赞助 ☞ <https://afdian.net/@acgnhiki>
+
+## Thanks
+
+[![JetBrains Logo (Main) logo](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://jb.gg/OpenSource)

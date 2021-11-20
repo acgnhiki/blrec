@@ -75,6 +75,8 @@ class DataAnalyser:
         self._keyframe_filepositions: List[int] = []
         self._resolution: Optional[Resolution] = None
 
+        self._has_audio = False
+        self._has_video = False
         self._header_analysed = False
         self._audio_analysed = False
         self._video_analysed = False
@@ -83,8 +85,6 @@ class DataAnalyser:
         assert not self._header_analysed
         self._header_analysed = True
         self._size_of_flv_header = header.size
-        self._has_audio = header.has_audio()
-        self._has_video = header.has_video()
 
     def analyse_tag(self, tag: FlvTag) -> None:
         if is_audio_tag(tag):
@@ -198,6 +198,7 @@ class DataAnalyser:
 
     def _analyse_audio_tag(self, tag: AudioTag) -> None:
         if not self._audio_analysed:
+            self._has_audio = True
             self._audio_analysed = True
             self._audio_codec_id = tag.sound_format.value
             self._audio_sample_rate = tag.sound_rate.value
@@ -219,6 +220,7 @@ class DataAnalyser:
             pass
 
         if not self._video_analysed:
+            self._has_video = True
             self._video_analysed = True
             self._video_codec_id = tag.codec_id.value
 

@@ -208,7 +208,6 @@ class StreamProcessor:
         self._in_reader = FlvReaderWithTimestampFix(stream)
         flv_header = self._read_header()
         self._has_audio = flv_header.has_audio()
-        assert flv_header.has_video(), 'no video in the stream!'
 
         try:
             first_data_tag = self._read_first_data_tag()
@@ -230,7 +229,7 @@ class StreamProcessor:
         self._new_file()
 
         try:
-            self._write_header(flv_header)
+            self._write_header(self._ensure_header_correct(flv_header))
             self._transfer_meta_tags()
             self._transfer_first_data_tag(first_data_tag)
         except Exception:
@@ -485,6 +484,15 @@ class StreamProcessor:
 
         self._size_updates.on_next(size)
         self._time_updates.on_next(tag.timestamp)
+
+    def _ensure_header_correct(self, header: FlvHeader) -> FlvHeader:
+        header.set_video_flag(
+            self._parameters_checker.last_video_header_tag is not None
+        )
+        header.set_audio_flag(
+            self._parameters_checker.last_audio_header_tag is not None
+        )
+        return header
 
     def _ensure_ts_correct(self, tag: FlvTag) -> None:
         if tag.timestamp + self._delta < 0:

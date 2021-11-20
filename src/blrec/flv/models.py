@@ -81,7 +81,7 @@ def non_negative_integer_validator(instance, attribute, value):  # type: ignore
         raise ValueError(f"'{attribute}' has to be a non negative integer!")
 
 
-@attr.s(auto_attribs=True, slots=True, frozen=True)
+@attr.s(auto_attribs=True, slots=True)
 class FlvHeader:
     signature: str
     version: int
@@ -93,6 +93,18 @@ class FlvHeader:
 
     def has_audio(self) -> bool:
         return bool(self.type_flag & 0b0000_0100)
+
+    def set_video_flag(self, value: bool) -> None:
+        if value:
+            self.type_flag |= 0b0000_0001
+        else:
+            self.type_flag &= ~0b0000_0001
+
+    def set_audio_flag(self, value: bool) -> None:
+        if value:
+            self.type_flag |= 0b0000_0100
+        else:
+            self.type_flag &= ~0b0000_0100
 
     @property
     def size(self) -> int:
