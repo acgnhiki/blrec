@@ -317,6 +317,7 @@ class StreamRecorder(
                 logger.warning(repr(e))
             except FlvStreamCorruptedError as e:
                 logger.warning(repr(e))
+                url = self._get_live_stream_url()
 
     def _streaming(self, url: str) -> None:
         logger.debug('Getting the live stream...')
