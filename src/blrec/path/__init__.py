@@ -4,6 +4,7 @@ from .helpers import (
     danmaku_path,
     raw_danmaku_path,
     extra_metadata_path,
+    escape_path,
 )
 
 
@@ -13,4 +14,5 @@ __all__ = (
     'danmaku_path',
     'raw_danmaku_path',
     'extra_metadata_path',
+    'escape_path',
 )

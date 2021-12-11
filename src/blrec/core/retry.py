@@ -3,7 +3,6 @@ from typing import Any, Callable, Optional, Type, cast
 
 from tenacity import wait_exponential, RetryCallState
 from tenacity import _utils
-from tenacity import compat as _compat
 
 
 class wait_exponential_for_same_exceptions(wait_exponential):
@@ -25,7 +24,6 @@ class wait_exponential_for_same_exceptions(wait_exponential):
         self._prev_exc_ts: Optional[float] = None
         self._last_wait_time: float = 0
 
-    @_compat.wait_dunder_call_accept_old_params
     def __call__(self, retry_state: RetryCallState) -> float:
         if (
             retry_state.outcome is not None and

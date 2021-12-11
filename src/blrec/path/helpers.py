@@ -1,3 +1,4 @@
+import re
 import os
 from pathlib import PurePath
 
@@ -8,6 +9,7 @@ __all__ = (
     'danmaku_path',
     'raw_danmaku_path',
     'extra_metadata_path',
+    'escape_path',
 )
 
 
@@ -31,3 +33,7 @@ def raw_danmaku_path(video_path: str) -> str:
 
 def extra_metadata_path(video_path: str) -> str:
     return video_path + '.meta.json'
+
+
+def escape_path(path: str) -> str:
+    return re.sub(r'[\\/:*?"<>|]', '', path)

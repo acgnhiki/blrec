@@ -39,6 +39,7 @@ from ..bili.live import Live
 from ..bili.typing import QualityNumber
 from ..flv.stream_processor import StreamProcessor, BaseOutputFileManager
 from ..utils.mixins import AsyncCooperationMix, AsyncStoppableMixin
+from ..path import escape_path
 from ..flv.exceptions import FlvStreamCorruptedError
 from ..bili.exceptions import (
     LiveRoomHidden, LiveRoomLocked, LiveRoomEncrypted, NoStreamUrlAvailable
@@ -501,10 +502,10 @@ class OutputFileManager(BaseOutputFileManager, AsyncCooperationMix):
         date_time = datetime.fromtimestamp(self._start_time)
         relpath = self.path_template.format(
             roomid=self._live.room_id,
-            uname=self._live.user_info.name,
-            title=self._live.room_info.title,
-            area=self._live.room_info.area_name,
-            parent_area=self._live.room_info.parent_area_name,
+            uname=escape_path(self._live.user_info.name),
+            title=escape_path(self._live.room_info.title),
+            area=escape_path(self._live.room_info.area_name),
+            parent_area=escape_path(self._live.room_info.parent_area_name),
             year=date_time.year,
             month=str(date_time.month).rjust(2, '0'),
             day=str(date_time.day).rjust(2, '0'),

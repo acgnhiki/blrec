@@ -1,6 +1,8 @@
 from __future__ import annotations
 import html
 import asyncio
+import logging
+import unicodedata
 from typing import AsyncIterator, Final, List, Any
 
 from lxml import etree
@@ -14,6 +16,9 @@ from .models import (
 
 
 __all__ = 'DanmakuReader', 'DanmakuWriter'
+
+
+logger = logging.getLogger(__name__)
 
 
 class DanmakuReader:  # TODO rewrite
@@ -146,7 +151,12 @@ class DanmakuWriter:
             'user': dm.uname,
         }
         elem = etree.Element('d', attrib=attrib)
-        elem.text = dm.text
+        try:
+            elem.text = dm.text
+        except ValueError:
+            # ValueError: All strings must be XML compatible: Unicode or ASCII,
+            # no NULL bytes or control characters
+            elem.text = remove_control_characters(dm.text)
         return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
 
     def _serialize_gift_send_record(self, record: GiftSendRecord) -> str:
@@ -166,7 +176,10 @@ class DanmakuWriter:
             value_serializer=record_value_serializer,
         )
         elem = etree.Element('sc', attrib=attrib)
-        elem.text = record.message
+        try:
+            elem.text = record.message
+        except ValueError:
+            elem.text = remove_control_characters(record.message)
         return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
 
 
@@ -180,3 +193,7 @@ def record_value_serializer(
     if not isinstance(value, str):
         return str(value)
     return value
+
+
+def remove_control_characters(s: str) -> str:
+    return ''.join(c for c in s if unicodedata.category(c) != 'Cc')
