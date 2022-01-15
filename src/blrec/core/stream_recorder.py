@@ -331,6 +331,9 @@ class StreamRecorder(
             logger.debug('Response received')
             response.raise_for_status()
 
+            if self._stopped:
+                return
+
             assert self._stream_processor is not None
             self._stream_processor.process_stream(
                 io.BufferedReader(

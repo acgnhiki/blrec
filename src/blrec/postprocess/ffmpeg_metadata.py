@@ -1,3 +1,4 @@
+import logging
 import json
 from typing import Iterable, cast
 
@@ -6,6 +7,9 @@ import aiofiles
 from .helpers import get_metadata, get_extra_metadata
 from ..flv.stream_processor import JoinPoint
 from ..flv.helpers import make_comment_for_joinpoints
+
+
+logger = logging.getLogger(__name__)
 
 
 async def make_metadata_file(flv_path: str) -> str:
@@ -57,11 +61,16 @@ def _make_chapters(
 
     result = ''
     for i in range(1, len(timestamps)):
+        start = timestamps[i - 1]
+        end = timestamps[i]
+        if end < start:
+            logger.warning(f'Chapter end time {end} before start {start}')
+            end = start
         result += f"""\
 [CHAPTER]
 TIMEBASE=1/1000
-START={timestamps[i-1]}
-END={timestamps[i]}
+START={start}
+END={end}
 title=segment \\#{i}
 """
     return result

@@ -7,6 +7,12 @@ import asyncio
 from functools import partial
 from typing import Iterable, List
 
+from tenacity import (
+    retry,
+    wait_none,
+    stop_after_attempt,
+    retry_if_exception_type,
+)
 
 from .helpers import delete_file, is_space_enough
 from .space_monitor import SpaceMonitor, DiskUsage, SpaceEventListener
@@ -65,6 +71,11 @@ class SpaceReclaimer(SpaceEventListener, SwitchableMixin):
                 return True
         return False
 
+    @retry(
+        retry=retry_if_exception_type(OSError),
+        wait=wait_none(),
+        stop=stop_after_attempt(3),
+    )
     async def _get_record_file_paths(self, max_ctime: float) -> List[str]:
         glob_path = os.path.join(self.path, '*/**/*.*')
         paths: Iterable[Path]
