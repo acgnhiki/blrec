@@ -29,7 +29,9 @@ export type QualityNumber =
 export interface RecorderSettings {
   qualityNumber: QualityNumber;
   readTimeout: number;
+  disconnectionTimeout: number;
   bufferSize: number;
+  saveCover: boolean;
 }
 
 export type RecorderOptions = Nullable<RecorderSettings>;
@@ -40,6 +42,7 @@ export enum DeleteStrategy {
 }
 
 export interface PostprocessingSettings {
+  injectExtraMetadata: boolean;
   remuxToMp4: boolean;
   deleteSource: DeleteStrategy;
 }

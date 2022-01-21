@@ -16,8 +16,9 @@ import type { Mutable } from '../../shared/utility-types';
 import {
   BUFFER_OPTIONS,
   QUALITY_OPTIONS,
-  SYNC_FAILED_WARNING_TIP,
   TIMEOUT_OPTIONS,
+  DISCONNECTION_TIMEOUT_OPTIONS,
+  SYNC_FAILED_WARNING_TIP,
 } from '../shared/constants/form';
 import { RecorderSettings } from '../shared/setting.model';
 import {
@@ -44,6 +45,9 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
   readonly timeoutOptions = cloneDeep(TIMEOUT_OPTIONS) as Mutable<
     typeof TIMEOUT_OPTIONS
   >;
+  readonly disconnectionTimeoutOptions = cloneDeep(
+    DISCONNECTION_TIMEOUT_OPTIONS
+  ) as Mutable<typeof DISCONNECTION_TIMEOUT_OPTIONS>;
   readonly bufferOptions = cloneDeep(BUFFER_OPTIONS) as Mutable<
     typeof BUFFER_OPTIONS
   >;
@@ -56,7 +60,9 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
     this.settingsForm = formBuilder.group({
       qualityNumber: [''],
       readTimeout: [''],
+      disconnectionTimeout: [''],
       bufferSize: [''],
+      saveCover: [''],
     });
   }
 
@@ -68,8 +74,16 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
     return this.settingsForm.get('readTimeout') as FormControl;
   }
 
+  get disconnectionTimeoutControl() {
+    return this.settingsForm.get('disconnectionTimeout') as FormControl;
+  }
+
   get bufferSizeControl() {
     return this.settingsForm.get('bufferSize') as FormControl;
+  }
+
+  get saveCoverControl() {
+    return this.settingsForm.get('saveCover') as FormControl;
   }
 
   ngOnChanges(): void {

@@ -72,16 +72,18 @@ class LiveMonitor(
         current_status = self._live.room_info.live_status
 
         if current_status == self._previous_status:
-            return
-
-        if current_status == LiveStatus.LIVE:
-            logger.debug('Simulating live began event')
-            await self._handle_status_change(current_status)
-            logger.debug('Simulating live stream available event')
-            await self._handle_status_change(current_status)
+            if current_status == LiveStatus.LIVE:
+                logger.debug('Simulating stream reset event')
+                await self._handle_status_change(current_status)
         else:
-            logger.debug('Simulating live ended event')
-            await self._handle_status_change(current_status)
+            if current_status == LiveStatus.LIVE:
+                logger.debug('Simulating live began event')
+                await self._handle_status_change(current_status)
+                logger.debug('Simulating live stream available event')
+                await self._handle_status_change(current_status)
+            else:
+                logger.debug('Simulating live ended event')
+                await self._handle_status_change(current_status)
 
     async def on_danmaku_received(self, danmu: Danmaku) -> None:
         danmu_cmd = danmu['cmd']

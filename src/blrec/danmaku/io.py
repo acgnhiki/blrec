@@ -3,6 +3,7 @@ import html
 import asyncio
 import logging
 import unicodedata
+from datetime import datetime, timezone, timedelta
 from typing import AsyncIterator, Final, List, Any
 
 from lxml import etree
@@ -51,12 +52,12 @@ class DanmakuReader:  # TODO rewrite
             room_title=self._tree.xpath('/i/metadata/room_title')[0].text,
             area=self._tree.xpath('/i/metadata/area')[0].text,
             parent_area=self._tree.xpath('/i/metadata/parent_area')[0].text,
-            live_start_time=int(
+            live_start_time=int(datetime.fromisoformat(
                 self._tree.xpath('/i/metadata/live_start_time')[0].text
-            ),
-            record_start_time=int(
+            ).timestamp()),
+            record_start_time=int(datetime.fromisoformat(
                 self._tree.xpath('/i/metadata/record_start_time')[0].text
-            ),
+            ).timestamp()),
             recorder=self._tree.xpath('/i/metadata/recorder')[0].text,
         )
 
@@ -128,6 +129,11 @@ class DanmakuWriter:
         await self._file.close()
 
     def _serialize_metadata(self, metadata: Metadata) -> str:
+        tz = timezone(timedelta(hours=8))
+        ts = metadata.live_start_time
+        live_start_time = datetime.fromtimestamp(ts, tz).isoformat()
+        ts = metadata.record_start_time
+        record_start_time = datetime.fromtimestamp(ts, tz).isoformat()
         return f"""\
     <metadata>
         <user_name>{html.escape(metadata.user_name)}</user_name>
@@ -135,8 +141,8 @@ class DanmakuWriter:
         <room_title>{html.escape(metadata.room_title)}</room_title>
         <area>{html.escape(metadata.area)}</area>
         <parent_area>{html.escape(metadata.parent_area)}</parent_area>
-        <live_start_time>{metadata.live_start_time}</live_start_time>
-        <record_start_time>{metadata.record_start_time}</record_start_time>
+        <live_start_time>{live_start_time}</live_start_time>
+        <record_start_time>{record_start_time}</record_start_time>
         <recorder>{metadata.recorder}</recorder>
     </metadata>
 """

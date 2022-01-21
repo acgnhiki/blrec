@@ -39,9 +39,14 @@ export class PostProcessingSettingsComponent implements OnInit, OnChanges {
     private settingsSyncService: SettingsSyncService
   ) {
     this.settingsForm = formBuilder.group({
+      injectExtraMetadata: [''],
       remuxToMp4: [''],
       deleteSource: [''],
     });
+  }
+
+  get injectExtraMetadataControl() {
+    return this.settingsForm.get('injectExtraMetadata') as FormControl;
   }
 
   get remuxToMp4Control() {

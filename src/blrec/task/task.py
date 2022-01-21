@@ -46,12 +46,15 @@ class RecordTask:
         record_gift_send: bool = False,
         record_guard_buy: bool = False,
         record_super_chat: bool = False,
+        save_cover: bool = False,
         save_raw_danmaku: bool = False,
         buffer_size: Optional[int] = None,
         read_timeout: Optional[int] = None,
+        disconnection_timeout: Optional[int] = None,
         filesize_limit: int = 0,
         duration_limit: int = 0,
         remux_to_mp4: bool = False,
+        inject_extra_metadata: bool = True,
         delete_source: DeleteStrategy = DeleteStrategy.AUTO,
     ) -> None:
         super().__init__()
@@ -67,12 +70,15 @@ class RecordTask:
         self._record_gift_send = record_gift_send
         self._record_guard_buy = record_guard_buy
         self._record_super_chat = record_super_chat
+        self._save_cover = save_cover
         self._save_raw_danmaku = save_raw_danmaku
         self._buffer_size = buffer_size
         self._read_timeout = read_timeout
+        self._disconnection_timeout = disconnection_timeout
         self._filesize_limit = filesize_limit
         self._duration_limit = duration_limit
         self._remux_to_mp4 = remux_to_mp4
+        self._inject_extra_metadata = inject_extra_metadata
         self._delete_source = delete_source
 
         self._ready = False
@@ -250,6 +256,14 @@ class RecordTask:
         self._recorder.record_super_chat = value
 
     @property
+    def save_cover(self) -> bool:
+        return self._recorder.save_cover
+
+    @save_cover.setter
+    def save_cover(self, value: bool) -> None:
+        self._recorder.save_cover = value
+
+    @property
     def save_raw_danmaku(self) -> bool:
         return self._recorder.save_raw_danmaku
 
@@ -284,6 +298,14 @@ class RecordTask:
     @read_timeout.setter
     def read_timeout(self, value: int) -> None:
         self._recorder.read_timeout = value
+
+    @property
+    def disconnection_timeout(self) -> int:
+        return self._recorder.disconnection_timeout
+
+    @disconnection_timeout.setter
+    def disconnection_timeout(self, value: int) -> None:
+        self._recorder.disconnection_timeout = value
 
     @property
     def out_dir(self) -> str:
@@ -324,6 +346,14 @@ class RecordTask:
     @remux_to_mp4.setter
     def remux_to_mp4(self, value: bool) -> None:
         self._postprocessor.remux_to_mp4 = value
+
+    @property
+    def inject_extra_metadata(self) -> bool:
+        return self._postprocessor.inject_extra_metadata
+
+    @inject_extra_metadata.setter
+    def inject_extra_metadata(self, value: bool) -> None:
+        self._postprocessor.inject_extra_metadata = value
 
     @property
     def delete_source(self) -> DeleteStrategy:
@@ -435,10 +465,12 @@ class RecordTask:
             self._path_template,
             buffer_size=self._buffer_size,
             read_timeout=self._read_timeout,
+            disconnection_timeout=self._disconnection_timeout,
             danmu_uname=self._danmu_uname,
             record_gift_send=self._record_gift_send,
             record_guard_buy=self._record_guard_buy,
             record_super_chat=self._record_super_chat,
+            save_cover=self._save_cover,
             save_raw_danmaku=self._save_raw_danmaku,
             filesize_limit=self._filesize_limit,
             duration_limit=self._duration_limit,
@@ -453,6 +485,7 @@ class RecordTask:
             self._live,
             self._recorder,
             remux_to_mp4=self._remux_to_mp4,
+            inject_extra_metadata=self._inject_extra_metadata,
             delete_source=self._delete_source,
         )
 

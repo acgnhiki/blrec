@@ -59,7 +59,13 @@ class FlvReader:
             return self._stream.read(tag.body_size)
 
     def _seek_to_previous_tag(self) -> int:
-        self._stream.seek(-BACK_POINTER_SIZE, SEEK_CUR)
+        try:
+            self._stream.seek(-BACK_POINTER_SIZE, SEEK_CUR)
+        except OSError as e:
+            if e.errno == 22 and e.strerror == 'Invalid argument':
+                raise EOFError()
+            else:
+                raise
         previous_tag_size = self._parser.parse_previous_tag_size()
         return self._stream.seek(-(4 + previous_tag_size), SEEK_CUR)
 

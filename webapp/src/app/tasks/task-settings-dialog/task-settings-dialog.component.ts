@@ -25,6 +25,7 @@ import {
   DURATION_LIMIT_OPTIONS,
   QUALITY_OPTIONS,
   TIMEOUT_OPTIONS,
+  DISCONNECTION_TIMEOUT_OPTIONS,
   BUFFER_OPTIONS,
   DELETE_STRATEGIES,
   SPLIT_FILE_TIP,
@@ -68,6 +69,9 @@ export class TaskSettingsDialogComponent implements OnChanges {
   readonly timeoutOptions = cloneDeep(TIMEOUT_OPTIONS) as Mutable<
     typeof TIMEOUT_OPTIONS
   >;
+  readonly disconnectionTimeoutOptions = cloneDeep(
+    DISCONNECTION_TIMEOUT_OPTIONS
+  ) as Mutable<typeof DISCONNECTION_TIMEOUT_OPTIONS>;
   readonly bufferOptions = cloneDeep(BUFFER_OPTIONS) as Mutable<
     typeof BUFFER_OPTIONS
   >;

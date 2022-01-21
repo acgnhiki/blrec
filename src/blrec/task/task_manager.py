@@ -231,13 +231,16 @@ class RecordTaskManager:
         task = self._get_task(room_id)
         task.quality_number = settings.quality_number
         task.read_timeout = settings.read_timeout
+        task.disconnection_timeout = settings.disconnection_timeout
         task.buffer_size = settings.buffer_size
+        task.save_cover = settings.save_cover
 
     def apply_task_postprocessing_settings(
         self, room_id: int, settings: PostprocessingSettings
     ) -> None:
         task = self._get_task(room_id)
         task.remux_to_mp4 = settings.remux_to_mp4
+        task.inject_extra_metadata = settings.inject_extra_metadata
         task.delete_source = settings.delete_source
 
     def _get_task(self, room_id: int) -> RecordTask:
@@ -258,11 +261,14 @@ class RecordTaskManager:
             record_gift_send=task.record_gift_send,
             record_guard_buy=task.record_guard_buy,
             record_super_chat=task.record_super_chat,
+            save_cover=task.save_cover,
             save_raw_danmaku=task.save_raw_danmaku,
             quality_number=task.quality_number,
             read_timeout=task.read_timeout,
+            disconnection_timeout=task.disconnection_timeout,
             buffer_size=task.buffer_size,
             remux_to_mp4=task.remux_to_mp4,
+            inject_extra_metadata=task.inject_extra_metadata,
             delete_source=task.delete_source,
         )
 

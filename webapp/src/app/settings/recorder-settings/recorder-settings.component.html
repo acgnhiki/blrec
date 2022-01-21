@@ -17,6 +17,21 @@
       </nz-select>
     </nz-form-control>
   </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="录播文件完成时保存当前直播间的封面"
+      >保存封面</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.saveCover ? saveCoverControl : 'warning'"
+    >
+      <nz-switch formControlName="saveCover"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
   <nz-form-item class="setting-item">
     <nz-form-label
       class="setting-label"
@@ -36,6 +51,29 @@
       "
     >
       <nz-select formControlName="readTimeout" [nzOptions]="timeoutOptions">
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="断网超过等待时间就结束录制，如果网络恢复后仍未下播会自动重新开始录制。"
+      >断网等待时间</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control select"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.disconnectionTimeout
+          ? disconnectionTimeoutControl
+          : 'warning'
+      "
+    >
+      <nz-select
+        formControlName="disconnectionTimeout"
+        [nzOptions]="disconnectionTimeoutOptions"
+      >
       </nz-select>
     </nz-form-control>
   </nz-form-item>

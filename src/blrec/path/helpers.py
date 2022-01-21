@@ -7,6 +7,7 @@ __all__ = (
     'file_exists',
     'create_file',
     'danmaku_path',
+    'cover_path',
     'raw_danmaku_path',
     'extra_metadata_path',
     'escape_path',
@@ -25,6 +26,10 @@ def create_file(path: str) -> None:
 
 def danmaku_path(video_path: str) -> str:
     return str(PurePath(video_path).with_suffix('.xml'))
+
+
+def cover_path(video_path: str, ext: str = 'jpg') -> str:
+    return str(PurePath(video_path).with_suffix('.' + ext))
 
 
 def raw_danmaku_path(video_path: str) -> str:

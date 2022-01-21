@@ -114,6 +114,14 @@ class Live:
     def is_living(self) -> bool:
         return self._room_info.live_status == LiveStatus.LIVE
 
+    async def check_connectivity(self) -> bool:
+        try:
+            await self._session.head('https://live.bilibili.com/', timeout=3)
+        except (aiohttp.ClientConnectionError, asyncio.TimeoutError):
+            return False
+        else:
+            return True
+
     async def update_info(self) -> None:
         await asyncio.wait([self.update_user_info(), self.update_room_info()])
 

@@ -62,6 +62,9 @@ class StreamRecorderEventListener(EventListener):
     async def on_video_file_completed(self, path: str) -> None:
         ...
 
+    async def on_stream_recording_stopped(self) -> None:
+        ...
+
 
 class StreamRecorder(
     EventEmitter[StreamRecorderEventListener],
@@ -77,6 +80,7 @@ class StreamRecorder(
         quality_number: QualityNumber = 10000,
         buffer_size: Optional[int] = None,
         read_timeout: Optional[int] = None,
+        disconnection_timeout: Optional[int] = None,
         filesize_limit: int = 0,
         duration_limit: int = 0,
     ) -> None:
@@ -94,6 +98,7 @@ class StreamRecorder(
         self._real_quality_number: Optional[QualityNumber] = None
         self.buffer_size = buffer_size or io.DEFAULT_BUFFER_SIZE  # bytes
         self.read_timeout = read_timeout or 3  # seconds
+        self.disconnection_timeout = disconnection_timeout or 600  # seconds
 
         self._filesize_limit = filesize_limit or 0
         self._duration_limit = duration_limit or 0
@@ -256,6 +261,7 @@ class StreamRecorder(
                 self._stream_processor = None
             self._progress_bar = None
             self._calculator.freeze()
+            self._emit_event('stream_recording_stopped')
 
     def _main_loop(self) -> None:
         for attempt in Retrying(
@@ -316,6 +322,17 @@ class StreamRecorder(
                 logger.warning(repr(e))
             except requests.exceptions.ConnectionError as e:
                 logger.warning(repr(e))
+                logger.info(
+                    f'Waiting {self.disconnection_timeout} seconds '
+                    'for connection recovery... '
+                )
+                try:
+                    self._wait_connection_recovered(self.disconnection_timeout)
+                except TimeoutError as e:
+                    logger.error(repr(e))
+                    self._stopped = True
+                else:
+                    logger.debug('Connection recovered')
             except FlvStreamCorruptedError as e:
                 logger.warning(repr(e))
                 url = self._get_live_stream_url()
@@ -375,6 +392,17 @@ class StreamRecorder(
             return
         logger.debug(f'Retry {name} after {seconds} seconds')
         time.sleep(seconds)
+
+    def _wait_connection_recovered(
+        self, timeout: Optional[int] = None, check_interval: int = 3
+    ) -> None:
+        timebase = time.monotonic()
+        while not self._run_coroutine(self._live.check_connectivity()):
+            if timeout is not None and time.monotonic() - timebase > timeout:
+                raise TimeoutError(
+                    f'Connection not recovered in {timeout} seconds'
+                )
+            time.sleep(check_interval)
 
     def _make_pbar_postfix(self) -> str:
         return '{room_id} - {user_name}: {room_title}'.format(

@@ -141,6 +141,31 @@
           <nz-form-label
             class="setting-label"
             nzNoColon
+            nzTooltipTitle="录播文件完成时保存当前直播间的封面"
+            >保存封面</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <nz-switch
+              name="saveCover"
+              [(ngModel)]="model.recorder.saveCover"
+              [disabled]="options.recorder.saveCover === null"
+            ></nz-switch>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.recorder.saveCover !== null"
+            (nzCheckedChange)="
+              options.recorder.saveCover = $event
+                ? globalSettings.recorder.saveCover
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
             nzTooltipTitle="超时时间设置得比较长相对不容易因网络不稳定而出现流中断，但是一旦出现中断就无法实现无缝拼接且漏录较多。"
             >数据读取超时</nz-form-label
           >
@@ -164,6 +189,34 @@
             (nzCheckedChange)="
               options.recorder.readTimeout = $event
                 ? globalSettings.recorder.readTimeout
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            nzTooltipTitle="断网超过等待时间就结束录制，如果网络恢复后仍未下播会自动重新开始录制。"
+            >断网等待时间</nz-form-label
+          >
+          <nz-form-control class="setting-control select">
+            <nz-select
+              name="disconnectionTimeout"
+              [(ngModel)]="model.recorder.disconnectionTimeout"
+              [disabled]="options.recorder.disconnectionTimeout === null"
+              [nzOptions]="disconnectionTimeoutOptions"
+              [nzOptionOverflowSize]="6"
+            >
+            </nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.recorder.bufferSize !== null"
+            (nzCheckedChange)="
+              options.recorder.bufferSize = $event
+                ? globalSettings.recorder.bufferSize
                 : null
             "
             >覆盖全局设置</label
@@ -344,8 +397,36 @@
           <nz-form-label
             class="setting-label"
             nzNoColon
-            nzTooltipTitle="需要安装 FFmpeg"
-            >FLV 转 MP4</nz-form-label
+            nzTooltipTitle="添加关键帧等元数据使定位播放和拖进度条不会卡顿"
+            >flv 添加元数据</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <nz-switch
+              name="injectExtraMetadata"
+              [(ngModel)]="model.postprocessing.injectExtraMetadata"
+              [disabled]="
+                options.postprocessing.injectExtraMetadata === null ||
+                !!options.postprocessing.remuxToMp4
+              "
+            ></nz-switch>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.postprocessing.injectExtraMetadata !== null"
+            (nzCheckedChange)="
+              options.postprocessing.injectExtraMetadata = $event
+                ? globalSettings.postprocessing.injectExtraMetadata
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            nzTooltipTitle="调用 ffmpeg 进行转换，需要安装 ffmpeg 。"
+            >flv 转封装为 mp4</nz-form-label
           >
           <nz-form-control class="setting-control switch">
             <nz-switch
@@ -382,7 +463,10 @@
             <nz-select
               name="deleteSource"
               [(ngModel)]="model.postprocessing.deleteSource"
-              [disabled]="options.postprocessing.deleteSource === null"
+              [disabled]="
+                options.postprocessing.deleteSource === null ||
+                !options.postprocessing.remuxToMp4
+              "
               [nzOptions]="deleteStrategies"
             ></nz-select>
           </nz-form-control>

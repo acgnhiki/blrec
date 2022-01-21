@@ -72,6 +72,15 @@ export const TIMEOUT_OPTIONS = [
   { label: '10 分钟', value: 600 },
 ] as const;
 
+export const DISCONNECTION_TIMEOUT_OPTIONS = [
+  { label: '3 分钟', value: 3 * 60 },
+  { label: '5 分钟', value: 5 * 60 },
+  { label: '10 分钟', value: 10 * 60 },
+  { label: '15 分钟', value: 15 * 60 },
+  { label: '20 分钟', value: 20 * 60 },
+  { label: '30 分钟', value: 30 * 60 },
+] as const;
+
 export const BUFFER_OPTIONS = [
   { label: '4 KB', value: 1024 * 4 },
   { label: '8 KB', value: 1024 * 8 },

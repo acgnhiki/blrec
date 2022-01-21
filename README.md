@@ -17,7 +17,7 @@
 - 自动修复时间戳问题：跳变、反跳等。
 - 直播流参数改变自动分割文件，避免出现花屏等问题。
 - 流中断自动拼接且支持 **无缝** 拼接，不会因网络中断而使录播文件片段化。
-- `flv` 文件注入关键帧等元数据，定位播放和拖进度条不会卡顿。
+- `flv` 文件添加关键帧等元数据，使定位播放和拖进度条不会卡顿。
 - 可选录制的画质
 - 可自定义文件保存路径和文件名
 - 支持按文件大小或时长分割文件
@@ -33,14 +33,12 @@
 
 ## 安装
 
-- 通过 pip 安装
+- 通过 pip 或者 pipx 安装
 
-    `pip install blrec`
+    `pip install blrec` 或者 `pipx install blrec`
 
-    用到的一些库需要 C 编译器，Windows 没 C 编译器会安装出错，
-    使用以下方式先安装已编译好的库然后再按照上面的安装。
-
-    `pip install -r windows-requirements.txt`
+    使用的一些库需要自己编译，Windows 没安装 C / C++ 编译器会安装出错，
+    参考 [Python Can't install packages](https://stackoverflow.com/questions/64261546/python-cant-install-packages) 先安装好 [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)。
 
 - 免安装绿色版
 
@@ -53,9 +51,9 @@
 
 ## 更新
 
-- 通过 pip 安装的用以下方式更新
+- 通过 pip 或者 pipx 安装的用以下方式更新
 
-    `pip install blrec --upgrade`
+    `pip install blrec --upgrade` 或者 `pipx upgrade blrec`
 
 - 免安装绿色版
 
@@ -64,11 +62,21 @@
     - 把旧版本的设置文件 `settings.toml` 复制并覆盖新版本的设置文件
     - 运行新版本的 `run.bat`
 
+## 卸载
+
+- 通过 pip 或者 pipx 安装的用以下方式卸载
+
+    `pip uninstall blrec` 或者 `pipx uninstall blrec`
+
+- 免安装绿色版
+
+    删除解压后的文件夹
+
 ## 使用方法
 
 ### 使用默认设置文件和保存位置
 
-在命令行终端里敲入 `blrec` 并回车运行，然后在浏览器访问 `http://localhost:2233`。
+在命令行终端里执行 `blrec` ，然后浏览器访问 `http://localhost:2233`。
 
 设置文件为 `toml` 文件，默认位置在 `~/.blrec/settings.toml`。默认录播文件保存位置为当前工作目录 `.`。
 
@@ -147,12 +155,6 @@
 [CHANGELOG](CHANGELOG.md)
 
 ---
-
-## 赞助 & 支持
-
-如果觉得这个工具好用，对你有所帮助，可以投喂支持亿下哦~
-
-投喂赞助 ☞ <https://afdian.net/@acgnhiki>
 
 ## Thanks
 

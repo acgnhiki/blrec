@@ -3,7 +3,10 @@ import logging
 from datetime import datetime
 from typing import Iterator, Optional
 
+import aiohttp
+import aiofiles
 import humanize
+from tenacity import retry, wait_fixed, stop_after_attempt
 
 from .danmaku_receiver import DanmakuReceiver
 from .danmaku_dumper import DanmakuDumper, DanmakuDumperEventListener
@@ -17,6 +20,8 @@ from ..bili.danmaku_client import DanmakuClient
 from ..bili.live_monitor import LiveMonitor, LiveEventListener
 from ..bili.typing import QualityNumber
 from ..utils.mixins import AsyncStoppableMixin
+from ..path import cover_path
+from ..logging.room_id import aio_task_with_room_id
 
 
 __all__ = 'RecorderEventListener', 'Recorder'
@@ -67,10 +72,12 @@ class Recorder(
         *,
         buffer_size: Optional[int] = None,
         read_timeout: Optional[int] = None,
+        disconnection_timeout: Optional[int] = None,
         danmu_uname: bool = False,
         record_gift_send: bool = False,
         record_guard_buy: bool = False,
         record_super_chat: bool = False,
+        save_cover: bool = False,
         save_raw_danmaku: bool = False,
         filesize_limit: int = 0,
         duration_limit: int = 0,
@@ -80,6 +87,7 @@ class Recorder(
         self._live = live
         self._danmaku_client = danmaku_client
         self._live_monitor = live_monitor
+        self.save_cover = save_cover
         self.save_raw_danmaku = save_raw_danmaku
 
         self._recording: bool = False
@@ -90,6 +98,7 @@ class Recorder(
             path_template=path_template,
             buffer_size=buffer_size,
             read_timeout=read_timeout,
+            disconnection_timeout=disconnection_timeout,
             filesize_limit=filesize_limit,
             duration_limit=duration_limit,
         )
@@ -141,6 +150,14 @@ class Recorder(
     @read_timeout.setter
     def read_timeout(self, value: int) -> None:
         self._stream_recorder.read_timeout = value
+
+    @property
+    def disconnection_timeout(self) -> int:
+        return self._stream_recorder.disconnection_timeout
+
+    @disconnection_timeout.setter
+    def disconnection_timeout(self, value: int) -> None:
+        self._stream_recorder.disconnection_timeout = value
 
     @property
     def danmu_uname(self) -> bool:
@@ -279,6 +296,8 @@ class Recorder(
 
     async def on_live_stream_reset(self, live: Live) -> None:
         logger.warning('The live stream has been reset')
+        if not self._recording:
+            await self._start_recording(stream_available=True)
 
     async def on_room_changed(self, room_info: RoomInfo) -> None:
         self._print_changed_room_info(room_info)
@@ -291,12 +310,18 @@ class Recorder(
 
     async def on_video_file_completed(self, path: str) -> None:
         await self._emit('video_file_completed', path)
+        if self.save_cover:
+            await self._save_cover_image(path)
 
     async def on_danmaku_file_created(self, path: str) -> None:
         await self._emit('danmaku_file_created', path)
 
     async def on_danmaku_file_completed(self, path: str) -> None:
         await self._emit('danmaku_file_completed', path)
+
+    async def on_stream_recording_stopped(self) -> None:
+        logger.debug('Stream recording stopped')
+        await self._stop_recording()
 
     async def _start_recording(self, stream_available: bool = False) -> None:
         if self._recording:
@@ -340,6 +365,24 @@ class Recorder(
         self._danmaku_dumper.set_live_start_time(live_start_time)
         self._danmaku_dumper.clear_files()
         self._stream_recorder.clear_files()
+
+    @retry(wait=wait_fixed(1), stop=stop_after_attempt(3))
+    @aio_task_with_room_id
+    async def _save_cover_image(self, video_path: str) -> None:
+        await self._live.update_info()
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            try:
+                url = self._live.room_info.cover
+                async with session.get(url) as response:
+                    ext = url.rsplit('.', 1)[-1]
+                    path = cover_path(video_path, ext)
+                    async with aiofiles.open(path, 'wb') as file:
+                        await file.write(await response.read())
+            except Exception as e:
+                logger.error(f'Failed to save cover image: {repr(e)}')
+                raise
+            else:
+                logger.info(f'Saved cover image: {path}')
 
     def _print_waiting_message(self) -> None:
         logger.info('Waiting... until the live starts')

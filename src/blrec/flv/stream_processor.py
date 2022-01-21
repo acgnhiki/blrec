@@ -333,6 +333,7 @@ class StreamProcessor:
             )
 
         logger.debug('Meta tags have been transfered')
+        self._update_last_out_tags()
 
     def _transfer_first_data_tag(self, tag: FlvTag) -> None:
         logger.debug(f'Transfer the first data tag: {tag}')
@@ -518,9 +519,13 @@ class StreamProcessor:
     def _enrich_metadata(
         self, old_metadata_tag: ScriptTag, offset: int
     ) -> ScriptTag:
-        # ensure the duration and filesize property exists in the metadata and
-        # init them.
-        self._metadata.update({'duration': 0.0, 'filesize': 0.0})
+        # ensure nesessary properties exists in the metadata and init them.
+        metadata = parse_metadata(old_metadata_tag)
+        self._metadata.update({
+            'duration': 0.0,
+            'filesize': 0.0,
+            'framerate': metadata.get('framerate', metadata.get('fps', 0.0)),
+        })
         # merge the metadata into the metadata tag
         return enrich_metadata(old_metadata_tag, self._metadata, offset)
 
@@ -552,7 +557,14 @@ class StreamProcessor:
         last_tag = self._last_tags[0]
         duration = last_tag.timestamp / 1000
         filesize = float(last_tag.next_tag_offset)
-        updates = dict(duration=duration, filesize=filesize)
+        updates = {
+            'duration': duration,
+            'filesize': filesize,
+        }
+        if self._analyse_data:
+            updates.update({
+                'framerate': self._data_analyser.calc_frame_rate(),
+            })
         self._metadata_tag = update_metadata(self._metadata_tag, updates)
         self._out_file.seek(self._metadata_tag.offset)
         self._out_writer.write_tag(self._metadata_tag)

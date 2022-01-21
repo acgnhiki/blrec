@@ -149,9 +149,11 @@ class DanmakuSettings(DanmakuOptions):
 class RecorderOptions(BaseModel):
     quality_number: Optional[QualityNumber]
     read_timeout: Optional[int]  # seconds
+    disconnection_timeout: Optional[int]  # seconds
     buffer_size: Annotated[  # bytes
         Optional[int], Field(ge=4096, le=1024 ** 2 * 512, multiple_of=2)
     ]
+    save_cover: Optional[bool]
 
     @validator('read_timeout')
     def _validate_read_timeout(cls, value: Optional[int]) -> Optional[int]:
@@ -160,22 +162,35 @@ class RecorderOptions(BaseModel):
             cls._validate_with_collection(value, allowed_values)
         return value
 
+    @validator('disconnection_timeout')
+    def _validate_disconnection_timeout(
+        cls, value: Optional[int]
+    ) -> Optional[int]:
+        if value is not None:
+            allowed_values = frozenset(60 * i for i in (3, 5, 10, 15, 20, 30))
+            cls._validate_with_collection(value, allowed_values)
+        return value
+
 
 class RecorderSettings(RecorderOptions):
     quality_number: QualityNumber = 20000  # 4K, the highest quality.
     read_timeout: int = 3
+    disconnection_timeout: int = 600
     buffer_size: Annotated[
         int, Field(ge=4096, le=1024 ** 2 * 512, multiple_of=2)
     ] = 8192
+    save_cover: bool = False
 
 
 class PostprocessingOptions(BaseModel):
     remux_to_mp4: Optional[bool]
+    inject_extra_metadata: Optional[bool]
     delete_source: Optional[DeleteStrategy]
 
 
 class PostprocessingSettings(PostprocessingOptions):
     remux_to_mp4: bool = False
+    inject_extra_metadata: bool = True
     delete_source: DeleteStrategy = DeleteStrategy.AUTO
 
 

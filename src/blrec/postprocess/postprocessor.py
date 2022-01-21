@@ -10,7 +10,7 @@ from rx.scheduler.threadpoolscheduler import ThreadPoolScheduler
 from .models import PostprocessorStatus, DeleteStrategy
 from .typing import Progress
 from .remuxer import remux_video, RemuxProgress, RemuxResult
-from .helpers import discard_file, discard_files, get_extra_metadata
+from .helpers import discard_file, get_extra_metadata
 from .ffmpeg_metadata import make_metadata_file
 from ..event.event_emitter import EventListener, EventEmitter
 from ..bili.live import Live
@@ -51,6 +51,7 @@ class Postprocessor(
         recorder: Recorder,
         *,
         remux_to_mp4: bool = False,
+        inject_extra_metadata: bool = False,
         delete_source: DeleteStrategy = DeleteStrategy.AUTO,
     ) -> None:
         super().__init__()
@@ -59,6 +60,7 @@ class Postprocessor(
         self._recorder = recorder
 
         self.remux_to_mp4 = remux_to_mp4
+        self.inject_extra_metadata = inject_extra_metadata
         self.delete_source = delete_source
 
         self._status = PostprocessorStatus.WAITING
@@ -103,9 +105,7 @@ class Postprocessor(
     async def _do_stop(self) -> None:
         self._recorder.remove_listener(self)
 
-        if self._status != PostprocessorStatus.WAITING:
-            await self._queue.join()
-
+        await self._queue.join()
         self._task.cancel()
         with suppress(asyncio.CancelledError):
             await self._task
@@ -133,9 +133,13 @@ class Postprocessor(
                 if self.remux_to_mp4:
                     self._status = PostprocessorStatus.REMUXING
                     result_path = await self._remux_flv_to_mp4(video_path)
-                else:
+                elif self.inject_extra_metadata:
                     self._status = PostprocessorStatus.INJECTING
                     result_path = await self._inject_extra_metadata(video_path)
+                else:
+                    result_path = video_path
+
+                await discard_file(extra_metadata_path(video_path), 'DEBUG')
 
                 self._completed_files.append(result_path)
                 await self._emit(
@@ -149,7 +153,6 @@ class Postprocessor(
     async def _inject_extra_metadata(self, path: str) -> str:
         metadata = await get_extra_metadata(path)
         await self._inject_metadata(path, metadata, self._scheduler)
-        await discard_file(extra_metadata_path(path), 'DEBUG')
         return path
 
     async def _remux_flv_to_mp4(self, in_path: str) -> str:
@@ -175,11 +178,9 @@ class Postprocessor(
 
         logger.debug(f'ffmpeg output:\n{remux_result.output}')
 
+        await discard_file(metadata_path, 'DEBUG')
         if self._should_delete_source_files(remux_result):
             await discard_file(in_path)
-            await discard_files(
-                [metadata_path, extra_metadata_path(in_path)], 'DEBUG'
-            )
 
         return result_path
 

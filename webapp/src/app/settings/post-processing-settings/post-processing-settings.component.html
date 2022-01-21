@@ -3,8 +3,28 @@
     <nz-form-label
       class="setting-label"
       nzNoColon
+      nzTooltipTitle="添加关键帧等元数据使定位播放和拖进度条不会卡顿"
+      >flv 添加元数据</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.injectExtraMetadata ? injectExtraMetadataControl : 'warning'
+      "
+    >
+      <nz-switch
+        formControlName="injectExtraMetadata"
+        [nzDisabled]="remuxToMp4Control.value"
+      ></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
       nzTooltipTitle="调用 ffmpeg 进行转换，需要安装 ffmpeg 。"
-      >FLV 转 MP4</nz-form-label
+      >flv 转封装为 mp4</nz-form-label
     >
     <nz-form-control
       class="setting-control switch"

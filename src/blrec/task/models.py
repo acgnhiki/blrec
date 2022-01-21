@@ -53,9 +53,12 @@ class TaskParam:
     # RecorderSettings
     quality_number: QualityNumber
     read_timeout: int
+    disconnection_timeout: Optional[int]
     buffer_size: int
+    save_cover: bool
     # PostprocessingOptions
     remux_to_mp4: bool
+    inject_extra_metadata: bool
     delete_source: DeleteStrategy
 
 
