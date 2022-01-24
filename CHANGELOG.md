@@ -1,5 +1,9 @@
 # 更新日志
 
+## 1.3.1
+
+- 修复没成功修复的录制异常 `IndexError: list index out of range`
+
 ## 1.3.0
 
 ### 功能

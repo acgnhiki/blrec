@@ -30,7 +30,7 @@ from .exceptions import (
     CutStream,
 )
 from .common import (
-    is_audio_tag, is_metadata_tag, is_video_tag, parse_metadata, rpeek_tags,
+    is_audio_tag, is_metadata_tag, is_video_tag, parse_metadata,
     enrich_metadata, update_metadata, is_data_tag, read_tags_in_duration,
     is_sequence_header
 )
@@ -85,7 +85,6 @@ class StreamProcessor:
         self._delta: int = 0
         self._has_audio: bool = False
         self._metadata_tag: ScriptTag
-        self._last_ts: int = 0
         self._last_tags: List[FlvTag] = []
         self._join_points: List[JoinPoint] = []
 
@@ -199,6 +198,7 @@ class StreamProcessor:
 
     def _reset(self) -> None:
         self._discard_file()
+        self._last_tags = []
         self._stream_count = 0
         logger.debug('Reset stream processing')
 
@@ -211,7 +211,7 @@ class StreamProcessor:
 
         try:
             first_data_tag = self._read_first_data_tag()
-            if self._stream_count == 1:
+            if not self._last_tags:
                 self._process_initial_stream(flv_header, first_data_tag)
             else:
                 self._process_subsequent_stream(first_data_tag)
@@ -235,7 +235,9 @@ class StreamProcessor:
         except Exception:
             self._reset()
             raise
-        del first_data_tag
+        else:
+            del flv_header, first_data_tag
+
         self._transfer_tags_until_complete()
 
     def _process_subsequent_stream(self, first_data_tag: FlvTag) -> None:
@@ -333,7 +335,6 @@ class StreamProcessor:
             )
 
         logger.debug('Meta tags have been transfered')
-        self._update_last_out_tags()
 
     def _transfer_first_data_tag(self, tag: FlvTag) -> None:
         logger.debug(f'Transfer the first data tag: {tag}')
@@ -392,20 +393,12 @@ class StreamProcessor:
         finally:
             logger.debug(f'{count} tags have been transfered')
 
-            if count > 0:
-                self._update_last_out_tags()
-
     def _add_join_point(
         self, offset: int, timestamp: int, seamless: bool
     ) -> None:
         join_point = JoinPoint(offset, timestamp, seamless)
         self._join_points.append(join_point)
         logger.debug(f'{repr(join_point)}; {join_point}')
-
-    def _update_last_out_tags(self) -> None:
-        self._last_tags = list(rpeek_tags(
-            self._out_file, self._out_reader, self._TAG_SEQUENCE_COUNT
-        ))
 
     def _find_last_duplicated_tag(self, tags: List[FlvTag]) -> int:
         logger.debug('Finding duplicated tags...')
@@ -465,17 +458,18 @@ class StreamProcessor:
         self._size_updates.on_next(size)
 
     def _write_tag(self, tag: FlvTag) -> None:
-        if self._analyse_data:
-            offset = self._out_file.tell()
-            tag = tag.evolve(offset=offset)
+        offset = self._out_file.tell()
+        tag = tag.evolve(offset=offset)
 
         try:
             size = self._out_writer.write_tag(tag)
         except Exception as exc:
             logger.debug(f'Failed to write data, due to: {repr(exc)}')
             raise
-
-        self._last_ts = tag.timestamp
+        else:
+            self._last_tags.insert(0, tag)
+            if len(self._last_tags) > self._TAG_SEQUENCE_COUNT:
+                self._last_tags.pop()
 
         self._stream_cutter.check_tag(tag)
         if not self._disable_limit:
