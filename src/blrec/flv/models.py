@@ -207,7 +207,7 @@ class AudioTag(FlvTag):
     sound_rate: SoundRate
     sound_size: SoundSize
     sound_type: SoundType
-    aac_packet_type: Optional[AACPacketType]
+    aac_packet_type: AACPacketType
 
     @property
     def header_size(self) -> int:
@@ -230,8 +230,8 @@ class AudioTag(FlvTag):
 class VideoTag(FlvTag):
     frame_type: FrameType
     codec_id: CodecID
-    avc_packet_type: Optional[AVCPacketType]
-    composition_time: Optional[int]
+    avc_packet_type: AVCPacketType
+    composition_time: int
 
     @property
     def header_size(self) -> int:

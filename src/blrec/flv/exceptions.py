@@ -1,10 +1,21 @@
 
-
-class FlvStreamCorruptedError(Exception):
+class FlvDataError(ValueError):
     ...
 
 
-class FlvFileCorruptedError(Exception):
+class InvalidFlvHeaderError(FlvDataError):
+    ...
+
+
+class InvalidFlvTagError(FlvDataError):
+    ...
+
+
+class FlvStreamCorruptedError(FlvDataError):
+    ...
+
+
+class FlvFileCorruptedError(FlvDataError):
     ...
 
 

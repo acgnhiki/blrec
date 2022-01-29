@@ -25,8 +25,8 @@ from tenacity import (
     stop_after_delay,
     stop_after_attempt,
     retry_if_result,
-    retry_if_exception,
     retry_if_exception_type,
+    retry_if_not_exception_type,
     Retrying,
     TryAgain,
 )
@@ -268,7 +268,7 @@ class StreamRecorder(
             reraise=True,
             retry=(
                 retry_if_result(lambda r: not self._stopped) |
-                retry_if_exception(lambda e: not isinstance(e, OSError))
+                retry_if_not_exception_type((OSError, NotImplementedError))
             ),
             wait=wait_exponential_for_same_exceptions(max=60),
             before_sleep=before_sleep_log(logger, logging.DEBUG, 'main_loop'),

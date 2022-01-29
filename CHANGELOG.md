@@ -1,5 +1,10 @@
 # 更新日志
 
+## 1.3.2
+
+- 修复录制错误： `AssertionError: Invalid Tag`
+- 修复前端 https 下不能显示主播头像
+
 ## 1.3.1
 
 - 修复没成功修复的录制异常 `IndexError: list index out of range`

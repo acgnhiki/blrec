@@ -8,6 +8,7 @@ from lxml import html
 from lxml.html.clean import clean_html
 
 from .typing import ResponseData
+from ..utils.url import ensure_scheme
 
 
 __all__ = 'LiveStatus', 'RoomInfo', 'UserInfo'
@@ -38,9 +39,9 @@ class RoomInfo:
 
     @staticmethod
     def from_data(data: ResponseData) -> 'RoomInfo':
-        if (timestamp := data.get('live_start_time', None)) is not None:
+        if (timestamp := data.get('live_start_time')) is not None:
             live_start_time = cast(int, timestamp)
-        elif (time_string := data.get('live_time', None)) is not None:
+        elif (time_string := data.get('live_time')) is not None:
             if time_string == '0000-00-00 00:00:00':
                 live_start_time = 0
             else:
@@ -48,6 +49,9 @@ class RoomInfo:
                 live_start_time = int(dt.timestamp())
         else:
             raise ValueError(f'Failed to init live_start_time: {data}')
+
+        if (cover := data.get('cover') or data.get('user_cover', '')):
+            cover = ensure_scheme(cover, 'https')
 
         if (description := data['description']):
             description = re.sub(r'<br\s*/?>', '\n', description)
@@ -66,7 +70,7 @@ class RoomInfo:
             live_start_time=live_start_time,
             online=int(data['online']),
             title=data['title'],
-            cover=data.get('cover', None) or data.get('user_cover', None),
+            cover=cover,
             tags=data['tags'],
             description=description,
         )
@@ -86,7 +90,7 @@ class UserInfo:
         return UserInfo(
             name=data['name'],
             gender=data['sex'],
-            face=data['face'],
+            face=ensure_scheme(data['face'], 'https'),
             uid=data['mid'],
             level=data['level'],
             sign=data['sign'],

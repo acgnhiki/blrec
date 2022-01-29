@@ -22,6 +22,7 @@ from .io import FlvReader, FlvWriter
 from .io_protocols import RandomIO
 from .utils import format_offest, format_timestamp
 from .exceptions import (
+    FlvDataError,
     FlvStreamCorruptedError,
     AudioParametersChanged,
     VideoParametersChanged,
@@ -375,6 +376,8 @@ class StreamProcessor:
             except EOFError:
                 logger.debug('The input stream exhausted')
                 break
+            except FlvDataError as e:
+                raise FlvStreamCorruptedError(repr(e))
             except Exception as e:
                 logger.debug(f'Failed to read data, due to: {repr(e)}')
                 raise
