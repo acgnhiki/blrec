@@ -259,8 +259,8 @@
             class="setting-label"
             nzFor="recordGiftSend"
             nzNoColon
-            nzTooltipTitle="记录送礼信息到弹幕文件里"
-            >记录送礼</nz-form-label
+            nzTooltipTitle="记录礼物信息到弹幕文件里"
+            >记录礼物</nz-form-label
           >
           <nz-form-control class="setting-control switch">
             <nz-switch
@@ -276,6 +276,33 @@
             (nzCheckedChange)="
               options.danmaku.recordGiftSend = $event
                 ? globalSettings.danmaku.recordGiftSend
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzFor="recordFreeGifts"
+            nzNoColon
+            nzTooltipTitle="记录免费礼物信息到弹幕文件里"
+            >记录免费礼物</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <nz-switch
+              id="recordFreeGifts"
+              name="recordFreeGifts"
+              [(ngModel)]="model.danmaku.recordFreeGifts"
+              [disabled]="options.danmaku.recordFreeGifts === null"
+            ></nz-switch>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.danmaku.recordFreeGifts !== null"
+            (nzCheckedChange)="
+              options.danmaku.recordFreeGifts = $event
+                ? globalSettings.danmaku.recordFreeGifts
                 : null
             "
             >覆盖全局设置</label

@@ -4,8 +4,17 @@ export type Event =
   | LiveBeganEvent
   | LiveEndedEvent
   | RoomChangeEvent
+  | RecordingStartedEvent
+  | RecordingFinishedEvent
+  | RecordingCancelledEvent
+  | VideoFileCreatedEvent
+  | VideoFileCompletedEvent
+  | DanmakuFileCreatedEvent
+  | DanmakuFileCompletedEvent
+  | RawDanmakuFileCreatedEvent
+  | RawDanmakuFileCompletedEvent
   | SpaceNoEnoughEvent
-  | FilesAvailableEvent;
+  | VideoPostprocessingCompletedEvent;
 
 export interface LiveBeganEvent {
   readonly type: 'LiveBeganEvent';
@@ -29,6 +38,75 @@ export interface RoomChangeEvent {
     readonly room_info: RoomInfo;
   };
 }
+export interface RecordingStartedEvent {
+  readonly type: 'RecordingStartedEvent';
+  readonly data: {
+    readonly room_info: RoomInfo;
+  };
+}
+export interface RecordingFinishedEvent {
+  readonly type: 'RecordingFinishedEvent';
+  readonly data: {
+    readonly room_info: RoomInfo;
+  };
+}
+
+export interface RecordingCancelledEvent {
+  readonly type: 'RecordingCancelledEvent';
+  readonly data: {
+    readonly room_info: RoomInfo;
+  };
+}
+export interface VideoFileCreatedEvent {
+  readonly type: 'VideoFileCreatedEvent';
+  readonly data: {
+    room_id: number;
+    path: string;
+  };
+}
+export interface VideoFileCompletedEvent {
+  readonly type: 'VideoFileCompletedEvent';
+  readonly data: {
+    room_id: number;
+    path: string;
+  };
+}
+export interface DanmakuFileCreatedEvent {
+  readonly type: 'DanmakuFileCreatedEvent';
+  readonly data: {
+    room_id: number;
+    path: string;
+  };
+}
+export interface DanmakuFileCompletedEvent {
+  readonly type: 'DanmakuFileCompletedEvent';
+  readonly data: {
+    room_id: number;
+    path: string;
+  };
+}
+export interface RawDanmakuFileCreatedEvent {
+  readonly type: 'RawDanmakuFileCreatedEvent';
+  readonly data: {
+    room_id: number;
+    path: string;
+  };
+}
+export interface RawDanmakuFileCompletedEvent {
+  readonly type: 'RawDanmakuFileCompletedEvent';
+  readonly data: {
+    room_id: number;
+    path: string;
+  };
+}
+
+export interface VideoPostprocessingCompletedEvent {
+  readonly type: 'VideoPostprocessingCompletedEvent';
+  readonly data: {
+    room_id: number;
+    path: string;
+  };
+}
 
 export interface SpaceNoEnoughEvent {
   readonly type: 'SpaceNoEnoughEvent';
@@ -36,13 +114,6 @@ export interface SpaceNoEnoughEvent {
     path: string;
     threshold: number;
     usage: DiskUsage;
-  };
-}
-
-export interface FilesAvailableEvent {
-  readonly type: 'FilesAvailableEvent';
-  readonly data: {
-    files: string[];
   };
 }
 

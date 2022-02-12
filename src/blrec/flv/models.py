@@ -137,8 +137,10 @@ class VideoTagHeader:
     composition_time: Optional[int]
 
 
-TAG_HEADER_SIZE: Final[int] = 11
 BACK_POINTER_SIZE: Final[int] = 4
+TAG_HEADER_SIZE: Final[int] = 11
+AUDIO_TAG_HEADER_SIZE: Final[int] = 2
+VIDEO_TAG_HEADER_SIZE: Final[int] = 5
 
 
 _T = TypeVar('_T', bound='FlvTag')

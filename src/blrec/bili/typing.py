@@ -15,6 +15,7 @@ QualityNumber = Literal[
 
 StreamFormat = Literal[
     'flv',
+    'ts',
     'fmp4',
 ]
 

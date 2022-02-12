@@ -103,7 +103,7 @@ class Application:
     async def launch(self) -> None:
         self._setup()
         await self._task_manager.load_all_tasks()
-        logger.info('Launched Application')
+        logger.info(f'Launched Application v{__version__}')
 
     async def exit(self) -> None:
         await self._exit()
@@ -136,50 +136,61 @@ class Application:
 
         settings = await self._settings_manager.add_task_settings(room_id)
         await self._task_manager.add_task(settings)
+        logger.info(f'Added task: {room_id}')
 
         return room_id
 
     async def remove_task(self, room_id: int) -> None:
         await self._task_manager.remove_task(room_id)
         await self._settings_manager.remove_task_settings(room_id)
+        logger.info(f'Removed task: {room_id}')
 
     async def remove_all_tasks(self) -> None:
         await self._task_manager.remove_all_tasks()
         await self._settings_manager.remove_all_task_settings()
+        logger.info('Removed all tasks')
 
     async def start_task(self, room_id: int) -> None:
         await self._task_manager.start_task(room_id)
         await self._settings_manager.mark_task_enabled(room_id)
+        logger.info(f'Started task: {room_id}')
 
     async def stop_task(self, room_id: int, force: bool = False) -> None:
         await self._task_manager.stop_task(room_id, force)
         await self._settings_manager.mark_task_disabled(room_id)
+        logger.info(f'Stopped task: {room_id}')
 
     async def start_all_tasks(self) -> None:
         await self._task_manager.start_all_tasks()
         await self._settings_manager.mark_all_tasks_enabled()
+        logger.info('Started all tasks')
 
     async def stop_all_tasks(self, force: bool = False) -> None:
         await self._task_manager.stop_all_tasks(force)
         await self._settings_manager.mark_all_tasks_disabled()
+        logger.info('Stopped all tasks')
 
     async def enable_task_recorder(self, room_id: int) -> None:
         await self._task_manager.enable_task_recorder(room_id)
         await self._settings_manager.mark_task_recorder_enabled(room_id)
+        logger.info(f'Enabled task recorder: {room_id}')
 
     async def disable_task_recorder(
         self, room_id: int, force: bool = False
     ) -> None:
         await self._task_manager.disable_task_recorder(room_id, force)
         await self._settings_manager.mark_task_recorder_disabled(room_id)
+        logger.info(f'Disabled task recorder: {room_id}')
 
     async def enable_all_task_recorders(self) -> None:
         await self._task_manager.enable_all_task_recorders()
         await self._settings_manager.mark_all_task_recorders_enabled()
+        logger.info('Enabled all task recorders')
 
     async def disable_all_task_recorders(self, force: bool = False) -> None:
         await self._task_manager.disable_all_task_recorders(force)
         await self._settings_manager.mark_all_task_recorders_disabled()
+        logger.info('Disabled all task recorders')
 
     def get_task_data(self, room_id: int) -> TaskData:
         return self._task_manager.get_task_data(room_id)

@@ -1,5 +1,17 @@
 # 更新日志
 
+## 1.4.0
+
+- 适应数据有问题的流服务器 gotcha08 (issue #13)
+- 支持 Docker (issue #15)
+- 修复弹幕录制出错 (issue #16)
+- 弹幕文件统一礼物价格单位 (issue #18)
+- Webhook 支持更多事件  (issue #19)
+- 文件名重复自动加后缀 (issue #20)
+- 记录免费礼物到弹幕文件为可选的
+- 加强 api-key 的安全性
+- 其它一些重构调整
+
 ## 1.3.2
 
 - 修复录制错误： `AssertionError: Invalid Tag`

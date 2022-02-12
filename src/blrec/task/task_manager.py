@@ -221,6 +221,7 @@ class RecordTaskManager:
         task = self._get_task(room_id)
         task.danmu_uname = settings.danmu_uname
         task.record_gift_send = settings.record_gift_send
+        task.record_free_gifts = settings.record_free_gifts
         task.record_guard_buy = settings.record_guard_buy
         task.record_super_chat = settings.record_super_chat
         task.save_raw_danmaku = settings.save_raw_danmaku
@@ -259,6 +260,7 @@ class RecordTaskManager:
             cookie=task.cookie,
             danmu_uname=task.danmu_uname,
             record_gift_send=task.record_gift_send,
+            record_free_gifts=task.record_free_gifts,
             record_guard_buy=task.record_guard_buy,
             record_super_chat=task.record_super_chat,
             save_cover=task.save_cover,

@@ -72,6 +72,23 @@
 
     删除解压后的文件夹
 
+
+## Docker
+
+- 默认参数
+
+    `docker run -v ~/blrec:/rec -dp 2233:2233 acgnhiki/blrec`
+
+- 指定参数
+
+    ```bash
+    docker run -v ~/blrec:/rec -dp 2233:2233 acgnhiki/blrec \
+        -c ~/blrec/settings.toml \
+        --key-file path/to/key-file \
+        --cert-file path/to/cert-file \
+        --api-key bili2233
+    ```
+
 ## 使用方法
 
 ### 使用默认设置文件和保存位置

@@ -53,8 +53,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   readonly selections = [
     { label: '全部', value: DataSelection.ALL },
     { label: '录制中', value: DataSelection.RECORDING },
+    { label: '录制开', value: DataSelection.RECORDER_ENABLED },
     { label: '录制关', value: DataSelection.RECORDER_DISABLED },
-    { label: '停止', value: DataSelection.STOPPED },
+    { label: '运行', value: DataSelection.MONITOR_ENABLED },
+    { label: '停止', value: DataSelection.MONITOR_DISABLED },
     { label: '直播', value: DataSelection.LIVING },
     { label: '轮播', value: DataSelection.ROUNDING },
     { label: '闲置', value: DataSelection.PREPARING },

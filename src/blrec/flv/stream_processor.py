@@ -22,7 +22,7 @@ from .io import FlvReader, FlvWriter
 from .io_protocols import RandomIO
 from .utils import format_offest, format_timestamp
 from .exceptions import (
-    FlvDataError,
+    FlvTagError,
     FlvStreamCorruptedError,
     AudioParametersChanged,
     VideoParametersChanged,
@@ -32,8 +32,8 @@ from .exceptions import (
 )
 from .common import (
     is_audio_tag, is_metadata_tag, is_video_tag, parse_metadata,
+    is_audio_data_tag, is_video_data_tag, is_sequence_header,
     enrich_metadata, update_metadata, is_data_tag, read_tags_in_duration,
-    is_sequence_header
 )
 from ..path import extra_metadata_path
 
@@ -71,6 +71,7 @@ class StreamProcessor:
             self._data_analyser = DataAnalyser()
 
         self._metadata = metadata.copy() if metadata else {}
+        self._metadata_tag: ScriptTag
 
         self._disable_limit = disable_limit
         self._analyse_data = analyse_data
@@ -85,9 +86,9 @@ class StreamProcessor:
 
         self._delta: int = 0
         self._has_audio: bool = False
-        self._metadata_tag: ScriptTag
         self._last_tags: List[FlvTag] = []
         self._join_points: List[JoinPoint] = []
+        self._resetting_file: bool = False
 
     @property
     def filesize_limit(self) -> int:
@@ -162,16 +163,29 @@ class StreamProcessor:
     def _need_to_finalize(self) -> bool:
         return self._stream_count > 0 and len(self._last_tags) > 0
 
-    def _new_file(self) -> None:
+    def _reset_params(self) -> None:
+        self._delta = 0
+        self._has_audio = False
+        self._last_tags = []
+        self._join_points = []
+        self._resetting_file = False
+
         self._stream_cutter.reset()
         if not self._disable_limit:
             self._limit_checker.reset()
+        if self._analyse_data:
+            self._data_analyser.reset()
 
+    def _new_file(self) -> None:
+        self._reset_params()
         self._out_file = self._file_manager.create_file()
-        self._out_reader = FlvReader(self._out_file)
         self._out_writer = FlvWriter(self._out_file)
+        logger.debug(f'New file: {self._file_manager.curr_path}')
 
-        logger.debug(f'new file: {self._file_manager.curr_path}')
+    def _reset_file(self) -> None:
+        self._reset_params()
+        self._out_file.truncate(0)
+        logger.debug(f'Reset file: {self._file_manager.curr_path}')
 
     def _complete_file(self) -> None:
         curr_path = self._file_manager.curr_path
@@ -182,26 +196,7 @@ class StreamProcessor:
         self._update_metadata_tag()
         self._file_manager.close_file()
 
-        if self._analyse_data:
-            self._data_analyser.reset()
-
-        logger.debug(f'complete file: {curr_path}')
-
-    def _discard_file(self) -> None:
-        curr_path = self._file_manager.curr_path
-
-        self._file_manager.close_file()
-
-        if self._analyse_data:
-            self._data_analyser.reset()
-
-        logger.debug(f'discard file: {curr_path}')
-
-    def _reset(self) -> None:
-        self._discard_file()
-        self._last_tags = []
-        self._stream_count = 0
-        logger.debug('Reset stream processing')
+        logger.debug(f'Complete file: {curr_path}')
 
     def _process_stream(self, stream: RandomIO) -> None:
         logger.debug(f'Processing the {self._stream_count}th stream...')
@@ -227,14 +222,18 @@ class StreamProcessor:
     def _process_initial_stream(
         self, flv_header: FlvHeader, first_data_tag: FlvTag
     ) -> None:
-        self._new_file()
+        if self._resetting_file:
+            self._reset_file()
+        else:
+            self._new_file()
 
         try:
             self._write_header(self._ensure_header_correct(flv_header))
             self._transfer_meta_tags()
             self._transfer_first_data_tag(first_data_tag)
         except Exception:
-            self._reset()
+            self._last_tags = []
+            self._resetting_file = True
             raise
         else:
             del flv_header, first_data_tag
@@ -376,8 +375,6 @@ class StreamProcessor:
             except EOFError:
                 logger.debug('The input stream exhausted')
                 break
-            except FlvDataError as e:
-                raise FlvStreamCorruptedError(repr(e))
             except Exception as e:
                 logger.debug(f'Failed to read data, due to: {repr(e)}')
                 raise
@@ -493,6 +490,8 @@ class StreamProcessor:
         return header
 
     def _ensure_ts_correct(self, tag: FlvTag) -> None:
+        if not is_audio_data_tag(tag) or not is_video_data_tag(tag):
+            return
         if tag.timestamp + self._delta < 0:
             self._delta = -tag.timestamp
             logger.warning('Incorrect timestamp: {}, new delta: {}'.format(
@@ -500,9 +499,9 @@ class StreamProcessor:
             ))
 
     def _correct_ts(self, tag: FlvTag, delta: int) -> FlvTag:
-        if delta == 0:
+        if delta == 0 and tag.timestamp >= 0:
             return tag
-        return tag.evolve(timestamp=tag.timestamp + delta)
+        return tag.evolve(timestamp=max(0, tag.timestamp + delta))
 
     def _calc_delta_duplicated(self, last_duplicated_tag: FlvTag) -> int:
         return self._last_tags[0].timestamp - last_duplicated_tag.timestamp
@@ -685,7 +684,24 @@ class BaseOutputFileManager(ABC):
         ...
 
 
-class FlvReaderWithTimestampFix(FlvReader):
+class RobustFlvReader(FlvReader):
+    def read_tag(self, *, no_body: bool = False) -> FlvTag:
+        count = 0
+        while True:
+            try:
+                tag = super().read_tag(no_body=no_body)
+            except FlvTagError as e:
+                logger.warning(f'Invalid tag: {repr(e)}')
+                self._parser.parse_previous_tag_size()
+                count += 1
+                if count > 3:
+                    raise
+            else:
+                count = 0
+                return tag
+
+
+class FlvReaderWithTimestampFix(RobustFlvReader):
     def __init__(self, stream: RandomIO) -> None:
         super().__init__(stream)
         self._last_tag: Optional[FlvTag] = None

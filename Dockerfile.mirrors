@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+
+FROM python:3.10-slim-buster
+
+WORKDIR /app
+VOLUME /rec
+
+COPY src src/
+COPY setup.py setup.cfg .
+
+RUN sed -i "s/deb.debian.org/mirrors.aliyun.com/g" /etc/apt/sources.list \
+    && sed -i "s/security.debian.org/mirrors.aliyun.com/g" /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends build-essential python3-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip3 install -i https://mirrors.aliyun.com/pypi/simple --no-cache-dir -e . \
+    && apt-get purge -y --auto-remove build-essential python3-dev
+# ref: https://github.com/docker-library/python/issues/60#issuecomment-134322383
+
+ENTRYPOINT ["blrec", "-o", "/rec", "--host", "0.0.0.0"]
+CMD ["-c", "/rec/settings.toml"]

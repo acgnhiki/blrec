@@ -3,19 +3,19 @@ class FlvDataError(ValueError):
     ...
 
 
-class InvalidFlvHeaderError(FlvDataError):
+class FlvHeaderError(FlvDataError):
     ...
 
 
-class InvalidFlvTagError(FlvDataError):
+class FlvTagError(FlvDataError):
     ...
 
 
-class FlvStreamCorruptedError(FlvDataError):
+class FlvStreamCorruptedError(Exception):
     ...
 
 
-class FlvFileCorruptedError(FlvDataError):
+class FlvFileCorruptedError(Exception):
     ...
 
 

@@ -2,7 +2,7 @@
 import asyncio
 import re
 import json
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, cast
 
 import aiohttp
 from tenacity import (
@@ -165,9 +165,11 @@ class Live:
         # the timestamp on the server at the moment in seconds
         return await self._api.get_timestamp()
 
-    async def get_live_stream_url(
-        self, qn: QualityNumber = 10000, format: StreamFormat = 'flv'
-    ) -> Optional[str]:
+    async def get_live_stream_urls(
+        self,
+        qn: QualityNumber = 10000,
+        format: StreamFormat = 'flv',
+    ) -> List[str]:
         try:
             data = await self._api.get_room_play_info(self._room_id, qn)
         except Exception:
@@ -188,12 +190,13 @@ class Live:
         accept_qn = cast(List[QualityNumber], codec['accept_qn'])
 
         if qn not in accept_qn:
-            return None
-
+            return []
         assert codec['current_qn'] == qn
-        url_info = codec['url_info'][0]
 
-        return url_info['host'] + codec['base_url'] + url_info['extra']
+        return [
+            i['host'] + codec['base_url'] + i['extra']
+            for i in codec['url_info']
+        ]
 
     def _check_room_play_info(self, data: ResponseData) -> None:
         if data['is_hidden']:

@@ -156,13 +156,22 @@ class DanmakuWriter:
             'uid': str(dm.uid),
             'user': dm.uname,
         }
-        elem = etree.Element('d', attrib=attrib)
+
+        try:
+            elem = etree.Element('d', attrib=attrib)
+        except ValueError:
+            # ValueError: All strings must be XML compatible: Unicode or ASCII,
+            # no NULL bytes or control characters
+            attrib['user'] = remove_control_characters(dm.uname)
+            elem = etree.Element('d', attrib=attrib)
+
         try:
             elem.text = dm.text
         except ValueError:
             # ValueError: All strings must be XML compatible: Unicode or ASCII,
             # no NULL bytes or control characters
             elem.text = remove_control_characters(dm.text)
+
         return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
 
     def _serialize_gift_send_record(self, record: GiftSendRecord) -> str:

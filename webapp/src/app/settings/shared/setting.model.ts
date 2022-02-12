@@ -10,6 +10,7 @@ export type HeaderOptions = Nullable<HeaderSettings>;
 export interface DanmakuSettings {
   danmuUname: boolean;
   recordGiftSend: boolean;
+  recordFreeGifts: boolean;
   recordGuardBuy: boolean;
   recordSuperChat: boolean;
   saveRawDanmaku: boolean;
@@ -164,8 +165,17 @@ export interface WebhookEventSettings {
   liveBegan: boolean;
   liveEnded: boolean;
   roomChange: boolean;
+  recordingStarted: boolean;
+  recordingFinished: boolean;
+  recordingCancelled: boolean;
+  videoFileCreated: boolean;
+  videoFileCompleted: boolean;
+  danmakuFileCreated: boolean;
+  danmakuFileCompleted: boolean;
+  rawDanmakuFileCreated: boolean;
+  rawDanmakuFileCompleted: boolean;
+  videoPostprocessingCompleted: boolean;
   spaceNoEnough: boolean;
-  fileCompleted: boolean;
   errorOccurred: boolean;
 }
 

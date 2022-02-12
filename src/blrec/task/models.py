@@ -47,6 +47,7 @@ class TaskParam:
     # DanmakuSettings
     danmu_uname: bool
     record_gift_send: bool
+    record_free_gifts: bool
     record_guard_buy: bool
     record_super_chat: bool
     save_raw_danmaku: bool

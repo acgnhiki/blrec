@@ -92,6 +92,7 @@ class SuperChatMsg:
     gift_name: str
     count: int
     price: int
+    rate: int
     time: int  # duration in seconds
     message: str
     uid: int
@@ -105,6 +106,7 @@ class SuperChatMsg:
             gift_name=data['gift']['gift_name'],
             count=int(data['gift']['num']),
             price=int(data['price']),
+            rate=int(data['rate']),
             time=int(data['time']),
             message=data['message'],
             uid=int(data['uid']),

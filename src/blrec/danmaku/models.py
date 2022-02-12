@@ -40,6 +40,9 @@ class GiftSendRecord:
     cointype: Literal['sliver', 'gold']
     price: int
 
+    def is_free_gift(self) -> bool:
+        return self.cointype != 'gold'
+
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
 class GuardBuyRecord:

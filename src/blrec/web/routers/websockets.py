@@ -1,12 +1,13 @@
 import logging
 import asyncio
+import json
 
 from fastapi import (
     APIRouter,
     WebSocket,
     WebSocketDisconnect,
 )
-from websockets import ConnectionClosed  # type: ignore
+from websockets.exceptions import ConnectionClosed
 
 from ...event import EventCenter
 from ...event.typing import Event
@@ -33,7 +34,8 @@ async def receive_events(websocket: WebSocket) -> None:
 
     async def send_event(event: Event) -> None:
         try:
-            await websocket.send_json(event.asdict())
+            text = json.dumps(event.asdict(), ensure_ascii=False)
+            await websocket.send_text(text)
         except (WebSocketDisconnect, ConnectionClosed) as e:
             logger.debug(f'Events websocket closed: {repr(e)}')
             subscription.dispose()

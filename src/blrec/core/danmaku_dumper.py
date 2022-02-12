@@ -4,17 +4,21 @@ import logging
 from contextlib import suppress
 from typing import Iterator, List, Optional
 
-from blrec.core.models import GiftSendMsg, GuardBuyMsg, SuperChatMsg
-
+from tenacity import (
+    AsyncRetrying,
+    stop_after_attempt,
+    retry_if_not_exception_type,
+)
 
 from .. import __version__, __prog__, __github__
 from .danmaku_receiver import DanmakuReceiver, DanmuMsg
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 from .statistics import StatisticsCalculator
 from ..bili.live import Live
-from ..exception import exception_callback
+from ..exception import exception_callback, submit_exception
 from ..event.event_emitter import EventListener, EventEmitter
 from ..path import danmaku_path
+from ..core.models import GiftSendMsg, GuardBuyMsg, SuperChatMsg
 from ..danmaku.models import (
     Metadata, Danmu, GiftSendRecord, GuardBuyRecord, SuperChatRecord
 )
@@ -50,6 +54,7 @@ class DanmakuDumper(
         *,
         danmu_uname: bool = False,
         record_gift_send: bool = False,
+        record_free_gifts: bool = False,
         record_guard_buy: bool = False,
         record_super_chat: bool = False,
     ) -> None:
@@ -61,6 +66,7 @@ class DanmakuDumper(
 
         self.danmu_uname = danmu_uname
         self.record_gift_send = record_gift_send
+        self.record_free_gifts = record_free_gifts
         self.record_guard_buy = record_guard_buy
         self.record_super_chat = record_super_chat
 
@@ -124,7 +130,7 @@ class DanmakuDumper(
         await self._cancel_dump_task()
 
     def _create_dump_task(self) -> None:
-        self._dump_task = asyncio.create_task(self._dump())
+        self._dump_task = asyncio.create_task(self._do_dump())
         self._dump_task.add_done_callback(exception_callback)
 
     async def _cancel_dump_task(self) -> None:
@@ -133,7 +139,7 @@ class DanmakuDumper(
             await self._dump_task
 
     @aio_task_with_room_id
-    async def _dump(self) -> None:
+    async def _do_dump(self) -> None:
         assert self._path is not None
         logger.debug('Started dumping danmaku')
         self._calculator.reset()
@@ -144,36 +150,54 @@ class DanmakuDumper(
                 await self._emit('danmaku_file_created', self._path)
                 await writer.write_metadata(self._make_metadata())
 
-                while True:
-                    msg = await self._receiver.get_message()
-                    if isinstance(msg, DanmuMsg):
-                        await writer.write_danmu(self._make_danmu(msg))
-                        self._calculator.submit(1)
-                    elif isinstance(msg, GiftSendMsg):
-                        if not self.record_gift_send:
-                            continue
-                        await writer.write_gift_send_record(
-                            self._make_gift_send_record(msg)
-                        )
-                    elif isinstance(msg, GuardBuyMsg):
-                        if not self.record_guard_buy:
-                            continue
-                        await writer.write_guard_buy_record(
-                            self._make_guard_buy_record(msg)
-                        )
-                    elif isinstance(msg, SuperChatMsg):
-                        if not self.record_super_chat:
-                            continue
-                        await writer.write_super_chat_record(
-                            self._make_super_chat_record(msg)
-                        )
-                    else:
-                        logger.warning('Unsupported message type:', repr(msg))
+                async for attempt in AsyncRetrying(
+                    retry=retry_if_not_exception_type((
+                        asyncio.CancelledError
+                    )),
+                    stop=stop_after_attempt(3),
+                ):
+                    with attempt:
+                        try:
+                            await self._dumping_loop(writer)
+                        except Exception as e:
+                            submit_exception(e)
+                            raise
         finally:
             logger.info(f"Danmaku file completed: '{self._path}'")
             await self._emit('danmaku_file_completed', self._path)
             logger.debug('Stopped dumping danmaku')
             self._calculator.freeze()
+
+    async def _dumping_loop(self, writer: DanmakuWriter) -> None:
+        while True:
+            msg = await self._receiver.get_message()
+            if isinstance(msg, DanmuMsg):
+                await writer.write_danmu(self._make_danmu(msg))
+                self._calculator.submit(1)
+            elif isinstance(msg, GiftSendMsg):
+                if not self.record_gift_send:
+                    continue
+                record = self._make_gift_send_record(msg)
+                if (
+                    not self.record_free_gifts and
+                    record.is_free_gift()
+                ):
+                    continue
+                await writer.write_gift_send_record(record)
+            elif isinstance(msg, GuardBuyMsg):
+                if not self.record_guard_buy:
+                    continue
+                await writer.write_guard_buy_record(
+                    self._make_guard_buy_record(msg)
+                )
+            elif isinstance(msg, SuperChatMsg):
+                if not self.record_super_chat:
+                    continue
+                await writer.write_super_chat_record(
+                    self._make_super_chat_record(msg)
+                )
+            else:
+                logger.warning('Unsupported message type:', repr(msg))
 
     def _make_metadata(self) -> Metadata:
         return Metadata(
@@ -235,7 +259,7 @@ class DanmakuDumper(
             ts=self._calc_stime(msg.timestamp * 1000),
             uid=msg.uid,
             user=msg.uname,
-            price=msg.price,
+            price=msg.price * msg.rate,
             time=msg.time,
             message=msg.message,
         )

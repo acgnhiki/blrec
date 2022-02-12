@@ -40,6 +40,7 @@ export class DanmakuSettingsComponent implements OnInit, OnChanges {
     this.settingsForm = formBuilder.group({
       danmuUname: [''],
       recordGiftSend: [''],
+      recordFreeGifts: [''],
       recordGuardBuy: [''],
       recordSuperChat: [''],
       saveRawDanmaku: [''],
@@ -52,6 +53,10 @@ export class DanmakuSettingsComponent implements OnInit, OnChanges {
 
   get recordGiftSendControl() {
     return this.settingsForm.get('recordGiftSend') as FormControl;
+  }
+
+  get recordFreeGiftsControl() {
+    return this.settingsForm.get('recordFreeGifts') as FormControl;
   }
 
   get recordGuardBuyControl() {

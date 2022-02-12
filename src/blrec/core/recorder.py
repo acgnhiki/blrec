@@ -11,7 +11,7 @@ from tenacity import retry, wait_fixed, stop_after_attempt
 from .danmaku_receiver import DanmakuReceiver
 from .danmaku_dumper import DanmakuDumper, DanmakuDumperEventListener
 from .raw_danmaku_receiver import RawDanmakuReceiver
-from .raw_danmaku_dumper import RawDanmakuDumper
+from .raw_danmaku_dumper import RawDanmakuDumper, RawDanmakuDumperEventListener
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 from ..event.event_emitter import EventListener, EventEmitter
 from ..bili.live import Live
@@ -41,17 +41,33 @@ class RecorderEventListener(EventListener):
         ...
 
     async def on_video_file_created(
-        self, path: str, record_start_time: int
+        self, recorder: Recorder, path: str
     ) -> None:
         ...
 
-    async def on_video_file_completed(self, path: str) -> None:
+    async def on_video_file_completed(
+        self, recorder: Recorder, path: str
+    ) -> None:
         ...
 
-    async def on_danmaku_file_created(self, path: str) -> None:
+    async def on_danmaku_file_created(
+        self, recorder: Recorder, path: str
+    ) -> None:
         ...
 
-    async def on_danmaku_file_completed(self, path: str) -> None:
+    async def on_danmaku_file_completed(
+        self, recorder: Recorder, path: str
+    ) -> None:
+        ...
+
+    async def on_raw_danmaku_file_created(
+        self, recorder: Recorder, path: str
+    ) -> None:
+        ...
+
+    async def on_raw_danmaku_file_completed(
+        self, recorder: Recorder, path: str
+    ) -> None:
         ...
 
 
@@ -60,6 +76,7 @@ class Recorder(
     LiveEventListener,
     AsyncStoppableMixin,
     DanmakuDumperEventListener,
+    RawDanmakuDumperEventListener,
     StreamRecorderEventListener,
 ):
     def __init__(
@@ -75,6 +92,7 @@ class Recorder(
         disconnection_timeout: Optional[int] = None,
         danmu_uname: bool = False,
         record_gift_send: bool = False,
+        record_free_gifts: bool = False,
         record_guard_buy: bool = False,
         record_super_chat: bool = False,
         save_cover: bool = False,
@@ -110,6 +128,7 @@ class Recorder(
             self._danmaku_receiver,
             danmu_uname=danmu_uname,
             record_gift_send=record_gift_send,
+            record_free_gifts=record_free_gifts,
             record_guard_buy=record_guard_buy,
             record_super_chat=record_super_chat,
         )
@@ -118,6 +137,10 @@ class Recorder(
             self._stream_recorder,
             self._raw_danmaku_receiver,
         )
+
+    @property
+    def live(self) -> Live:
+        return self._live
 
     @property
     def recording(self) -> bool:
@@ -174,6 +197,14 @@ class Recorder(
     @record_gift_send.setter
     def record_gift_send(self, value: bool) -> None:
         self._danmaku_dumper.record_gift_send = value
+
+    @property
+    def record_free_gifts(self) -> bool:
+        return self._danmaku_dumper.record_free_gifts
+
+    @record_free_gifts.setter
+    def record_free_gifts(self, value: bool) -> None:
+        self._danmaku_dumper.record_free_gifts = value
 
     @property
     def record_guard_buy(self) -> bool:
@@ -246,6 +277,7 @@ class Recorder(
     async def _do_start(self) -> None:
         self._live_monitor.add_listener(self)
         self._danmaku_dumper.add_listener(self)
+        self._raw_danmaku_dumper.add_listener(self)
         self._stream_recorder.add_listener(self)
         logger.debug('Started recorder')
 
@@ -259,6 +291,7 @@ class Recorder(
         await self._stop_recording()
         self._live_monitor.remove_listener(self)
         self._danmaku_dumper.remove_listener(self)
+        self._raw_danmaku_dumper.remove_listener(self)
         self._stream_recorder.remove_listener(self)
         logger.debug('Stopped recorder')
 
@@ -306,18 +339,24 @@ class Recorder(
     async def on_video_file_created(
         self, path: str, record_start_time: int
     ) -> None:
-        await self._emit('video_file_created', path, record_start_time)
+        await self._emit('video_file_created', self, path)
 
     async def on_video_file_completed(self, path: str) -> None:
-        await self._emit('video_file_completed', path)
+        await self._emit('video_file_completed', self, path)
         if self.save_cover:
             await self._save_cover_image(path)
 
     async def on_danmaku_file_created(self, path: str) -> None:
-        await self._emit('danmaku_file_created', path)
+        await self._emit('danmaku_file_created', self, path)
 
     async def on_danmaku_file_completed(self, path: str) -> None:
-        await self._emit('danmaku_file_completed', path)
+        await self._emit('danmaku_file_completed', self, path)
+
+    async def on_raw_danmaku_file_created(self, path: str) -> None:
+        await self._emit('raw_danmaku_file_created', self, path)
+
+    async def on_raw_danmaku_file_completed(self, path: str) -> None:
+        await self._emit('raw_danmaku_file_completed', self, path)
 
     async def on_stream_recording_stopped(self) -> None:
         logger.debug('Stream recording stopped')

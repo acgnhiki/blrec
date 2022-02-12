@@ -33,6 +33,8 @@ export class DiskSpaceSettingsComponent implements OnInit, OnChanges {
   readonly syncFailedWarningTip = SYNC_FAILED_WARNING_TIP;
 
   readonly intervalOptions = [
+    { label: '10 秒', value: 10 },
+    { label: '30 秒', value: 30 },
     { label: '1 分钟', value: 60 },
     { label: '3 分钟', value: 180 },
     { label: '5 分钟', value: 300 },
@@ -44,6 +46,7 @@ export class DiskSpaceSettingsComponent implements OnInit, OnChanges {
     { label: '3 GB', value: 1024 ** 3 * 3 },
     { label: '5 GB', value: 1024 ** 3 * 5 },
     { label: '10 GB', value: 1024 ** 3 * 10 },
+    { label: '20 GB', value: 1024 ** 3 * 20 },
   ];
 
   constructor(

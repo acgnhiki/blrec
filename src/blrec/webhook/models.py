@@ -9,8 +9,17 @@ from ..event import (
     LiveBeganEvent,
     LiveEndedEvent,
     RoomChangeEvent,
+    RecordingStartedEvent,
+    RecordingFinishedEvent,
+    RecordingCancelledEvent,
+    VideoFileCreatedEvent,
+    VideoFileCompletedEvent,
+    DanmakuFileCreatedEvent,
+    DanmakuFileCompletedEvent,
+    RawDanmakuFileCreatedEvent,
+    RawDanmakuFileCompletedEvent,
     SpaceNoEnoughEvent,
-    FileCompletedEvent,
+    VideoPostprocessingCompletedEvent,
 )
 from ..event.typing import Event
 
@@ -37,8 +46,26 @@ class WebHook:
             types.add(LiveEndedEvent)
         if settings.room_change:
             types.add(RoomChangeEvent)
-        if settings.file_completed:
-            types.add(FileCompletedEvent)
+        if settings.recording_started:
+            types.add(RecordingStartedEvent)
+        if settings.recording_finished:
+            types.add(RecordingFinishedEvent)
+        if settings.recording_cancelled:
+            types.add(RecordingCancelledEvent)
+        if settings.video_file_created:
+            types.add(VideoFileCreatedEvent)
+        if settings.video_file_completed:
+            types.add(VideoFileCompletedEvent)
+        if settings.danmaku_file_created:
+            types.add(DanmakuFileCreatedEvent)
+        if settings.danmaku_file_completed:
+            types.add(DanmakuFileCompletedEvent)
+        if settings.raw_danmaku_file_created:
+            types.add(RawDanmakuFileCreatedEvent)
+        if settings.raw_danmaku_file_completed:
+            types.add(RawDanmakuFileCompletedEvent)
+        if settings.video_postprocessing_completed:
+            types.add(VideoPostprocessingCompletedEvent)
         if settings.space_no_enough:
             types.add(SpaceNoEnoughEvent)
 

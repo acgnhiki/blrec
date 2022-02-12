@@ -22,7 +22,7 @@ from ..postprocess import Postprocessor, PostprocessorStatus, DeleteStrategy
 from ..postprocess.remuxer import RemuxProgress
 from ..flv.metadata_injector import InjectProgress
 from ..event.event_submitters import (
-    LiveEventSubmitter, PostprocessorEventSubmitter
+    LiveEventSubmitter, RecorderEventSubmitter, PostprocessorEventSubmitter
 )
 from ..logging.room_id import aio_task_with_room_id
 
@@ -44,6 +44,7 @@ class RecordTask:
         user_agent: str = '',
         danmu_uname: bool = False,
         record_gift_send: bool = False,
+        record_free_gifts: bool = False,
         record_guard_buy: bool = False,
         record_super_chat: bool = False,
         save_cover: bool = False,
@@ -68,6 +69,7 @@ class RecordTask:
         self._user_agent = user_agent
         self._danmu_uname = danmu_uname
         self._record_gift_send = record_gift_send
+        self._record_free_gifts = record_free_gifts
         self._record_guard_buy = record_guard_buy
         self._record_super_chat = record_super_chat
         self._save_cover = save_cover
@@ -238,6 +240,14 @@ class RecordTask:
     @record_gift_send.setter
     def record_gift_send(self, value: bool) -> None:
         self._recorder.record_gift_send = value
+
+    @property
+    def record_free_gifts(self) -> bool:
+        return self._recorder.record_free_gifts
+
+    @record_free_gifts.setter
+    def record_free_gifts(self, value: bool) -> None:
+        self._recorder.record_free_gifts = value
 
     @property
     def record_guard_buy(self) -> bool:
@@ -442,6 +452,7 @@ class RecordTask:
         self._setup_live_monitor()
         self._setup_live_event_submitter()
         self._setup_recorder()
+        self._setup_recorder_event_submitter()
         self._setup_postprocessor()
         self._setup_postprocessor_event_submitter()
 
@@ -468,6 +479,7 @@ class RecordTask:
             disconnection_timeout=self._disconnection_timeout,
             danmu_uname=self._danmu_uname,
             record_gift_send=self._record_gift_send,
+            record_free_gifts=self._record_free_gifts,
             record_guard_buy=self._record_guard_buy,
             record_super_chat=self._record_super_chat,
             save_cover=self._save_cover,
@@ -476,9 +488,8 @@ class RecordTask:
             duration_limit=self._duration_limit,
         )
 
-    def _setup_postprocessor_event_submitter(self) -> None:
-        self._postprocessor_event_submitter = \
-            PostprocessorEventSubmitter(self._postprocessor)
+    def _setup_recorder_event_submitter(self) -> None:
+        self._recorder_event_submitter = RecorderEventSubmitter(self._recorder)
 
     def _setup_postprocessor(self) -> None:
         self._postprocessor = Postprocessor(
@@ -489,8 +500,14 @@ class RecordTask:
             delete_source=self._delete_source,
         )
 
+    def _setup_postprocessor_event_submitter(self) -> None:
+        self._postprocessor_event_submitter = \
+            PostprocessorEventSubmitter(self._postprocessor)
+
     async def _destroy(self) -> None:
         self._destroy_postprocessor_event_submitter()
+        self._destroy_postprocessor()
+        self._destroy_recorder_event_submitter()
         self._destroy_recorder()
         self._destroy_live_event_submitter()
         self._destroy_live_monitor()
@@ -508,8 +525,11 @@ class RecordTask:
     def _destroy_recorder(self) -> None:
         del self._recorder
 
-    def _destroy_postprocessor_event_submitter(self) -> None:
-        del self._postprocessor_event_submitter
+    def _destroy_recorder_event_submitter(self) -> None:
+        del self._recorder_event_submitter
 
     def _destroy_postprocessor(self) -> None:
         del self._postprocessor
+
+    def _destroy_postprocessor_event_submitter(self) -> None:
+        del self._postprocessor_event_submitter

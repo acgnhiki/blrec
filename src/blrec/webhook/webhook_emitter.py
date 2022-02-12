@@ -11,7 +11,7 @@ from tenacity import (
 
 from .models import WebHook
 from ..utils.mixins import SwitchableMixin
-from ..exception import ExceptionCenter, format_exception
+from ..exception import ExceptionCenter
 from ..event import EventCenter, Error, ErrorData
 from ..event.typing import Event
 from .. import __prog__, __version__
@@ -57,11 +57,7 @@ class WebHookEmitter(SwitchableMixin):
         self._send_request(url, event.asdict())
 
     def _send_exception(self, url: str, exc: BaseException) -> None:
-        data = ErrorData(
-            name=type(exc).__name__,
-            detail=format_exception(exc),
-        )
-        payload = Error.from_data(data).asdict()
+        payload = Error.from_data(ErrorData.from_exc(exc)).asdict()
         self._send_request(url, payload)
 
     def _send_request(self, url: str, payload: Dict[str, Any]) -> None:

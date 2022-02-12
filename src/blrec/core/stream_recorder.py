@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import time
 import errno
 import asyncio
@@ -40,7 +41,7 @@ from ..bili.typing import QualityNumber
 from ..flv.stream_processor import StreamProcessor, BaseOutputFileManager
 from ..utils.mixins import AsyncCooperationMix, AsyncStoppableMixin
 from ..path import escape_path
-from ..flv.exceptions import FlvStreamCorruptedError
+from ..flv.exceptions import FlvDataError, FlvStreamCorruptedError
 from ..bili.exceptions import (
     LiveRoomHidden, LiveRoomLocked, LiveRoomEncrypted, NoStreamUrlAvailable
 )
@@ -224,6 +225,7 @@ class StreamRecorder(
 
     def _run(self) -> None:
         self._calculator.reset()
+        self._use_candidate_stream: bool = False
         try:
             with tqdm(
                 desc='Recording',
@@ -297,6 +299,7 @@ class StreamRecorder(
                     self._stopped = True
                 except Exception as e:
                     logger.exception(e)
+                    self._handle_exception(e)
                     raise
 
     def _streaming_loop(self) -> None:
@@ -333,6 +336,10 @@ class StreamRecorder(
                     self._stopped = True
                 else:
                     logger.debug('Connection recovered')
+            except FlvDataError as e:
+                logger.warning(repr(e))
+                self._use_candidate_stream = not self._use_candidate_stream
+                url = self._get_live_stream_url()
             except FlvStreamCorruptedError as e:
                 logger.warning(repr(e))
                 url = self._get_live_stream_url()
@@ -368,10 +375,14 @@ class StreamRecorder(
     )
     def _get_live_stream_url(self) -> str:
         qn = self._real_quality_number or self.quality_number
-        url = self._run_coroutine(self._live.get_live_stream_url(qn, 'flv'))
+        logger.debug(
+            'Getting the live stream url... '
+            f'qn: {qn}, use_candidate_stream: {self._use_candidate_stream}'
+        )
+        urls = self._run_coroutine(self._live.get_live_stream_urls(qn, 'flv'))
 
         if self._real_quality_number is None:
-            if url is None:
+            if not urls:
                 logger.info(
                     f'The specified video quality ({qn}) is not available, '
                     'using the original video quality (10000) instead.'
@@ -382,7 +393,17 @@ class StreamRecorder(
                 logger.info(f'The specified video quality ({qn}) is available')
                 self._real_quality_number = self.quality_number
 
-        assert url is not None
+        if not self._use_candidate_stream:
+            url = urls[0]
+        else:
+            try:
+                url = urls[1]
+            except IndexError:
+                logger.debug(
+                    'no candidate stream url available, '
+                    'using the primary stream url instead.'
+                )
+                url = urls[0]
         logger.debug(f"Got live stream url: '{url}'")
 
         return url
@@ -545,9 +566,17 @@ class OutputFileManager(BaseOutputFileManager, AsyncCooperationMix):
             second=str(date_time.second).rjust(2, '0'),
         )
 
-        full_pathname = os.path.abspath(
+        pathname = os.path.abspath(
             os.path.expanduser(os.path.join(self.out_dir, relpath) + '.flv')
         )
-        os.makedirs(os.path.dirname(full_pathname), exist_ok=True)
+        os.makedirs(os.path.dirname(pathname), exist_ok=True)
+        while os.path.exists(pathname):
+            root, ext = os.path.splitext(pathname)
+            m = re.search(r'_\((\d+)\)$', root)
+            if m is None:
+                root += '_(1)'
+            else:
+                root = re.sub(r'\(\d+\)$', f'({int(m.group(1)) + 1})', root)
+            pathname = root + ext
 
-        return full_pathname
+        return pathname

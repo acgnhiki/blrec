@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import logging
 from pathlib import PurePath
@@ -35,7 +36,9 @@ logger = logging.getLogger(__name__)
 
 
 class PostprocessorEventListener(EventListener):
-    async def on_file_completed(self, room_id: int, path: str) -> None:
+    async def on_video_postprocessing_completed(
+        self, postprocessor: Postprocessor, path: str
+    ) -> None:
         ...
 
 
@@ -69,6 +72,10 @@ class Postprocessor(
         self._completed_files: List[str] = []
 
     @property
+    def recorder(self) -> Recorder:
+        return self._recorder
+
+    @property
     def status(self) -> PostprocessorStatus:
         return self._status
 
@@ -87,10 +94,14 @@ class Postprocessor(
         # clear completed files of previous recording
         self._completed_files.clear()
 
-    async def on_video_file_completed(self, path: str) -> None:
+    async def on_video_file_completed(
+        self, recorder: Recorder, path: str
+    ) -> None:
         self._queue.put_nowait(path)
 
-    async def on_danmaku_file_completed(self, path: str) -> None:
+    async def on_danmaku_file_completed(
+        self, recorder: Recorder, path: str
+    ) -> None:
         self._completed_files.append(path)
 
     async def _do_start(self) -> None:
@@ -143,7 +154,7 @@ class Postprocessor(
 
                 self._completed_files.append(result_path)
                 await self._emit(
-                    'file_completed', self._live.room_id, result_path
+                    'video_postprocessing_completed', self, result_path,
                 )
             except Exception as exc:
                 submit_exception(exc)

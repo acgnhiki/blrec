@@ -26,5 +26,4 @@ class ExceptionHandler(SwitchableMixin):
 
     def _log_exception(self, exc: BaseException) -> None:
         exc_info = (type(exc), exc, exc.__traceback__)
-        msg = 'Unhandled Exception'
-        logger.critical(msg, exc_info=exc_info)
+        logger.critical(type(exc).__name__, exc_info=exc_info)

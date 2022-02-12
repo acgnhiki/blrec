@@ -68,11 +68,11 @@ class WebApi:
         params = {
             'room_id': room_id,
             'protocol': '0,1',
-            'format': '0,2',
+            'format': '0,1,2',
             'codec': '0,1',
             'qn': qn,
             'platform': 'web',
-            'ptype': 16,
+            'ptype': 8,
         }
         r = await self._get(self.GET_ROOM_PLAY_INFO_URL, params=params)
         return r['data']

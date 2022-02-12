@@ -3,8 +3,8 @@
     <nz-form-label
       class="setting-label"
       nzNoColon
-      nzTooltipTitle="记录送礼信息到弹幕文件里"
-      >记录送礼</nz-form-label
+      nzTooltipTitle="记录礼物信息到弹幕文件里"
+      >记录礼物</nz-form-label
     >
     <nz-form-control
       class="setting-control switch"
@@ -14,6 +14,23 @@
       "
     >
       <nz-switch formControlName="recordGiftSend"></nz-switch>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item" appSwitchActionable>
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="记录免费礼物信息到弹幕文件里"
+      >记录免费礼物</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.recordFreeGifts ? recordFreeGiftsControl : 'warning'
+      "
+    >
+      <nz-switch formControlName="recordFreeGifts"></nz-switch>
     </nz-form-control>
   </nz-form-item>
   <nz-form-item class="setting-item" appSwitchActionable>

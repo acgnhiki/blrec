@@ -18,13 +18,10 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field, BaseSettings, validator, PrivateAttr, DirectoryPath
 from pydantic.networks import HttpUrl, EmailStr
 
-import typer
-
 from ..bili.typing import QualityNumber
 from ..postprocess import DeleteStrategy
 from ..logging.typing import LOG_LEVEL
 from ..utils.string import camel_case
-from ..path.helpers import file_exists, create_file
 
 
 logger = logging.getLogger(__name__)
@@ -67,22 +64,8 @@ __all__ = (
 DEFAULT_SETTINGS_PATH: Final[str] = '~/.blrec/settings.toml'
 
 
-def settings_file_factory() -> str:
-    path = os.path.abspath(os.path.expanduser(DEFAULT_SETTINGS_PATH))
-    if not file_exists(path):
-        create_file(path)
-        typer.secho(
-            f"Created setting file: '{path}'",
-            fg=typer.colors.BRIGHT_MAGENTA,
-            bold=True,
-        )
-    return path
-
-
 class EnvSettings(BaseSettings):
-    settings_file: Annotated[
-        str, Field(env='config', default_factory=settings_file_factory)
-    ]
+    settings_file: Annotated[str, Field(env='config')] = DEFAULT_SETTINGS_PATH
     out_dir: Optional[str] = None
     api_key: Annotated[
         Optional[str],
@@ -98,7 +81,6 @@ _V = TypeVar('_V')
 
 class BaseModel(PydanticBaseModel):
     class Config:
-        extra = 'forbid'
         validate_assignment = True
         anystr_strip_whitespace = True
         allow_population_by_field_name = True
@@ -133,6 +115,7 @@ class HeaderSettings(HeaderOptions):
 class DanmakuOptions(BaseModel):
     danmu_uname: Optional[bool]
     record_gift_send: Optional[bool]
+    record_free_gifts: Optional[bool]
     record_guard_buy: Optional[bool]
     record_super_chat: Optional[bool]
     save_raw_danmaku: Optional[bool]
@@ -141,6 +124,7 @@ class DanmakuOptions(BaseModel):
 class DanmakuSettings(DanmakuOptions):
     danmu_uname: bool = False
     record_gift_send: bool = True
+    record_free_gifts: bool = True
     record_guard_buy: bool = True
     record_super_chat: bool = True
     save_raw_danmaku: bool = False
@@ -302,13 +286,13 @@ class SpaceSettings(BaseModel):
 
     @validator('check_interval')
     def _validate_interval(cls, value: int) -> int:
-        allowed_values = frozenset(60 * i for i in (1, 3, 5, 10))
+        allowed_values = frozenset((10, 30, *(60 * i for i in (1, 3, 5, 10))))
         cls._validate_with_collection(value, allowed_values)
         return value
 
     @validator('space_threshold')
     def _validate_threshold(cls, value: int) -> int:
-        allowed_values = frozenset(1024 ** 3 * i for i in (1, 3, 5, 10))
+        allowed_values = frozenset(1024 ** 3 * i for i in (1, 3, 5, 10, 20))
         cls._validate_with_collection(value, allowed_values)
         return value
 
@@ -375,8 +359,17 @@ class WebHookEventSettings(BaseModel):
     live_began: bool = True
     live_ended: bool = True
     room_change: bool = True
+    recording_started: bool = True
+    recording_finished: bool = True
+    recording_cancelled: bool = True
+    video_file_created: bool = True
+    video_file_completed: bool = True
+    danmaku_file_created: bool = True
+    danmaku_file_completed: bool = True
+    raw_danmaku_file_created: bool = True
+    raw_danmaku_file_completed: bool = True
+    video_postprocessing_completed: bool = True
     space_no_enough: bool = True
-    file_completed: bool = True
     error_occurred: bool = True
 
 
