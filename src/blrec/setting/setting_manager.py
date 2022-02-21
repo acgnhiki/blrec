@@ -249,18 +249,13 @@ class SettingsManager:
             self.apply_task_output_settings(settings.room_id, settings.output)
 
         out_dir = self._settings.output.out_dir
+        self._app._out_dir = out_dir
         self._app._space_monitor.path = out_dir
         self._app._space_reclaimer.path = out_dir
 
-        prev_out_dir = self._app._out_dir
-        self._app._out_dir = out_dir
-
-        if not os.path.samefile(out_dir, prev_out_dir):
-            self.apply_logging_settings()
-
     def apply_logging_settings(self) -> None:
         configure_logger(
-            self._app._out_dir,
+            log_dir=self._settings.logging.log_dir,
             console_log_level=self._settings.logging.console_log_level,
             max_bytes=self._settings.logging.max_bytes,
             backup_count=self._settings.logging.backup_count,

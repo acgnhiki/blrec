@@ -1,5 +1,5 @@
 from .models import (
-    DEFAULT_SETTINGS_PATH,
+    DEFAULT_SETTINGS_FILE,
 
     EnvSettings,
     Settings,
@@ -36,7 +36,7 @@ from .setting_manager import SettingsManager
 
 
 __all__ = (
-    'DEFAULT_SETTINGS_PATH',
+    'DEFAULT_SETTINGS_FILE',
 
     'EnvSettings',
     'Settings',

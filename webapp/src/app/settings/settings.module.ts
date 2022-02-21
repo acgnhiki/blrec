@@ -55,6 +55,7 @@ import { WebhookManagerComponent } from './webhook-settings/webhook-manager/webh
 import { WebhookEditDialogComponent } from './webhook-settings/webhook-edit-dialog/webhook-edit-dialog.component';
 import { WebhookListComponent } from './webhook-settings/webhook-list/webhook-list.component';
 import { OutdirEditDialogComponent } from './output-settings/outdir-edit-dialog/outdir-edit-dialog.component';
+import { LogdirEditDialogComponent } from './logging-settings/logdir-edit-dialog/logdir-edit-dialog.component';
 import { PathTemplateEditDialogComponent } from './output-settings/path-template-edit-dialog/path-template-edit-dialog.component';
 
 @NgModule({
@@ -84,6 +85,7 @@ import { PathTemplateEditDialogComponent } from './output-settings/path-template
     WebhookEditDialogComponent,
     WebhookListComponent,
     OutdirEditDialogComponent,
+    LogdirEditDialogComponent,
     PathTemplateEditDialogComponent,
   ],
   imports: [

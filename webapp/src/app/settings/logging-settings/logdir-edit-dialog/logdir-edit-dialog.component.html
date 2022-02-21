@@ -1,5 +1,5 @@
 <nz-modal
-  nzTitle="修改文件存放目录"
+  nzTitle="修改日志文件存放目录"
   nzCentered
   [(nzVisible)]="visible"
   [nzOkDisabled]="control.invalid || control.value.trim() === value"
@@ -11,10 +11,10 @@
       <nz-form-item>
         <nz-form-control
           nzHasFeedback
-          nzValidatingTip="正在验验..."
+          nzValidatingTip="正在验证..."
           [nzErrorTip]="errorTip"
         >
-          <input type="text" required nz-input formControlName="outDir" />
+          <input type="text" required nz-input formControlName="logDir" />
           <ng-template #errorTip let-control>
             <ng-container *ngIf="control.hasError('required')">
               请输入保存位置

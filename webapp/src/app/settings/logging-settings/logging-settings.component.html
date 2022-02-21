@@ -1,4 +1,23 @@
 <form nz-form [formGroup]="settingsForm">
+  <nz-form-item
+    class="setting-item actionable"
+    (click)="logDirEditDialog.open()"
+  >
+    <nz-form-label class="setting-label">日志文件存放目录</nz-form-label>
+    <nz-form-control
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.logDir ? logDirControl : 'warning'"
+    >
+      <nz-form-text class="setting-value"
+        >{{ logDirControl.value }}
+      </nz-form-text>
+      <app-logdir-edit-dialog
+        #logDirEditDialog
+        [value]="logDirControl.value"
+        (confirm)="logDirControl.setValue($event)"
+      ></app-logdir-edit-dialog>
+    </nz-form-control>
+  </nz-form-item>
   <nz-form-item class="setting-item" appSwitchActionable>
     <nz-form-label class="setting-label" nzNoColon
       >终端日志输出级别</nz-form-label

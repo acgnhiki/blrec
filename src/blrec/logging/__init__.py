@@ -1,4 +1,4 @@
-from .configure import configure_logger, TqdmOutputStream, ConsoleHandler
+from .configure_logging import configure_logger, TqdmOutputStream, ConsoleHandler
 
 
 __all__ = (

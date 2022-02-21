@@ -75,33 +75,51 @@
 
 ## Docker
 
-- 默认参数
+### 环境变量
 
-    `docker run -v ~/blrec:/rec -dp 2233:2233 acgnhiki/blrec`
+- 默认设置文件位置: `ENV DEFAULT_SETTINGS_FILE=/cfg/settings.toml`
+- 默认日志存放目录: `ENV DEFAULT_LOG_DIR=/log`
+- 默认录播存放目录: `ENV DEFAULT_OUT_DIR=/rec`
 
-- 指定参数
+### 默认参数运行
 
-    ```bash
-    docker run -v ~/blrec:/rec -dp 2233:2233 acgnhiki/blrec \
-        -c ~/blrec/settings.toml \
-        --key-file path/to/key-file \
-        --cert-file path/to/cert-file \
-        --api-key bili2233
-    ```
+`sudo docker run -v /etc/blrec:/cfg -v /var/log/blrec:/log -v ~/blrec:/rec -dp 2233:2233 acgnhiki/blrec`
+
+### 命令行参数用法
+
+```bash
+sudo docker run \
+    -v /etc/blrec:/cfg -v /var/log/blrec:/log -v ~/blrec:/rec \
+    -dp 2233:2233 acgnhiki/blrec \
+    -c /cfg/another_settings.toml \
+    --key-file path/to/key-file \
+    --cert-file path/to/cert-file \
+    --api-key bili2233
+```
 
 ## 使用方法
 
-### 使用默认设置文件和保存位置
+### 命令行参数用法
+
+`blrec --help`
+
+### 默认参数运行
 
 在命令行终端里执行 `blrec` ，然后浏览器访问 `http://localhost:2233`。
 
-设置文件为 `toml` 文件，默认位置在 `~/.blrec/settings.toml`。默认录播文件保存位置为当前工作目录 `.`。
+默认设置文件位置：`~/.blrec/settings.toml`
 
-### 指定设置文件和保存位置
+默认日志文件目录： `~/.blrec/logs`
 
-`blrec -c path/to/settings.toml -o dirpath/to/save/files`
+默认录播文件目录: `.`
 
-如果指定的设置文件不存在会自动创建。通过命令行参数指定保存位置会覆盖掉设置文件的设置。
+### 指定设置文件和录播与日志保存位置
+
+`blrec -c path/to/settings.toml -o path/to/records --log-dir path/to/logs`
+
+如果指定的设置文件不存在会自动创建
+
+**命令行参数会覆盖掉设置文件的对应的设置**
 
 ### 绑定主机和端口
 
@@ -134,7 +152,8 @@
 作为 ASGI 应用运行，参数通过环境变量指定。
 
 - `config` 指定设置文件
-- `out_dir` 指定保存位置
+- `out_dir` 指定录播存放位置
+- `log_dir` 指定日志存放位置
 - `api_key` 指定 `api key`
 
 ### bash

@@ -58,10 +58,15 @@ export class LoggingSettingsComponent implements OnInit, OnChanges {
     private settingsSyncService: SettingsSyncService
   ) {
     this.settingsForm = formBuilder.group({
+      logDir: [''],
       consoleLogLevel: [''],
       maxBytes: [''],
       backupCount: [''],
     });
+  }
+
+  get logDirControl() {
+    return this.settingsForm.get('logDir') as FormControl;
   }
 
   get consoleLogLevelControl() {

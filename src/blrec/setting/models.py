@@ -15,7 +15,7 @@ from typing import (
 
 import toml
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import Field, BaseSettings, validator, PrivateAttr, DirectoryPath
+from pydantic import Field, BaseSettings, validator, PrivateAttr
 from pydantic.networks import HttpUrl, EmailStr
 
 from ..bili.typing import QualityNumber
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 __all__ = (
-    'DEFAULT_SETTINGS_PATH',
+    'DEFAULT_SETTINGS_FILE',
 
     'EnvSettings',
     'Settings',
@@ -61,12 +61,19 @@ __all__ = (
 )
 
 
-DEFAULT_SETTINGS_PATH: Final[str] = '~/.blrec/settings.toml'
+DEFAULT_OUT_DIR: Final[str] = os.environ.get('DEFAULT_OUT_DIR', '.')
+DEFAULT_LOG_DIR: Final[str] = os.environ.get(
+    'DEFAULT_LOG_DIR', '~/.blrec/logs/'
+)
+DEFAULT_SETTINGS_FILE: Final[str] = os.environ.get(
+    'DEFAULT_SETTINGS_FILE', '~/.blrec/settings.toml'
+)
 
 
 class EnvSettings(BaseSettings):
-    settings_file: Annotated[str, Field(env='config')] = DEFAULT_SETTINGS_PATH
+    settings_file: Annotated[str, Field(env='config')] = DEFAULT_SETTINGS_FILE
     out_dir: Optional[str] = None
+    log_dir: Optional[str] = None
     api_key: Annotated[
         Optional[str],
         Field(min_length=8, max_length=80, regex=r'[a-zA-Z\d\-]{8,80}'),
@@ -232,8 +239,14 @@ class OutputOptions(BaseModel):
         return value
 
 
+def out_dir_factory() -> str:
+    path = os.path.expanduser(DEFAULT_OUT_DIR)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
 class OutputSettings(OutputOptions):
-    out_dir: Annotated[str, DirectoryPath] = '.'
+    out_dir: Annotated[str, Field(default_factory=out_dir_factory)]
     path_template: str = (
         '{roomid} - {uname}/'
         'blive_{roomid}_{year}-{month}-{day}-{hour}{minute}{second}'
@@ -271,12 +284,25 @@ class TaskSettings(TaskOptions):
     enable_recorder: bool = True
 
 
+def log_dir_factory() -> str:
+    path = os.path.expanduser(DEFAULT_LOG_DIR)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
 class LoggingSettings(BaseModel):
+    log_dir: Annotated[str, Field(default_factory=log_dir_factory)]
     console_log_level: LOG_LEVEL = 'INFO'
     max_bytes: Annotated[
         int, Field(ge=1024 ** 2, le=1024 ** 2 * 10, multiple_of=1024 ** 2)
     ] = 1024 ** 2 * 10  # allowed 1 ~ 10 MB
     backup_count: Annotated[int, Field(ge=1, le=30)] = 30
+
+    @validator('log_dir')
+    def _validate_dir(cls, path: str) -> str:
+        if not os.path.isdir(os.path.expanduser(path)):
+            raise ValueError(f"'{path}' not a directory")
+        return path
 
 
 class SpaceSettings(BaseModel):
@@ -408,6 +434,8 @@ class Settings(BaseModel):
     def update_from_env_settings(self, env_settings: EnvSettings) -> None:
         if (out_dir := env_settings.out_dir) is not None:
             self.output.out_dir = out_dir
+        if (log_dir := env_settings.log_dir) is not None:
+            self.logging.log_dir = log_dir
 
     def dump(self) -> None:
         assert self._path

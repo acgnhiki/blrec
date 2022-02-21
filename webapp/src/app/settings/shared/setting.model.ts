@@ -89,6 +89,7 @@ export type LogLevel =
   | 'NOTSET';
 
 export interface LoggingSettings {
+  logDir: string;
   consoleLogLevel: LogLevel;
   maxBytes: number;
   backupCount: number;

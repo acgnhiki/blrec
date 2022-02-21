@@ -9,7 +9,6 @@ import typer
 
 from .. import __prog__, __version__
 from ..logging import TqdmOutputStream
-from ..setting import DEFAULT_SETTINGS_PATH
 
 
 logger = logging.getLogger(__name__)
@@ -33,16 +32,21 @@ def cli_main(
         help=f"show {__prog__}'s version and exit",
     ),
     config: str = typer.Option(
-        '~/.blrec/settings.toml',
+        None,
         '--config',
         '-c',
-        help='path of setting file',
+        help='path of settings.toml file',
     ),
     out_dir: Optional[str] = typer.Option(
         None,
         '--out-dir',
         '-o',
-        help='path of directory to save files (overwrite setting)'
+        help='path of directory to store record files (overwrite setting)'
+    ),
+    log_dir: Optional[str] = typer.Option(
+        None,
+        '--log-dir',
+        help='path of directory to store log files (overwrite setting)'
     ),
     host: str = typer.Option('localhost', help='webapp host bind'),
     port: int = typer.Option(2233, help='webapp port bind'),
@@ -52,12 +56,14 @@ def cli_main(
     api_key: Optional[str] = typer.Option(None, help='web api key'),
 ) -> None:
     """Bilibili live streaming recorder"""
-    if config != DEFAULT_SETTINGS_PATH:
+    if config is not None:
         os.environ['config'] = config
     if api_key is not None:
         os.environ['api_key'] = api_key
     if out_dir is not None:
         os.environ['out_dir'] = out_dir
+    if log_dir is not None:
+        os.environ['log_dir'] = log_dir
 
     if open:
         typer.launch(f'http://localhost:{port}')
