@@ -1,10 +1,11 @@
 from __future__ import annotations
 import asyncio
-from typing import Dict, Iterator, TYPE_CHECKING
+from typing import Dict, Iterator, Optional, TYPE_CHECKING
 
 
 from .task import RecordTask
 from .models import TaskData, TaskParam, VideoFileDetail, DanmakuFileDetail
+from ..flv.data_analyser import MetaData
 from ..exception import NotFoundError
 if TYPE_CHECKING:
     from ..setting import SettingsManager
@@ -153,6 +154,10 @@ class RecordTaskManager:
     def get_task_param(self, room_id: int) -> TaskParam:
         task = self._get_task(room_id)
         return self._make_task_param(task)
+
+    def get_task_metadata(self, room_id: int) -> Optional[MetaData]:
+        task = self._get_task(room_id)
+        return task.metadata
 
     def get_task_video_file_details(
         self, room_id: int

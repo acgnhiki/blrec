@@ -21,6 +21,7 @@ from ..core import Recorder
 from ..postprocess import Postprocessor, PostprocessorStatus, DeleteStrategy
 from ..postprocess.remuxer import RemuxProgress
 from ..flv.metadata_injector import InjectProgress
+from ..flv.data_analyser import MetaData
 from ..event.event_submitters import (
     LiveEventSubmitter, RecorderEventSubmitter, PostprocessorEventSubmitter
 )
@@ -132,6 +133,7 @@ class RecordTask:
             danmu_count=self._recorder.danmu_count,
             danmu_rate=self._recorder.danmu_rate,
             real_quality_number=self._recorder.real_quality_number,
+            recording_path=self.recording_path,
             postprocessor_status=self._postprocessor.status,
             postprocessing_path=self._postprocessor.postprocessing_path,
             postprocessing_progress=(
@@ -348,6 +350,14 @@ class RecordTask:
     @duration_limit.setter
     def duration_limit(self, value: int) -> None:
         self._recorder.duration_limit = value
+
+    @property
+    def recording_path(self) -> Optional[str]:
+        return self._recorder.recording_path
+
+    @property
+    def metadata(self) -> Optional[MetaData]:
+        return self._recorder.metadata
 
     @property
     def remux_to_mp4(self) -> bool:

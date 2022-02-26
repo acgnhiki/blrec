@@ -29,6 +29,7 @@ class TaskStatus:
     danmu_count: int  # Number of Danmu in total
     danmu_rate: float  # Number of Danmu per minutes
     real_quality_number: QualityNumber
+    recording_path: Optional[str] = None
     postprocessor_status: PostprocessorStatus = PostprocessorStatus.WAITING
     postprocessing_path: Optional[str] = None
     postprocessing_progress: Optional[Progress] = None

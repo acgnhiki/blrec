@@ -14,7 +14,7 @@ from rx.subject import Subject
 from rx.core import Observable
 
 from .models import FlvHeader, FlvTag, ScriptTag, VideoTag, AudioTag
-from .data_analyser import DataAnalyser
+from .data_analyser import DataAnalyser, MetaData
 from .stream_cutter import StreamCutter
 from .limit_checker import LimitChecker
 from .parameters_checker import ParametersChecker
@@ -116,6 +116,16 @@ class StreamProcessor:
     def join_points(self) -> Iterator[JoinPoint]:
         for point in self._join_points:
             yield point
+
+    @property
+    def metadata(self) -> Optional[MetaData]:
+        if not self._analyse_data:
+            return None
+        try:
+            return self._data_analyser.make_metadata()
+        except Exception as e:
+            logger.debug(f'Failed to make metadata data, due to: {repr(e)}')
+            return None
 
     @property
     def size_updates(self) -> Observable:

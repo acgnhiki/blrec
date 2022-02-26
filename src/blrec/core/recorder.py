@@ -14,6 +14,7 @@ from .raw_danmaku_receiver import RawDanmakuReceiver
 from .raw_danmaku_dumper import RawDanmakuDumper, RawDanmakuDumperEventListener
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 from ..event.event_emitter import EventListener, EventEmitter
+from ..flv.data_analyser import MetaData
 from ..bili.live import Live
 from ..bili.models import RoomInfo
 from ..bili.danmaku_client import DanmakuClient
@@ -273,6 +274,14 @@ class Recorder(
     @duration_limit.setter
     def duration_limit(self, value: int) -> None:
         self._stream_recorder.duration_limit = value
+
+    @property
+    def recording_path(self) -> Optional[str]:
+        return self._stream_recorder.recording_path
+
+    @property
+    def metadata(self) -> Optional[MetaData]:
+        return self._stream_recorder.metadata
 
     async def _do_start(self) -> None:
         self._live_monitor.add_listener(self)

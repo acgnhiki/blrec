@@ -14,7 +14,7 @@ from .models import (
 from .common import Resolution, is_audio_tag, is_script_tag, is_video_tag
 
 
-__all__ = 'DataAnalyser',
+__all__ = 'DataAnalyser', 'MetaData', 'KeyFrames'
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True, kw_only=True)

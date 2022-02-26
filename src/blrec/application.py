@@ -7,6 +7,7 @@ import attr
 import psutil
 
 from . import __prog__, __version__
+from .flv.data_analyser import MetaData
 from .disk_space import SpaceMonitor, SpaceReclaimer
 from .bili.helpers import ensure_room_id
 from .task import (
@@ -200,6 +201,9 @@ class Application:
 
     def get_task_param(self, room_id: int) -> TaskParam:
         return self._task_manager.get_task_param(room_id)
+
+    def get_task_metadata(self, room_id: int) -> Optional[MetaData]:
+        return self._task_manager.get_task_metadata(room_id)
 
     def get_task_video_file_details(
         self, room_id: int

@@ -38,6 +38,7 @@ from .statistics import StatisticsCalculator
 from ..event.event_emitter import EventListener, EventEmitter
 from ..bili.live import Live
 from ..bili.typing import QualityNumber
+from ..flv.data_analyser import MetaData
 from ..flv.stream_processor import StreamProcessor, BaseOutputFileManager
 from ..utils.mixins import AsyncCooperationMix, AsyncStoppableMixin
 from ..path import escape_path
@@ -185,6 +186,13 @@ class StreamRecorder(
     @property
     def recording_path(self) -> Optional[str]:
         return self._file_manager.curr_path
+
+    @property
+    def metadata(self) -> Optional[MetaData]:
+        if self._stream_processor is not None:
+            return self._stream_processor.metadata
+        else:
+            return None
 
     def has_file(self) -> bool:
         return self._file_manager.has_file()

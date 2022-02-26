@@ -54,6 +54,17 @@ async def get_task_param(room_id: int) -> Dict[str, Any]:
 
 
 @router.get(
+    '/{room_id}/metadata',
+    responses={**not_found_responses},
+)
+async def get_task_metadata(room_id: int) -> Dict[str, Any]:
+    metadata = app.get_task_metadata(room_id)
+    if not metadata:
+        return {}
+    return attr.asdict(metadata)
+
+
+@router.get(
     '/{room_id}/videos',
     responses={**not_found_responses},
 )
