@@ -1,0 +1,105 @@
+name: Windows portable
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+env:
+  FFMPEG_ARCHIVE_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n5.0-latest-win64-lgpl-shared-5.0.zip
+  FFMPEG_ARCHIVE_NAME: ffmpeg-n5.0-latest-win64-lgpl-shared-5.0.zip
+  PYTHON_ARCHIVE_URL: https://www.python.org/ftp/python/3.10.4/python-3.10.4-embed-amd64.zip
+
+jobs:
+
+  build:
+    name: Build Windows portable distributions
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+
+      - name: Download ffmpeg archive
+        run: Invoke-WebRequest -Uri $($env:FFMPEG_ARCHIVE_URL) -OutFile ffmpeg.zip
+
+      - name: Download python archive
+        run: Invoke-WebRequest -Uri $($env:PYTHON_ARCHIVE_URL) -OutFile python.zip
+
+      - name: Create build directory and dist directory
+        run: New-Item -Path @("build", "dist") -ItemType Directory
+
+      - name: Unzip ffmpeg archive
+        run: Expand-Archive -LiteralPath "ffmpeg.zip" -DestinationPath "build"
+
+      - name: Unzip Python archive
+        run: Expand-Archive -LiteralPath "python.zip" -DestinationPath "build\python"
+
+      - name: Enter build directory
+        run: |
+          Set-Location -Path "build"
+          ls
+
+      - name: Rename ffmpeg directory
+        working-directory: build
+        run: Rename-Item -Path $($env:FFMPEG_ARCHIVE_NAME).Substring(0, $($env:FFMPEG_ARCHIVE_NAME).Length - 4) "ffmpeg"
+
+      - name: Sliming ffmpeg
+        working-directory: build
+        run: |
+          Get-ChildItem -Path "ffmpeg" -Exclude @("LICENSE.txt", "bin") | Remove-Item -Recurse
+          ls ffmpeg
+
+      - name: Create venv
+        working-directory: build
+        run: python -m venv venv
+
+      - name: Install packages
+        working-directory: build
+        run: |
+          ls ${{ github.workspace }}
+          .\venv\Scripts\activate
+          pip install ${{ github.workspace }}
+          ls venv\Lib\site-packages
+
+      - name: Copy site-packages
+        shell: cmd
+        working-directory: build
+        run: (robocopy venv\Lib\site-packages python\Lib\site-packages /mir /xd __pycache__* pip* setuptools*) ^& IF %ERRORLEVEL% LSS 8 SET ERRORLEVEL = 0
+        # https://ss64.com/nt/robocopy-exit.html
+        # https://superuser.com/questions/280425/getting-robocopy-to-return-a-proper-exit-code
+        # https://social.msdn.microsoft.com/Forums/en-US/d599833c-dcea-46f5-85e9-b1f028a0fefe/robocopy-exits-with-error-code-1
+
+      - name: Add search path
+        working-directory: build
+        run: Add-Content -Path "python\python310._pth" "Lib\site-packages"
+
+      - name: Copy run.bat
+        working-directory: build
+        run: Copy-Item "${{ github.workspace }}\run.bat" -Destination ".\run.bat"
+
+      - name: Exit build directory
+        working-directory: build
+        run: |
+          ls
+          Set-Location -Path ".."
+
+      - name: Zip files
+        run: |
+          ls build
+          Compress-Archive -Path @("build\run.bat", "build\python", "build\ffmpeg") -DestinationPath "dist\blrec-${{ github.ref_name }}-win64.zip"
+          ls dist
+
+      - name: Upload distributions to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist\*
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true

@@ -12,7 +12,9 @@ from tenacity import (
 
 from .. import __version__, __prog__, __github__
 from .danmaku_receiver import DanmakuReceiver, DanmuMsg
-from .stream_recorder import StreamRecorder, StreamRecorderEventListener
+from .base_stream_recorder import (
+    BaseStreamRecorder, StreamRecorderEventListener
+)
 from .statistics import StatisticsCalculator
 from ..bili.live import Live
 from ..exception import exception_callback, submit_exception
@@ -49,7 +51,7 @@ class DanmakuDumper(
     def __init__(
         self,
         live: Live,
-        stream_recorder: StreamRecorder,
+        stream_recorder: BaseStreamRecorder,
         danmaku_receiver: DanmakuReceiver,
         *,
         danmu_uname: bool = False,
@@ -75,7 +77,7 @@ class DanmakuDumper(
         self._calculator = StatisticsCalculator(interval=60)
 
     @property
-    def danmu_count(self) -> int:
+    def danmu_total(self) -> int:
         return self._calculator.count
 
     @property
@@ -89,6 +91,14 @@ class DanmakuDumper(
     @property
     def dumping_path(self) -> Optional[str]:
         return self._path
+
+    def change_stream_recorder(
+        self, stream_recorder: BaseStreamRecorder
+    ) -> None:
+        self._stream_recorder.remove_listener(self)
+        self._stream_recorder = stream_recorder
+        self._stream_recorder.add_listener(self)
+        logger.debug('Changed stream recorder')
 
     def _do_enable(self) -> None:
         self._stream_recorder.add_listener(self)

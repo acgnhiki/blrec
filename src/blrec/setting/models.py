@@ -18,7 +18,7 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field, BaseSettings, validator, PrivateAttr
 from pydantic.networks import HttpUrl, EmailStr
 
-from ..bili.typing import QualityNumber
+from ..bili.typing import StreamFormat, QualityNumber
 from ..postprocess import DeleteStrategy
 from ..logging.typing import LOG_LEVEL
 from ..utils.string import camel_case
@@ -138,6 +138,7 @@ class DanmakuSettings(DanmakuOptions):
 
 
 class RecorderOptions(BaseModel):
+    stream_format: Optional[StreamFormat]
     quality_number: Optional[QualityNumber]
     read_timeout: Optional[int]  # seconds
     disconnection_timeout: Optional[int]  # seconds
@@ -164,6 +165,7 @@ class RecorderOptions(BaseModel):
 
 
 class RecorderSettings(RecorderOptions):
+    stream_format: StreamFormat = 'flv'
     quality_number: QualityNumber = 20000  # 4K, the highest quality.
     read_timeout: int = 3
     disconnection_timeout: int = 600
@@ -240,7 +242,7 @@ class OutputOptions(BaseModel):
 
 
 def out_dir_factory() -> str:
-    path = os.path.expanduser(DEFAULT_OUT_DIR)
+    path = os.path.normpath(os.path.expanduser(DEFAULT_OUT_DIR))
     os.makedirs(path, exist_ok=True)
     return path
 
@@ -285,7 +287,7 @@ class TaskSettings(TaskOptions):
 
 
 def log_dir_factory() -> str:
-    path = os.path.expanduser(DEFAULT_LOG_DIR)
+    path = os.path.normpath(os.path.expanduser(DEFAULT_LOG_DIR))
     os.makedirs(path, exist_ok=True)
     return path
 
@@ -444,7 +446,7 @@ class Settings(BaseModel):
 
     @validator('tasks')
     def _validate_tasks(cls, tasks: List[TaskSettings]) -> List[TaskSettings]:
-        if len(tasks) >= cls._MAX_TASKS:
+        if len(tasks) > cls._MAX_TASKS:
             raise ValueError(f'Out of max tasks limits: {cls._MAX_TASKS}')
         return tasks
 

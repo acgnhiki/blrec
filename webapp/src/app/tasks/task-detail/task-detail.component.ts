@@ -3,6 +3,7 @@ import {
   OnInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  OnDestroy,
 } from '@angular/core';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -25,7 +26,7 @@ import {
   styleUrls: ['./task-detail.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TaskDetailComponent implements OnInit {
+export class TaskDetailComponent implements OnInit, OnDestroy {
   roomId!: number;
   taskData!: TaskData;
   videoFileDetails: VideoFileDetail[] = [];

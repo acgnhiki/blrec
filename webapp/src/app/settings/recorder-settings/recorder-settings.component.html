@@ -3,6 +3,40 @@
     <nz-form-label
       class="setting-label"
       nzNoColon
+      [nzTooltipTitle]="streamFormatTip"
+      >直播流格式</nz-form-label
+    >
+    <ng-template #streamFormatTip>
+      <p>
+        选择要录制的直播流格式<br />
+        <br />
+        FLV 网络不稳定容易中断丢失数据 <br />
+        HLS (ts) 基本不受本地网络影响 <br />
+        HLS (fmp4) 只有少数直播间支持 <br />
+        <br />
+        P.S.<br />
+        非 FLV 格式需要 ffmpeg<br />
+        HLS (fmp4) 不支持会自动切换到 HLS (ts)<br />
+      </p>
+    </ng-template>
+    <nz-form-control
+      class="setting-control select"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.streamFormat ? streamFormatControl : 'warning'
+      "
+    >
+      <nz-select
+        formControlName="streamFormat"
+        [nzOptions]="streamFormatOptions"
+      >
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
       nzTooltipTitle="所选画质不存在将以原画代替"
       >画质</nz-form-label
     >

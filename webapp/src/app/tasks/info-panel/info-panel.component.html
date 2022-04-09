@@ -1,0 +1,100 @@
+<div class="info-panel">
+  <button class="close-panel" (click)="closePanel($event)" title="关闭">
+    [x]
+  </button>
+  <ul
+    class="info-list"
+    *ngIf="
+      data.task_status.running_status === RunningStatus.RECORDING &&
+      profile &&
+      profile.streams &&
+      profile.format &&
+      metadata
+    "
+  >
+    <li class="info-item">
+      <span class="label">视频信息</span>
+      <span class="value">
+        <span>
+          {{ profile.streams[0]?.codec_name }}
+          <!-- <ng-container *ngIf="profile.streams[0]?.profile">
+            ({{ profile.streams[0]?.profile }})
+          </ng-container> -->
+        </span>
+        <span>
+          {{ profile.streams[0]?.width }}x{{ profile.streams[0]?.height }}
+        </span>
+        <span> {{ profile.streams[0]?.r_frame_rate!.split("/")[0] }} fps</span>
+        <!-- <span
+          *ngIf="
+            profile.streams[0]?.bit_rate && profile.streams[0]?.bit_rate !== '1'
+          "
+        >
+          {{ profile.streams[0]?.bit_rate! | datarate: { bitrate: true } }}
+        </span> -->
+        <span>
+          {{ metadata.videodatarate * 1000 | datarate: { bitrate: true } }}
+        </span>
+      </span>
+    </li>
+    <li class="info-item">
+      <span class="label">音频信息</span>
+      <span class="value">
+        <span>
+          {{ profile.streams[1]?.codec_name }}
+          <!-- <ng-container *ngIf="profile.streams[1]?.profile">
+            ({{ profile.streams[1]?.profile }})
+          </ng-container> -->
+        </span>
+        <span> {{ profile.streams[1]?.sample_rate }} HZ</span>
+        <span>
+          {{ profile.streams[1]?.channel_layout }}
+        </span>
+        <!-- <span *ngIf="profile.streams[1]?.bit_rate">
+          {{ profile.streams[1]?.bit_rate! | datarate: { bitrate: true } }}
+        </span> -->
+        <span>
+          {{ metadata.audiodatarate * 1000 | datarate: { bitrate: true } }}
+        </span>
+      </span>
+    </li>
+    <li class="info-item">
+      <span class="label">格式画质</span
+      ><span class="value">
+        <span>
+          {{ data.task_status.real_stream_format }}
+        </span>
+        <span>
+          {{ data.task_status.real_quality_number | quality }}
+          ({{ data.task_status.real_quality_number
+          }}<ng-container *ngIf="isBlurayStreamQuality()">, bluray</ng-container
+          >)
+        </span>
+      </span>
+    </li>
+    <li class="info-item" *ngIf="profile.streams[0]?.tags?.encoder">
+      <span class="label">流编码器</span>
+      <span class="value">{{ profile.streams[0]?.tags?.encoder }}</span>
+    </li>
+    <li class="info-item">
+      <span class="label">流主机名</span
+      ><span class="value">
+        {{ data.task_status.stream_host }}
+      </span>
+    </li>
+    <li class="info-item">
+      <span class="label">下载速度</span>
+      <app-wave-graph [value]="data.task_status.dl_rate"></app-wave-graph>
+      <span class="value">
+        {{ data.task_status.dl_rate | datarate: { bitrate: true } }}
+      </span>
+    </li>
+    <li class="info-item">
+      <span class="label">录制速度</span>
+      <app-wave-graph [value]="data.task_status.rec_rate"></app-wave-graph>
+      <span class="value">
+        {{ data.task_status.rec_rate | datarate }}
+      </span>
+    </li>
+  </ul>
+</div>

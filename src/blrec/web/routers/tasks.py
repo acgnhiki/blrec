@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 import attr
+from pydantic import PositiveInt, conint
 from fastapi import (
     APIRouter,
     status,
@@ -31,17 +32,30 @@ router = APIRouter(
 
 
 @router.get('/data')
-async def get_all_task_data(
+async def get_task_data(
+    page: PositiveInt = 1,
+    size: conint(ge=10, lt=100) = 100,  # type: ignore
     filter: TaskDataFilter = Depends(task_data_filter)
 ) -> List[Dict[str, Any]]:
-    return [attr.asdict(d) for d in filter(app.get_all_task_data())]
+    start = (page - 1) * size
+    stop = page * size
+
+    task_data = []
+    for index, data in enumerate(filter(app.get_all_task_data())):
+        if index < start:
+            continue
+        if index >= stop:
+            break
+        task_data.append(attr.asdict(data))
+
+    return task_data
 
 
 @router.get(
     '/{room_id}/data',
     responses={**not_found_responses},
 )
-async def get_task_data(room_id: int) -> Dict[str, Any]:
+async def get_one_task_data(room_id: int) -> Dict[str, Any]:
     return attr.asdict(app.get_task_data(room_id))
 
 
@@ -62,6 +76,14 @@ async def get_task_metadata(room_id: int) -> Dict[str, Any]:
     if not metadata:
         return {}
     return attr.asdict(metadata)
+
+
+@router.get(
+    '/{room_id}/profile',
+    responses={**not_found_responses},
+)
+async def get_task_stream_profile(room_id: int) -> Dict[str, Any]:
+    return app.get_task_stream_profile(room_id)
 
 
 @router.get(
@@ -276,7 +298,7 @@ async def add_task(room_id: int) -> ResponseMessage:
     """
     real_room_id = await app.add_task(room_id)
     return ResponseMessage(
-        message='Added Task Successfully',
+        message='Successfully Added Task',
         data={'room_id': real_room_id},
     )
 

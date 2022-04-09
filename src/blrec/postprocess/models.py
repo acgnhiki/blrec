@@ -13,6 +13,7 @@ class PostprocessorStatus(Enum):
 
 class DeleteStrategy(Enum):
     AUTO = 'auto'
+    SAFE = 'safe'
     NEVER = 'never'
 
     def __str__(self) -> str:

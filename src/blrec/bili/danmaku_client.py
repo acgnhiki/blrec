@@ -15,7 +15,7 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from .api import WebApi
+from .api import AppApi, WebApi
 from .typing import Danmaku
 from ..event.event_emitter import EventListener, EventEmitter
 from ..exception import exception_callback
@@ -52,14 +52,16 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
     def __init__(
         self,
         session: ClientSession,
-        api: WebApi,
+        appapi: AppApi,
+        webapi: WebApi,
         room_id: int,
         *,
         max_retries: int = 10,
     ) -> None:
         super().__init__()
         self.session = session
-        self.api = api
+        self.appapi = appapi
+        self.webapi = webapi
         self._room_id = room_id
 
         self._host_index: int = 0
@@ -151,7 +153,10 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             raise ValueError(f'Unexpected code: {code}')
 
     async def _update_danmu_info(self) -> None:
-        self._danmu_info = await self.api.get_danmu_info(self._room_id)
+        try:
+            self._danmu_info = await self.appapi.get_danmu_info(self._room_id)
+        except Exception:
+            self._danmu_info = await self.webapi.get_danmu_info(self._room_id)
         logger.debug('Danmu info updated')
 
     async def _disconnect(self) -> None:
@@ -177,7 +182,10 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
     async def _send_heartbeat(self) -> None:
         data = Frame.encode(WS.OP_HEARTBEAT, '')
         while True:
-            await self._ws.send_bytes(data)
+            try:
+                await self._ws.send_bytes(data)
+            except Exception as exc:
+                logger.debug(f'Failed to send heartbeat due to: {repr(exc)}')
             await asyncio.sleep(self._HEARTBEAT_INTERVAL)
 
     async def _create_message_loop(self) -> None:

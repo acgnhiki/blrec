@@ -16,8 +16,9 @@ from ..bili.live import Live
 from ..bili.models import RoomInfo, UserInfo
 from ..bili.danmaku_client import DanmakuClient
 from ..bili.live_monitor import LiveMonitor
-from ..bili.typing import QualityNumber
+from ..bili.typing import StreamFormat, QualityNumber
 from ..core import Recorder
+from ..core.stream_analyzer import StreamProfile
 from ..postprocess import Postprocessor, PostprocessorStatus, DeleteStrategy
 from ..postprocess.remuxer import RemuxProgress
 from ..flv.metadata_injector import InjectProgress
@@ -43,18 +44,6 @@ class RecordTask:
         path_template: str = '',
         cookie: str = '',
         user_agent: str = '',
-        danmu_uname: bool = False,
-        record_gift_send: bool = False,
-        record_free_gifts: bool = False,
-        record_guard_buy: bool = False,
-        record_super_chat: bool = False,
-        save_cover: bool = False,
-        save_raw_danmaku: bool = False,
-        buffer_size: Optional[int] = None,
-        read_timeout: Optional[int] = None,
-        disconnection_timeout: Optional[int] = None,
-        filesize_limit: int = 0,
-        duration_limit: int = 0,
         remux_to_mp4: bool = False,
         inject_extra_metadata: bool = True,
         delete_source: DeleteStrategy = DeleteStrategy.AUTO,
@@ -68,18 +57,6 @@ class RecordTask:
         self._path_template = path_template
         self._cookie = cookie
         self._user_agent = user_agent
-        self._danmu_uname = danmu_uname
-        self._record_gift_send = record_gift_send
-        self._record_free_gifts = record_free_gifts
-        self._record_guard_buy = record_guard_buy
-        self._record_super_chat = record_super_chat
-        self._save_cover = save_cover
-        self._save_raw_danmaku = save_raw_danmaku
-        self._buffer_size = buffer_size
-        self._read_timeout = read_timeout
-        self._disconnection_timeout = disconnection_timeout
-        self._filesize_limit = filesize_limit
-        self._duration_limit = duration_limit
         self._remux_to_mp4 = remux_to_mp4
         self._inject_extra_metadata = inject_extra_metadata
         self._delete_source = delete_source
@@ -127,11 +104,16 @@ class RecordTask:
             monitor_enabled=self.monitor_enabled,
             recorder_enabled=self.recorder_enabled,
             running_status=self.running_status,
-            elapsed=self._recorder.elapsed,
-            data_count=self._recorder.data_count,
-            data_rate=self._recorder.data_rate,
-            danmu_count=self._recorder.danmu_count,
+            stream_url=self._recorder.stream_url,
+            stream_host=self._recorder.stream_host,
+            dl_total=self._recorder.dl_total,
+            dl_rate=self._recorder.dl_rate,
+            rec_elapsed=self._recorder.rec_elapsed,
+            rec_total=self._recorder.rec_total,
+            rec_rate=self._recorder.rec_rate,
+            danmu_total=self._recorder.danmu_total,
             danmu_rate=self._recorder.danmu_rate,
+            real_stream_format=self._recorder.real_stream_format,
             real_quality_number=self._recorder.real_quality_number,
             recording_path=self.recording_path,
             postprocessor_status=self._postprocessor.status,
@@ -284,12 +266,24 @@ class RecordTask:
         self._recorder.save_raw_danmaku = value
 
     @property
+    def stream_format(self) -> StreamFormat:
+        return self._recorder.stream_format
+
+    @stream_format.setter
+    def stream_format(self, value: StreamFormat) -> None:
+        self._recorder.stream_format = value
+
+    @property
     def quality_number(self) -> QualityNumber:
         return self._recorder.quality_number
 
     @quality_number.setter
     def quality_number(self, value: QualityNumber) -> None:
         self._recorder.quality_number = value
+
+    @property
+    def real_stream_format(self) -> StreamFormat:
+        return self._recorder.real_stream_format
 
     @property
     def real_quality_number(self) -> QualityNumber:
@@ -358,6 +352,10 @@ class RecordTask:
     @property
     def metadata(self) -> Optional[MetaData]:
         return self._recorder.metadata
+
+    @property
+    def stream_profile(self) -> StreamProfile:
+        return self._recorder.stream_profile
 
     @property
     def remux_to_mp4(self) -> bool:
@@ -452,7 +450,8 @@ class RecordTask:
         await self._live.deinit()
         await self._live.init()
         self._danmaku_client.session = self._live.session
-        self._danmaku_client.api = self._live.api
+        self._danmaku_client.appapi = self._live.appapi
+        self._danmaku_client.webapi = self._live.webapi
 
         if self._monitor_enabled:
             await self._danmaku_client.start()
@@ -468,7 +467,10 @@ class RecordTask:
 
     def _setup_danmaku_client(self) -> None:
         self._danmaku_client = DanmakuClient(
-            self._live.session, self._live.api, self._live.room_id
+            self._live.session,
+            self._live.appapi,
+            self._live.webapi,
+            self._live.room_id
         )
 
     def _setup_live_monitor(self) -> None:
@@ -484,18 +486,6 @@ class RecordTask:
             self._live_monitor,
             self._out_dir,
             self._path_template,
-            buffer_size=self._buffer_size,
-            read_timeout=self._read_timeout,
-            disconnection_timeout=self._disconnection_timeout,
-            danmu_uname=self._danmu_uname,
-            record_gift_send=self._record_gift_send,
-            record_free_gifts=self._record_free_gifts,
-            record_guard_buy=self._record_guard_buy,
-            record_super_chat=self._record_super_chat,
-            save_cover=self._save_cover,
-            save_raw_danmaku=self._save_raw_danmaku,
-            filesize_limit=self._filesize_limit,
-            duration_limit=self._duration_limit,
         )
 
     def _setup_recorder_event_submitter(self) -> None:

@@ -1,13 +1,11 @@
-@use '../../shared/styles/layout';
+@use "../../shared/styles/layout";
 
 $card-width: 400px;
 $grid-gutter: 12px;
-$max-columns: 3;
 
 :host {
   --card-width: #{$card-width};
   --grid-gutter: #{$grid-gutter};
-  --max-columns: #{$max-columns};
 
   @extend %inner-content;
   padding: var(--grid-gutter);
@@ -24,13 +22,7 @@ $max-columns: 3;
   gap: var(--grid-gutter);
   justify-content: center;
 
-  max-width: min(
-    100%,
-    calc(
-      var(--card-width) * var(--max-columns) + var(--grid-gutter) *
-        (var(--max-columns) - 1)
-    )
-  );
+  max-width: min(100%);
   margin: 0 auto;
 }
 

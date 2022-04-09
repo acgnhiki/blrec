@@ -12,7 +12,10 @@ from tenacity import (
 )
 
 from .raw_danmaku_receiver import RawDanmakuReceiver
-from .stream_recorder import StreamRecorder, StreamRecorderEventListener
+from .base_stream_recorder import (
+    BaseStreamRecorder, StreamRecorderEventListener
+)
+from ..bili.live import Live
 from ..exception import exception_callback, submit_exception
 from ..event.event_emitter import EventListener, EventEmitter
 from ..path import raw_danmaku_path
@@ -41,12 +44,22 @@ class RawDanmakuDumper(
 ):
     def __init__(
         self,
-        stream_recorder: StreamRecorder,
+        live: Live,
+        stream_recorder: BaseStreamRecorder,
         danmaku_receiver: RawDanmakuReceiver,
     ) -> None:
         super().__init__()
+        self._live = live  # @aio_task_with_room_id
         self._stream_recorder = stream_recorder
         self._receiver = danmaku_receiver
+
+    def change_stream_recorder(
+        self, stream_recorder: BaseStreamRecorder
+    ) -> None:
+        self._stream_recorder.remove_listener(self)
+        self._stream_recorder = stream_recorder
+        self._stream_recorder.add_listener(self)
+        logger.debug('Changed stream recorder')
 
     def _do_enable(self) -> None:
         self._stream_recorder.add_listener(self)

@@ -36,8 +36,11 @@ def aio_task_with_room_id(
 
         curr_task = asyncio.current_task()
         assert curr_task is not None
+        old_name = curr_task.get_name()
         curr_task.set_name(f'{func.__qualname__}::{room_id}')
-
-        return await func(obj, *arg, **kwargs)
+        try:
+            return await func(obj, *arg, **kwargs)
+        finally:
+            curr_task.set_name(old_name)
 
     return wrapper

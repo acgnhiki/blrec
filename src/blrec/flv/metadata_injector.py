@@ -130,8 +130,15 @@ def inject_metadata(
                     observer.on_error(e)
                 else:
                     logger.info(f"Successfully inject metadata for '{path}'")
-                    os.replace(out_path, path)
-                    observer.on_completed()
+                    try:
+                        os.replace(out_path, path)
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to replace file {path} with '{out_path}'"
+                        )
+                        observer.on_error(e)
+                    else:
+                        observer.on_completed()
 
         if room_id is not None:
             return _scheduler.schedule(with_room_id(room_id)(action))

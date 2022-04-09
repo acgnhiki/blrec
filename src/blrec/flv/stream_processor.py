@@ -6,7 +6,7 @@ import json
 import logging
 from typing import (
     Any, BinaryIO, Dict, List, Final, Iterable, Iterator, Optional, Tuple,
-    Protocol, TypedDict, Union, cast
+    Protocol, TypedDict, Union, cast, TYPE_CHECKING
 )
 
 import attr
@@ -31,11 +31,13 @@ from .exceptions import (
     CutStream,
 )
 from .common import (
-    is_audio_tag, is_metadata_tag, is_video_tag, parse_metadata,
-    is_audio_data_tag, is_video_data_tag, is_sequence_header,
-    enrich_metadata, update_metadata, is_data_tag, read_tags_in_duration,
+    is_audio_tag, is_video_tag, is_metadata_tag, parse_metadata,
+    is_audio_data_tag, is_video_data_tag, enrich_metadata, update_metadata,
+    is_data_tag, read_tags_in_duration,
 )
 from ..path import extra_metadata_path
+if TYPE_CHECKING:
+    from ..core.stream_analyzer import StreamProfile
 
 
 __all__ = 'StreamProcessor', 'BaseOutputFileManager', 'JoinPoint'
@@ -83,6 +85,7 @@ class StreamProcessor:
         self._stream_count: int = 0
         self._size_updates = Subject()
         self._time_updates = Subject()
+        self._stream_profile_updates = Subject()
 
         self._delta: int = 0
         self._has_audio: bool = False
@@ -123,6 +126,8 @@ class StreamProcessor:
             return None
         try:
             return self._data_analyser.make_metadata()
+        except AssertionError:
+            return None
         except Exception as e:
             logger.debug(f'Failed to make metadata data, due to: {repr(e)}')
             return None
@@ -136,6 +141,10 @@ class StreamProcessor:
         return self._time_updates
 
     @property
+    def stream_profile_updates(self) -> Observable:
+        return self._stream_profile_updates
+
+    @property
     def cancelled(self) -> bool:
         return self._cancelled
 
@@ -145,6 +154,9 @@ class StreamProcessor:
 
     def cancel(self) -> None:
         self._cancelled = True
+
+    def set_metadata(self, metadata: Dict[str, Any]) -> None:
+        self._metadata = metadata.copy()
 
     def process_stream(self, stream: RandomIO) -> None:
         assert not self._cancelled and not self._finalized, \
@@ -241,6 +253,7 @@ class StreamProcessor:
             self._write_header(self._ensure_header_correct(flv_header))
             self._transfer_meta_tags()
             self._transfer_first_data_tag(first_data_tag)
+            self._update_stream_profile(flv_header, first_data_tag)
         except Exception:
             self._last_tags = []
             self._resetting_file = True
@@ -346,6 +359,33 @@ class StreamProcessor:
 
         logger.debug('Meta tags have been transfered')
 
+    def _update_stream_profile(
+        self, flv_header: FlvHeader, first_data_tag: FlvTag
+    ) -> None:
+        from ..core.stream_analyzer import ffprobe
+
+        if self._parameters_checker.last_metadata_tag is None:
+            return
+        if self._parameters_checker.last_video_header_tag is None:
+            return
+
+        bytes_io = io.BytesIO()
+        writer = FlvWriter(bytes_io)
+        writer.write_header(flv_header)
+        writer.write_tag(self._parameters_checker.last_metadata_tag)
+        writer.write_tag(self._parameters_checker.last_video_header_tag)
+        if self._parameters_checker.last_audio_header_tag is not None:
+            writer.write_tag(self._parameters_checker.last_audio_header_tag)
+        writer.write_tag(first_data_tag)
+
+        def on_next(profile: StreamProfile) -> None:
+            self._stream_profile_updates.on_next(profile)
+
+        def on_error(e: Exception) -> None:
+            logger.warning(f'Failed to analyse stream: {repr(e)}')
+
+        ffprobe(bytes_io.getvalue()).subscribe(on_next, on_error)
+
     def _transfer_first_data_tag(self, tag: FlvTag) -> None:
         logger.debug(f'Transfer the first data tag: {tag}')
         self._delta = -tag.timestamp
@@ -385,6 +425,18 @@ class StreamProcessor:
             except EOFError:
                 logger.debug('The input stream exhausted')
                 break
+            except AudioParametersChanged:
+                if self._analyse_data:
+                    logger.warning('Audio parameters changed at {}'.format(
+                        format_timestamp(self._data_analyser.last_timestamp),
+                    ))
+                yield tag
+            except VideoParametersChanged:
+                if self._analyse_data:
+                    logger.warning('Video parameters changed at {}'.format(
+                        format_timestamp(self._data_analyser.last_timestamp),
+                    ))
+                raise
             except Exception as e:
                 logger.debug(f'Failed to read data, due to: {repr(e)}')
                 raise
@@ -396,7 +448,7 @@ class StreamProcessor:
 
         try:
             count: int = 0
-            for tag in filter(lambda t: not is_sequence_header(t), tags):
+            for tag in tags:
                 self._ensure_ts_correct(tag)
                 self._write_tag(self._correct_ts(tag, self._delta))
                 count += 1
@@ -741,13 +793,13 @@ class FlvReaderWithTimestampFix(RobustFlvReader):
             tag = super().read_tag(no_body=no_body)
 
             if self._last_tag is None:
-                if is_data_tag(tag):
+                if is_video_tag(tag) or is_audio_tag(tag):
                     self._update_last_tags(tag)
                 elif is_metadata_tag(tag):
                     self._update_parameters(tag)
                 return tag
 
-            if not is_data_tag(tag):
+            if not is_video_tag(tag) and not is_audio_tag(tag):
                 return tag
 
             if self._is_ts_rebounded(tag):
@@ -790,11 +842,11 @@ class FlvReaderWithTimestampFix(RobustFlvReader):
         if is_video_tag(tag):
             if self._last_video_tag is None:
                 return False
-            return tag.timestamp < self._last_video_tag.timestamp
+            return tag.timestamp <= self._last_video_tag.timestamp
         elif is_audio_tag(tag):
             if self._last_audio_tag is None:
                 return False
-            return tag.timestamp < self._last_audio_tag.timestamp
+            return tag.timestamp <= self._last_audio_tag.timestamp
         else:
             return False
 

@@ -1,10 +1,10 @@
-
-import asyncio
 import re
 import json
+import asyncio
 from typing import Dict, List, cast
 
 import aiohttp
+from jsonpath import jsonpath
 from tenacity import (
     retry,
     wait_exponential,
@@ -13,11 +13,12 @@ from tenacity import (
 )
 
 
-from .api import WebApi
+from .api import AppApi, WebApi
 from .models import LiveStatus, RoomInfo, UserInfo
-from .typing import QualityNumber, StreamFormat, ResponseData
+from .typing import StreamFormat, QualityNumber, StreamCodec, ResponseData
 from .exceptions import (
-    LiveRoomHidden, LiveRoomLocked, LiveRoomEncrypted, NoStreamUrlAvailable
+    LiveRoomHidden, LiveRoomLocked, LiveRoomEncrypted, NoStreamAvailable,
+    NoStreamFormatAvailable, NoStreamCodecAvailable, NoStreamQualityAvailable,
 )
 
 
@@ -63,8 +64,9 @@ class Live:
         return {
             'Referer': 'https://live.bilibili.com/',
             'Connection': 'Keep-Alive',
+            'Accept-Encoding': 'gzip',
             'User-Agent': self._user_agent,
-            'cookie': self._cookie,
+            'Cookie': self._cookie,
         }
 
     @property
@@ -72,8 +74,12 @@ class Live:
         return self._session
 
     @property
-    def api(self) -> WebApi:
-        return self._api
+    def appapi(self) -> AppApi:
+        return self._appapi
+
+    @property
+    def webapi(self) -> WebApi:
+        return self._webapi
 
     @property
     def room_id(self) -> int:
@@ -89,11 +95,13 @@ class Live:
 
     async def init(self) -> None:
         self._session = aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(limit=200),
             headers=self.headers,
             raise_for_status=True,
             trust_env=True,
         )
-        self._api = WebApi(self._session)
+        self._appapi = AppApi(self._session)
+        self._webapi = WebApi(self._session)
 
         self._room_info = await self.get_room_info()
         self._user_info = await self.get_user_info(self._room_info.uid)
@@ -125,28 +133,19 @@ class Live:
     async def update_info(self) -> None:
         await asyncio.wait([self.update_user_info(), self.update_room_info()])
 
-    @retry(
-        reraise=True,
-        retry=retry_if_exception_type((
-            asyncio.TimeoutError, aiohttp.ClientError,
-        )),
-        wait=wait_exponential(max=10),
-        stop=stop_after_delay(60),
-    )
     async def update_user_info(self) -> None:
         self._user_info = await self.get_user_info(self._room_info.uid)
 
+    async def update_room_info(self) -> None:
+        self._room_info = await self.get_room_info()
+
     @retry(
-        reraise=True,
         retry=retry_if_exception_type((
             asyncio.TimeoutError, aiohttp.ClientError,
         )),
         wait=wait_exponential(max=10),
         stop=stop_after_delay(60),
     )
-    async def update_room_info(self) -> None:
-        self._room_info = await self.get_room_info()
-
     async def get_room_info(self) -> RoomInfo:
         try:
             # frequent requests will be intercepted by the server's firewall!
@@ -154,44 +153,54 @@ class Live:
         except Exception:
             # more cpu consumption
             room_info_data = await self._get_room_info_via_html_page()
-
         return RoomInfo.from_data(room_info_data)
 
+    @retry(
+        retry=retry_if_exception_type((
+            asyncio.TimeoutError, aiohttp.ClientError,
+        )),
+        wait=wait_exponential(max=10),
+        stop=stop_after_delay(60),
+    )
     async def get_user_info(self, uid: int) -> UserInfo:
-        user_info_data = await self._api.get_user_info(uid)
-        return UserInfo.from_data(user_info_data)
+        try:
+            user_info_data = await self._appapi.get_user_info(uid)
+            return UserInfo.from_app_api_data(user_info_data)
+        except Exception:
+            user_info_data = await self._webapi.get_user_info(uid)
+            return UserInfo.from_web_api_data(user_info_data)
 
     async def get_server_timestamp(self) -> int:
         # the timestamp on the server at the moment in seconds
-        return await self._api.get_timestamp()
+        return await self._webapi.get_timestamp()
 
     async def get_live_stream_urls(
         self,
         qn: QualityNumber = 10000,
-        format: StreamFormat = 'flv',
+        stream_format: StreamFormat = 'flv',
+        stream_codec: StreamCodec = 'avc',
     ) -> List[str]:
         try:
-            data = await self._api.get_room_play_info(self._room_id, qn)
+            info = await self._appapi.get_room_play_info(self._room_id, qn)
         except Exception:
-            # fallback to the html page global info
-            data = await self._get_room_play_info_via_html_page()
-            self._check_room_play_info(data)
-            stream = data['playurl_info']['playurl']['stream']
-            if stream[0]['format'][0]['codec'][0]['current_qn'] != qn:
-                raise
-        else:
-            self._check_room_play_info(data)
+            info = await self._webapi.get_room_play_info(self._room_id, qn)
 
-        streams = list(filter(
-            lambda s: s['format'][0]['format_name'] == format,
-            data['playurl_info']['playurl']['stream']
-        ))
-        codec = streams[0]['format'][0]['codec'][0]
+        self._check_room_play_info(info)
+
+        streams = jsonpath(info, '$.playurl_info.playurl.stream[*]')
+        if not streams:
+            raise NoStreamAvailable(qn, stream_format, stream_codec)
+        formats = jsonpath(streams, f'$[*].format[?(@.format_name == "{stream_format}")]')  # noqa
+        if not formats:
+            raise NoStreamFormatAvailable(qn, stream_format, stream_codec)
+        codecs = jsonpath(formats, f'$[*].codec[?(@.codec_name == "{stream_codec}")]')  # noqa
+        if not codecs:
+            raise NoStreamCodecAvailable(qn, stream_format, stream_codec)
+        codec = codecs[0]
+
         accept_qn = cast(List[QualityNumber], codec['accept_qn'])
-
-        if qn not in accept_qn:
-            return []
-        assert codec['current_qn'] == qn
+        if qn not in accept_qn or codec['current_qn'] != qn:
+            raise NoStreamQualityAvailable(qn, stream_format, stream_codec)
 
         return [
             i['host'] + codec['base_url'] + i['extra']
@@ -199,16 +208,12 @@ class Live:
         ]
 
     def _check_room_play_info(self, data: ResponseData) -> None:
-        if data['is_hidden']:
+        if data.get('is_hidden'):
             raise LiveRoomHidden()
-        if data['is_locked']:
+        if data.get('is_locked'):
             raise LiveRoomLocked()
-        if data['encrypted'] and not data['pwd_verified']:
+        if data.get('encrypted') and not data.get('pwd_verified'):
             raise LiveRoomEncrypted()
-        try:
-            data['playurl_info']['playurl']['stream'][0]
-        except Exception:
-            raise NoStreamUrlAvailable()
 
     async def _get_live_status_via_api(self) -> int:
         room_info_data = await self._get_room_info_via_api()
@@ -216,10 +221,14 @@ class Live:
 
     async def _get_room_info_via_api(self) -> ResponseData:
         try:
-            room_info_data = await self._api.get_info(self._room_id)
-        except Exception:
-            info_data = await self._api.get_info_by_room(self._room_id)
+            info_data = await self._appapi.get_info_by_room(self._room_id)
             room_info_data = info_data['room_info']
+        except Exception:
+            try:
+                info_data = await self._webapi.get_info_by_room(self._room_id)
+                room_info_data = info_data['room_info']
+            except Exception:
+                room_info_data = await self._webapi.get_info(self._room_id)
 
         return room_info_data
 

@@ -20,5 +20,17 @@ class LiveRoomEncrypted(Exception):
     pass
 
 
-class NoStreamUrlAvailable(Exception):
+class NoStreamAvailable(Exception):
+    pass
+
+
+class NoStreamFormatAvailable(Exception):
+    pass
+
+
+class NoStreamCodecAvailable(Exception):
+    pass
+
+
+class NoStreamQualityAvailable(Exception):
     pass

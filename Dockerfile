@@ -6,13 +6,13 @@ WORKDIR /app
 VOLUME ["/cfg", "/log", "/rec"]
 
 COPY src src/
-COPY setup.py setup.cfg .
+COPY setup.py setup.cfg ./
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential python3-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip3 install --no-cache-dir -e . \
-    && apt-get purge -y --auto-remove build-essential python3-dev
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg build-essential python3-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip3 install --no-cache-dir -e . && \
+    apt-get purge -y --auto-remove build-essential python3-dev
 # ref: https://github.com/docker-library/python/issues/60#issuecomment-134322383
 
 ENV DEFAULT_SETTINGS_FILE=/cfg/settings.toml

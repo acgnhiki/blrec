@@ -23,6 +23,7 @@ import {
   PATH_TEMPLATE_PATTERN,
   FILESIZE_LIMIT_OPTIONS,
   DURATION_LIMIT_OPTIONS,
+  STREAM_FORMAT_OPTIONS,
   QUALITY_OPTIONS,
   TIMEOUT_OPTIONS,
   DISCONNECTION_TIMEOUT_OPTIONS,
@@ -62,6 +63,9 @@ export class TaskSettingsDialogComponent implements OnChanges {
   >;
   readonly durationLimitOptions = cloneDeep(DURATION_LIMIT_OPTIONS) as Mutable<
     typeof DURATION_LIMIT_OPTIONS
+  >;
+  readonly streamFormatOptions = cloneDeep(STREAM_FORMAT_OPTIONS) as Mutable<
+    typeof STREAM_FORMAT_OPTIONS
   >;
   readonly qualityOptions = cloneDeep(QUALITY_OPTIONS) as Mutable<
     typeof QUALITY_OPTIONS

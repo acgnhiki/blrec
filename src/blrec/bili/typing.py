@@ -19,5 +19,10 @@ StreamFormat = Literal[
     'fmp4',
 ]
 
+StreamCodec = Literal[
+    'avc',
+    'hevc',
+]
+
 JsonResponse = Dict[str, Any]
 ResponseData = Dict[str, Any]

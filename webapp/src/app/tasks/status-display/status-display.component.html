@@ -4,7 +4,7 @@
       <span
         class="status-indicator"
         nz-tooltip
-        nzTooltipTitle="正在录制中"
+        nzTooltipTitle="正在录制"
         nzTooltipPlacement="top"
       >
         <i></i>
@@ -12,39 +12,39 @@
       <span
         class="time-elapsed"
         nz-tooltip
-        nzTooltipTitle="开始录制到现在过去的时间"
+        nzTooltipTitle="录制用时"
         nzTooltipPlacement="top"
       >
-        {{ status.elapsed | duration }}
+        {{ status.rec_elapsed | duration }}
       </span>
       <span
         class="data-rate"
         nz-tooltip
-        nzTooltipTitle="当前实时录制速度"
+        nzTooltipTitle="录制速度"
         nzTooltipPlacement="top"
       >
-        {{ status.data_rate | speed }}
+        {{ status.rec_rate | datarate: { spacer: "" } }}
       </span>
       <span
         class="data-count"
         nz-tooltip
-        nzTooltipTitle="已录制的数据"
+        nzTooltipTitle="录制总计"
         nzTooltipPlacement="top"
       >
-        {{ status.data_count | filesize: { spacer: "" } }}
+        {{ status.rec_total | filesize: { spacer: "" } }}
       </span>
       <span
         class="danmu-count"
         nz-tooltip
-        nzTooltipTitle="弹幕数量：{{ status.danmu_count | number: '1.0-0' }}"
+        nzTooltipTitle="弹幕总计：{{ status.danmu_total | number: '1.0-0' }}"
         nzTooltipPlacement="top"
       >
-        {{ status.danmu_count | number: "1.0-0" }}
+        {{ status.danmu_total | number: "1.0-0" }}
       </span>
       <span
         class="quality"
         nz-tooltip
-        nzTooltipTitle="当前录制的画质"
+        nzTooltipTitle="录制画质"
         nzTooltipPlacement="leftTop"
       >
         {{ status.real_quality_number | quality }}

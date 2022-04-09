@@ -26,6 +26,7 @@ import {
   GlobalTaskSettings,
   TaskOptionsIn,
 } from '../../settings/shared/setting.model';
+import { TaskSettingsService } from '../shared/services/task-settings.service';
 
 @Component({
   selector: 'app-task-item',
@@ -54,7 +55,8 @@ export class TaskItemComponent implements OnChanges, OnDestroy {
     private message: NzMessageService,
     private modal: NzModalService,
     private settingService: SettingService,
-    private taskManager: TaskManagerService
+    private taskManager: TaskManagerService,
+    private appTaskSettings: TaskSettingsService
   ) {
     breakpointObserver
       .observe(breakpoints[0])
@@ -71,6 +73,14 @@ export class TaskItemComponent implements OnChanges, OnDestroy {
 
   get toggleRecorderForbidden() {
     return !this.data.task_status.monitor_enabled;
+  }
+
+  get showInfoPanel() {
+    return Boolean(this.appTaskSettings.getSettings(this.roomId).showInfoPanel);
+  }
+
+  set showInfoPanel(value: boolean) {
+    this.appTaskSettings.updateSettings(this.roomId, { showInfoPanel: value });
   }
 
   ngOnChanges(changes: SimpleChanges): void {

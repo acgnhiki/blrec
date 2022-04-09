@@ -15,6 +15,7 @@ import { Observable } from 'rxjs';
 import type { Mutable } from '../../shared/utility-types';
 import {
   BUFFER_OPTIONS,
+  STREAM_FORMAT_OPTIONS,
   QUALITY_OPTIONS,
   TIMEOUT_OPTIONS,
   DISCONNECTION_TIMEOUT_OPTIONS,
@@ -39,6 +40,9 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
 
   readonly settingsForm: FormGroup;
   readonly syncFailedWarningTip = SYNC_FAILED_WARNING_TIP;
+  readonly streamFormatOptions = cloneDeep(STREAM_FORMAT_OPTIONS) as Mutable<
+    typeof STREAM_FORMAT_OPTIONS
+  >;
   readonly qualityOptions = cloneDeep(QUALITY_OPTIONS) as Mutable<
     typeof QUALITY_OPTIONS
   >;
@@ -58,12 +62,17 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
     private settingsSyncService: SettingsSyncService
   ) {
     this.settingsForm = formBuilder.group({
+      streamFormat: [''],
       qualityNumber: [''],
       readTimeout: [''],
       disconnectionTimeout: [''],
       bufferSize: [''],
       saveCover: [''],
     });
+  }
+
+  get streamFormatControl() {
+    return this.settingsForm.get('streamFormat') as FormControl;
   }
 
   get qualityNumberControl() {

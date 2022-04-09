@@ -6,15 +6,15 @@ WORKDIR /app
 VOLUME ["/cfg", "/log", "/rec"]
 
 COPY src src/
-COPY setup.py setup.cfg .
+COPY setup.py setup.cfg ./
 
-RUN sed -i "s/deb.debian.org/mirrors.aliyun.com/g" /etc/apt/sources.list \
-    && sed -i "s/security.debian.org/mirrors.aliyun.com/g" /etc/apt/sources.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends build-essential python3-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip3 install -i https://mirrors.aliyun.com/pypi/simple --no-cache-dir -e . \
-    && apt-get purge -y --auto-remove build-essential python3-dev
+RUN sed -i "s/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g" /etc/apt/sources.list && \
+    sed -i "s/security.debian.org/mirrors.tuna.tsinghua.edu.cn/g" /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg build-essential python3-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip3 install -i https://mirrors.aliyun.com/pypi/simple --no-cache-dir -e . && \
+    apt-get purge -y --auto-remove build-essential python3-dev
 # ref: https://github.com/docker-library/python/issues/60#issuecomment-134322383
 
 ENV DEFAULT_SETTINGS_FILE=/cfg/settings.toml

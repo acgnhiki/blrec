@@ -2,7 +2,7 @@
 import aiohttp
 
 from .api import WebApi
-from .typing import ResponseData
+from .typing import ResponseData, QualityNumber
 from .exceptions import ApiRequestError
 from ..exception import NotFoundError
 
@@ -27,3 +27,16 @@ async def ensure_room_id(room_id: int) -> int:
             raise
     else:
         return result['room_id']
+
+
+def get_quality_name(qn: QualityNumber) -> str:
+    QUALITY_MAPPING = {
+        20000: '4K',
+        10000: '原画',
+        401: '蓝光(杜比)',
+        400: '蓝光',
+        250: '超清',
+        150: '高清',
+        80: '流畅',
+    }
+    return QUALITY_MAPPING.get(qn, '')

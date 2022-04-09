@@ -1,0 +1,85 @@
+@use "../../shared/styles/layout";
+@use "../../shared/styles/list";
+@use "../../shared/styles/text";
+
+.info-panel {
+  position: absolute;
+  top: 2.55rem;
+  bottom: 2rem;
+  left: 0rem;
+  right: 0rem;
+  width: 100%;
+
+  font-size: 1rem;
+
+  @extend %osd-text;
+  @include text.elide-text-overflow;
+
+  overflow: auto;
+  &::-webkit-scrollbar {
+    background-color: transparent;
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #eee;
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #fff;
+  }
+
+  .close-panel {
+    position: absolute;
+    top: 0rem;
+    right: 0rem;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    color: white;
+    background: transparent;
+    border: none;
+    font-size: 1rem;
+
+    @include layout.center-content;
+
+    cursor: pointer;
+  }
+
+  .info-list {
+    @include list.reset-list;
+    width: 100%;
+    height: 100%;
+
+    .info-item {
+      .label {
+        display: inline-block;
+        margin: 0;
+        width: 5rem;
+        text-align: right;
+        &::after {
+          content: "：";
+        }
+      }
+      .value {
+        display: inline-block;
+        margin: 0;
+        text-align: left;
+        span:not(:first-child) {
+          &::before {
+            content: ", ";
+          }
+        }
+      }
+    }
+  }
+}
+
+app-wave-graph {
+  margin-right: 1rem;
+}

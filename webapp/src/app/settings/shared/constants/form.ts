@@ -48,7 +48,14 @@ export const DURATION_LIMIT_OPTIONS = [
 
 export const DELETE_STRATEGIES = [
   { label: '自动', value: DeleteStrategy.AUTO },
+  { label: '谨慎', value: DeleteStrategy.SAFE },
   { label: '从不', value: DeleteStrategy.NEVER },
+] as const;
+
+export const STREAM_FORMAT_OPTIONS = [
+  { label: 'FLV', value: 'flv' },
+  { label: 'HLS (ts)', value: 'ts' },
+  { label: 'HLS (fmp4)', value: 'fmp4' },
 ] as const;
 
 export const QUALITY_OPTIONS = [

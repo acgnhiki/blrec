@@ -5,7 +5,7 @@ from typing import Optional
 import attr
 
 from ..bili.models import RoomInfo, UserInfo
-from ..bili.typing import QualityNumber
+from ..bili.typing import StreamFormat, QualityNumber
 from ..postprocess import DeleteStrategy, PostprocessorStatus
 from ..postprocess.typing import Progress
 
@@ -23,11 +23,16 @@ class TaskStatus:
     monitor_enabled: bool
     recorder_enabled: bool
     running_status: RunningStatus
-    elapsed: float  # time elapsed
-    data_count: int  # Number of Bytes in total
-    data_rate: float  # Number of Bytes per second
-    danmu_count: int  # Number of Danmu in total
+    stream_url: str
+    stream_host: str
+    dl_total: int  # Number of Bytes in total
+    dl_rate: float  # Number of Bytes per second
+    rec_elapsed: float  # time elapsed
+    rec_total: int  # Number of Bytes in total
+    rec_rate: float  # Number of Bytes per second
+    danmu_total: int  # Number of Danmu in total
     danmu_rate: float  # Number of Danmu per minutes
+    real_stream_format: StreamFormat
     real_quality_number: QualityNumber
     recording_path: Optional[str] = None
     postprocessor_status: PostprocessorStatus = PostprocessorStatus.WAITING
@@ -53,6 +58,7 @@ class TaskParam:
     record_super_chat: bool
     save_raw_danmaku: bool
     # RecorderSettings
+    stream_format: StreamFormat
     quality_number: QualityNumber
     read_timeout: int
     disconnection_timeout: Optional[int]

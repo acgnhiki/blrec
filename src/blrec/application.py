@@ -8,6 +8,7 @@ import psutil
 
 from . import __prog__, __version__
 from .flv.data_analyser import MetaData
+from .core.stream_analyzer import StreamProfile
 from .disk_space import SpaceMonitor, SpaceReclaimer
 from .bili.helpers import ensure_room_id
 from .task import (
@@ -17,7 +18,7 @@ from .task import (
     VideoFileDetail,
     DanmakuFileDetail,
 )
-from .exception import ExistsError, ExceptionHandler
+from .exception import ExistsError, ExceptionHandler, exception_callback
 from .event.event_submitters import SpaceEventSubmitter
 from .setting import (
     SettingsManager,
@@ -103,8 +104,9 @@ class Application:
 
     async def launch(self) -> None:
         self._setup()
-        await self._task_manager.load_all_tasks()
         logger.info(f'Launched Application v{__version__}')
+        task = asyncio.create_task(self._task_manager.load_all_tasks())
+        task.add_done_callback(exception_callback)
 
     async def exit(self) -> None:
         await self._exit()
@@ -130,68 +132,104 @@ class Application:
     async def add_task(self, room_id: int) -> int:
         room_id = await ensure_room_id(room_id)
 
-        if self._settings_manager.has_task_settings(room_id):
+        if self._task_manager.has_task(room_id):
             raise ExistsError(
-                f"a task for the room {room_id} is already existed"
+                f'a task for the room {room_id} is already existed'
             )
 
-        settings = await self._settings_manager.add_task_settings(room_id)
+        settings = self._settings_manager.find_task_settings(room_id)
+        if not settings:
+            settings = await self._settings_manager.add_task_settings(room_id)
+
         await self._task_manager.add_task(settings)
-        logger.info(f'Added task: {room_id}')
 
         return room_id
 
     async def remove_task(self, room_id: int) -> None:
+        logger.info(f'Removing task {room_id}...')
         await self._task_manager.remove_task(room_id)
         await self._settings_manager.remove_task_settings(room_id)
-        logger.info(f'Removed task: {room_id}')
+        logger.info(f'Successfully removed task {room_id}')
 
     async def remove_all_tasks(self) -> None:
+        logger.info('Removing all tasks...')
         await self._task_manager.remove_all_tasks()
         await self._settings_manager.remove_all_task_settings()
-        logger.info('Removed all tasks')
+        logger.info('Successfully removed all tasks')
 
     async def start_task(self, room_id: int) -> None:
+        logger.info(f'Starting task {room_id}...')
         await self._task_manager.start_task(room_id)
         await self._settings_manager.mark_task_enabled(room_id)
-        logger.info(f'Started task: {room_id}')
+        logger.info(f'Successfully started task {room_id}')
 
     async def stop_task(self, room_id: int, force: bool = False) -> None:
+        logger.info(f'Stopping task {room_id}...')
         await self._task_manager.stop_task(room_id, force)
         await self._settings_manager.mark_task_disabled(room_id)
-        logger.info(f'Stopped task: {room_id}')
+        logger.info(f'Successfully stopped task {room_id}')
 
     async def start_all_tasks(self) -> None:
+        logger.info('Starting all tasks...')
         await self._task_manager.start_all_tasks()
         await self._settings_manager.mark_all_tasks_enabled()
-        logger.info('Started all tasks')
+        logger.info('Successfully started all tasks')
 
     async def stop_all_tasks(self, force: bool = False) -> None:
+        logger.info('Stopping all tasks...')
         await self._task_manager.stop_all_tasks(force)
         await self._settings_manager.mark_all_tasks_disabled()
-        logger.info('Stopped all tasks')
+        logger.info('Successfully stopped all tasks')
+
+    async def enable_task_monitor(self, room_id: int) -> None:
+        logger.info(f'Enabling monitor for task {room_id}...')
+        await self._task_manager.enable_task_monitor(room_id)
+        await self._settings_manager.mark_task_monitor_enabled(room_id)
+        logger.info(f'Successfully enabled monitor for task {room_id}')
+
+    async def disable_task_monitor(self, room_id: int) -> None:
+        logger.info(f'Disabling monitor for task {room_id}...')
+        await self._task_manager.disable_task_monitor(room_id)
+        await self._settings_manager.mark_task_monitor_disabled(room_id)
+        logger.info(f'Successfully disabled monitor for task {room_id}')
+
+    async def enable_all_task_monitors(self) -> None:
+        logger.info('Enabling monitors for all tasks...')
+        await self._task_manager.enable_all_task_monitors()
+        await self._settings_manager.mark_all_task_monitors_enabled()
+        logger.info('Successfully enabled monitors for all tasks')
+
+    async def disable_all_task_monitors(self) -> None:
+        logger.info('Disabling monitors for all tasks...')
+        await self._task_manager.disable_all_task_monitors()
+        await self._settings_manager.mark_all_task_monitors_disabled()
+        logger.info('Successfully disabled monitors for all tasks')
 
     async def enable_task_recorder(self, room_id: int) -> None:
+        logger.info(f'Enabling recorder for task {room_id}...')
         await self._task_manager.enable_task_recorder(room_id)
         await self._settings_manager.mark_task_recorder_enabled(room_id)
-        logger.info(f'Enabled task recorder: {room_id}')
+        logger.info(f'Successfully enabled recorder for task {room_id}')
 
     async def disable_task_recorder(
         self, room_id: int, force: bool = False
     ) -> None:
+        logger.info(f'Disabling recorder for task {room_id}...')
         await self._task_manager.disable_task_recorder(room_id, force)
         await self._settings_manager.mark_task_recorder_disabled(room_id)
-        logger.info(f'Disabled task recorder: {room_id}')
+        logger.info(f'Successfully disabled recorder for task {room_id}')
 
     async def enable_all_task_recorders(self) -> None:
+        logger.info('Enabling recorders for all tasks...')
         await self._task_manager.enable_all_task_recorders()
         await self._settings_manager.mark_all_task_recorders_enabled()
-        logger.info('Enabled all task recorders')
+        logger.info('Successfully enabled recorders for all tasks')
 
     async def disable_all_task_recorders(self, force: bool = False) -> None:
+        logger.info('Disabling recorders for all tasks...')
         await self._task_manager.disable_all_task_recorders(force)
         await self._settings_manager.mark_all_task_recorders_disabled()
-        logger.info('Disabled all task recorders')
+        logger.info('Successfully disabled recorders for all tasks')
 
     def get_task_data(self, room_id: int) -> TaskData:
         return self._task_manager.get_task_data(room_id)
@@ -204,6 +242,9 @@ class Application:
 
     def get_task_metadata(self, room_id: int) -> Optional[MetaData]:
         return self._task_manager.get_task_metadata(room_id)
+
+    def get_task_stream_profile(self, room_id: int) -> StreamProfile:
+        return self._task_manager.get_task_stream_profile(room_id)
 
     def get_task_video_file_details(
         self, room_id: int
@@ -222,10 +263,14 @@ class Application:
         return self._task_manager.cut_stream(room_id)
 
     async def update_task_info(self, room_id: int) -> None:
+        logger.info(f'Updating info for task {room_id}...')
         await self._task_manager.update_task_info(room_id)
+        logger.info(f'Successfully updated info for task {room_id}')
 
     async def update_all_task_infos(self) -> None:
+        logger.info('Updating info for all tasks...')
         await self._task_manager.update_all_task_infos()
+        logger.info('Successfully updated info for all tasks')
 
     def get_settings(
         self,

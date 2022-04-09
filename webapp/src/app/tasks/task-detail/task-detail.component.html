@@ -23,6 +23,12 @@
       [taskStatus]="taskData.task_status"
     ></app-task-recording-detail>
 
+    <app-task-network-detail
+      *ngIf="taskData"
+      [loading]="loading"
+      [taskStatus]="taskData.task_status"
+    ></app-task-network-detail>
+
     <app-task-postprocessing-detail
       *ngIf="taskData?.task_status?.postprocessing_path"
       [loading]="loading"

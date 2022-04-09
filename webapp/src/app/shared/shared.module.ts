@@ -6,7 +6,7 @@ import { NzPageHeaderModule } from 'ng-zorro-antd/page-header';
 
 import { DataurlPipe } from './pipes/dataurl.pipe';
 import { DurationPipe } from './pipes/duration.pipe';
-import { SpeedPipe } from './pipes/speed.pipe';
+import { DataratePipe } from './pipes/datarate.pipe';
 import { FilesizePipe } from './pipes/filesize.pipe';
 import { QualityPipe } from './pipes/quality.pipe';
 import { ProgressPipe } from './pipes/progress.pipe';
@@ -20,7 +20,7 @@ import { FilestatusPipe } from './pipes/filestatus.pipe';
   declarations: [
     DataurlPipe,
     DurationPipe,
-    SpeedPipe,
+    DataratePipe,
     FilesizePipe,
     QualityPipe,
     SubPageComponent,
@@ -30,15 +30,11 @@ import { FilestatusPipe } from './pipes/filestatus.pipe';
     FilenamePipe,
     FilestatusPipe,
   ],
-  imports: [
-    CommonModule,
-    NzSpinModule,
-    NzPageHeaderModule,
-  ],
+  imports: [CommonModule, NzSpinModule, NzPageHeaderModule],
   exports: [
     DataurlPipe,
     DurationPipe,
-    SpeedPipe,
+    DataratePipe,
     FilesizePipe,
     QualityPipe,
     ProgressPipe,
@@ -48,6 +44,6 @@ import { FilestatusPipe } from './pipes/filestatus.pipe';
     SubPageContentDirective,
     PageSectionComponent,
     FilestatusPipe,
-  ]
+  ],
 })
-export class SharedModule { }
+export class SharedModule {}
