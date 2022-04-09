@@ -81,6 +81,10 @@ class DataAnalyser:
         self._audio_analysed = False
         self._video_analysed = False
 
+    @property
+    def last_timestamp(self) -> int:
+        return self._last_timestamp
+
     def analyse_header(self, header: FlvHeader) -> None:
         assert not self._header_analysed
         self._header_analysed = True

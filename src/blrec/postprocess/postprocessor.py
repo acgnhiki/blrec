@@ -17,7 +17,7 @@ from ..event.event_emitter import EventListener, EventEmitter
 from ..bili.live import Live
 from ..core import Recorder, RecorderEventListener
 from ..exception import submit_exception
-from ..utils.mixins import AsyncStoppableMixin, AsyncCooperationMix
+from ..utils.mixins import AsyncStoppableMixin, AsyncCooperationMixin
 from ..path import extra_metadata_path
 from ..flv.metadata_injector import inject_metadata, InjectProgress
 from ..flv.helpers import is_valid_flv_file
@@ -46,7 +46,7 @@ class Postprocessor(
     EventEmitter[PostprocessorEventListener],
     RecorderEventListener,
     AsyncStoppableMixin,
-    AsyncCooperationMix,
+    AsyncCooperationMixin,
 ):
     def __init__(
         self,
@@ -162,8 +162,11 @@ class Postprocessor(
                 self._queue.task_done()
 
     async def _inject_extra_metadata(self, path: str) -> str:
-        metadata = await get_extra_metadata(path)
-        await self._inject_metadata(path, metadata, self._scheduler)
+        try:
+            metadata = await get_extra_metadata(path)
+            await self._inject_metadata(path, metadata, self._scheduler)
+        except Exception as e:
+            logger.error(f"Failed to inject metadata for '{path}': {repr(e)}")
         return path
 
     async def _remux_flv_to_mp4(self, in_path: str) -> str:
@@ -259,6 +262,9 @@ class Postprocessor(
     ) -> bool:
         if self.delete_source == DeleteStrategy.AUTO:
             if not remux_result.is_failed():
+                return True
+        elif self.delete_source == DeleteStrategy.SAFE:
+            if not remux_result.is_failed() and not remux_result.is_warned():
                 return True
         elif self.delete_source == DeleteStrategy.NEVER:
             return False

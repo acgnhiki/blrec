@@ -30,6 +30,7 @@ import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
+import { NgxEchartsModule } from 'ngx-echarts';
 
 import { SharedModule } from '../shared/shared.module';
 import { TasksRoutingModule } from './tasks-routing.module';
@@ -47,6 +48,9 @@ import { TaskUserInfoDetailComponent } from './task-detail/task-user-info-detail
 import { TaskRoomInfoDetailComponent } from './task-detail/task-room-info-detail/task-room-info-detail.component';
 import { TaskPostprocessingDetailComponent } from './task-detail/task-postprocessing-detail/task-postprocessing-detail.component';
 import { TaskRecordingDetailComponent } from './task-detail/task-recording-detail/task-recording-detail.component';
+import { TaskNetworkDetailComponent } from './task-detail/task-network-detail/task-network-detail.component';
+import { InfoPanelComponent } from './info-panel/info-panel.component';
+import { WaveGraphComponent } from './info-panel/wave-graph/wave-graph.component';
 
 @NgModule({
   declarations: [
@@ -64,6 +68,9 @@ import { TaskRecordingDetailComponent } from './task-detail/task-recording-detai
     TaskRoomInfoDetailComponent,
     TaskPostprocessingDetailComponent,
     TaskRecordingDetailComponent,
+    TaskNetworkDetailComponent,
+    InfoPanelComponent,
+    WaveGraphComponent,
   ],
   imports: [
     CommonModule,
@@ -99,6 +106,9 @@ import { TaskRecordingDetailComponent } from './task-detail/task-recording-detai
     NzTableModule,
     NzStatisticModule,
     NzDescriptionsModule,
+    NgxEchartsModule.forRoot({
+      echarts: () => import('echarts'),
+    }),
 
     TasksRoutingModule,
     SharedModule,

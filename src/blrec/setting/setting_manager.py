@@ -164,6 +164,28 @@ class SettingsManager:
             settings.enable_recorder = False
         await self.dump_settings()
 
+    async def mark_task_monitor_enabled(self, room_id: int) -> None:
+        settings = self.find_task_settings(room_id)
+        assert settings is not None
+        settings.enable_monitor = True
+        await self.dump_settings()
+
+    async def mark_task_monitor_disabled(self, room_id: int) -> None:
+        settings = self.find_task_settings(room_id)
+        assert settings is not None
+        settings.enable_monitor = False
+        await self.dump_settings()
+
+    async def mark_all_task_monitors_enabled(self) -> None:
+        for settings in self._settings.tasks:
+            settings.enable_monitor = True
+        await self.dump_settings()
+
+    async def mark_all_task_monitors_disabled(self) -> None:
+        for settings in self._settings.tasks:
+            settings.enable_monitor = False
+        await self.dump_settings()
+
     async def mark_task_recorder_enabled(self, room_id: int) -> None:
         settings = self.find_task_settings(room_id)
         assert settings is not None

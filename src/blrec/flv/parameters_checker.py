@@ -41,14 +41,14 @@ class ParametersChecker:
         if is_audio_sequence_header(tag):
             if self._last_audio_header_tag is not None:
                 if not tag.is_the_same_as(self._last_audio_header_tag):
-                    logger.warning('Audio parameters changed')
+                    logger.debug(f'Audio parameters changed: {tag}')
                     self._last_audio_header_tag = tag
                     raise AudioParametersChanged()
             self._last_audio_header_tag = tag
         elif is_video_sequence_header(tag):
             if self._last_video_header_tag is not None:
                 if not tag.is_the_same_as(self._last_video_header_tag):
-                    logger.warning('Video parameters changed')
+                    logger.debug(f'Video parameters changed: {tag}')
                     self._last_video_header_tag = tag
                     raise VideoParametersChanged()
             self._last_video_header_tag = tag

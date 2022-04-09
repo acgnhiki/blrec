@@ -114,6 +114,46 @@
           <nz-form-label
             class="setting-label"
             nzNoColon
+            [nzTooltipTitle]="streamFormatTip"
+            >直播流格式</nz-form-label
+          >
+          <ng-template #streamFormatTip>
+            <p>
+              选择要录制的直播流格式<br />
+              <br />
+              FLV 网络不稳定容易中断丢失数据 <br />
+              HLS (ts) 基本不受本地网络影响 <br />
+              HLS (fmp4) 只有少数直播间支持 <br />
+              <br />
+              P.S.<br />
+              非 FLV 格式需要 ffmpeg<br />
+              HLS (fmp4) 不支持会自动切换到 HLS (ts)<br />
+            </p>
+          </ng-template>
+          <nz-form-control class="setting-control select">
+            <nz-select
+              name="streamFormat"
+              [(ngModel)]="model.recorder.streamFormat"
+              [disabled]="options.recorder.streamFormat === null"
+              [nzOptions]="streamFormatOptions"
+            >
+            </nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.recorder.streamFormat !== null"
+            (nzCheckedChange)="
+              options.recorder.streamFormat = $event
+                ? globalSettings.recorder.streamFormat
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
             nzTooltipTitle="所选画质不存在将以原画代替"
             >画质</nz-form-label
           >
@@ -482,8 +522,9 @@
           >
           <ng-template #deleteSourceTip>
             <p>
-              自动: 转换成功才删除源文件<br />
-              从不: 转换后总是保留源文件<br />
+              自动: 没出错就删除源文件<br />
+              谨慎: 没出错且没警告才删除源文件<br />
+              从不: 总是保留源文件<br />
             </p>
           </ng-template>
           <nz-form-control class="setting-control select">

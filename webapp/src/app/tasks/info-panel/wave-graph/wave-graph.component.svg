@@ -1,0 +1,7 @@
+<svg [attr.width]="width" [attr.height]="height">
+  <polyline
+    [attr.stroke]="stroke"
+    fill="none"
+    [attr.points]="polylinePoints"
+    ></polyline>
+</svg>

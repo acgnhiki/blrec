@@ -86,7 +86,7 @@ class UserInfo:
     sign: str
 
     @staticmethod
-    def from_data(data: ResponseData) -> 'UserInfo':
+    def from_web_api_data(data: ResponseData) -> 'UserInfo':
         return UserInfo(
             name=data['name'],
             gender=data['sex'],
@@ -94,4 +94,16 @@ class UserInfo:
             uid=data['mid'],
             level=data['level'],
             sign=data['sign'],
+        )
+
+    @staticmethod
+    def from_app_api_data(data: ResponseData) -> 'UserInfo':
+        card = data['card']
+        return UserInfo(
+            name=card['name'],
+            gender=card['sex'],
+            face=ensure_scheme(card['face'], 'https'),
+            uid=card['mid'],
+            level=card['level_info']['current_level'],
+            sign=card['sign'],
         )

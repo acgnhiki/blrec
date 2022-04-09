@@ -9,6 +9,8 @@ import {
   TaskData,
   DataSelection,
   TaskParam,
+  Metadata,
+  StreamProfile,
   AddTaskResult,
   VideoFileDetail,
   DanmakuFileDetail,
@@ -47,6 +49,16 @@ export class TaskService {
   getTaskParam(roomId: number): Observable<TaskParam> {
     const url = apiUrl + `/api/v1/tasks/${roomId}/param`;
     return this.http.get<TaskParam>(url);
+  }
+
+  getMetadata(roomId: number): Observable<Metadata | null> {
+    const url = apiUrl + `/api/v1/tasks/${roomId}/metadata`;
+    return this.http.get<Metadata | null>(url);
+  }
+
+  getStreamProfile(roomId: number): Observable<StreamProfile> {
+    const url = apiUrl + `/api/v1/tasks/${roomId}/profile`;
+    return this.http.get<StreamProfile>(url);
   }
 
   updateAllTaskInfos(): Observable<ResponseMessage> {

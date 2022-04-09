@@ -1,0 +1,41 @@
+<nz-card nzTitle="网络详情" [nzLoading]="loading">
+  <div class="statistics">
+    <nz-statistic
+      class="stream-host"
+      [nzTitle]="'流主机'"
+      [nzValueTemplate]="streamHost"
+    ></nz-statistic>
+    <ng-template #streamHost>{{ taskStatus.stream_host }}</ng-template>
+
+    <nz-statistic
+      [nzTitle]="'流格式'"
+      [nzValueTemplate]="realStreamFormat"
+    ></nz-statistic>
+    <ng-template #realStreamFormat>{{
+      taskStatus.real_stream_format
+    }}</ng-template>
+
+    <nz-statistic
+      [nzTitle]="'下载速度'"
+      [nzValueTemplate]="downloadRate"
+    ></nz-statistic>
+    <ng-template #downloadRate>{{
+      taskStatus.dl_rate * 8 | datarate: { bitrate: true }
+    }}</ng-template>
+
+    <nz-statistic
+      [nzTitle]="'下载总计'"
+      [nzValueTemplate]="downloadTotal"
+    ></nz-statistic>
+    <ng-template #downloadTotal>{{
+      taskStatus.dl_total | filesize: { spacer: " " }
+    }}</ng-template>
+  </div>
+  <div
+    class="dl-rate-chart"
+    echarts
+    [loading]="loading"
+    [options]="initialChartOptions"
+    [merge]="updatedChartOptions"
+  ></div>
+</nz-card>

@@ -1,12 +1,22 @@
 from __future__ import annotations
 import asyncio
+import logging
 from typing import Dict, Iterator, Optional, TYPE_CHECKING
 
+import aiohttp
+from tenacity import (
+    retry,
+    wait_exponential,
+    stop_after_delay,
+    retry_if_exception_type,
+)
 
 from .task import RecordTask
 from .models import TaskData, TaskParam, VideoFileDetail, DanmakuFileDetail
 from ..flv.data_analyser import MetaData
-from ..exception import NotFoundError
+from ..core.stream_analyzer import StreamProfile
+from ..exception import submit_exception, NotFoundError
+from ..bili.exceptions import ApiRequestError
 if TYPE_CHECKING:
     from ..setting import SettingsManager
 from ..setting import (
@@ -22,76 +32,109 @@ from ..setting import (
 __all__ = 'RecordTaskManager',
 
 
+logger = logging.getLogger(__name__)
+
+
 class RecordTaskManager:
     def __init__(self, settings_manager: SettingsManager) -> None:
         self._settings_manager = settings_manager
         self._tasks: Dict[int, RecordTask] = {}
-        import threading
-        self._lock = threading.Lock()
 
     async def load_all_tasks(self) -> None:
+        logger.info('Loading all tasks...')
+
         settings_list = self._settings_manager.get_settings({'tasks'}).tasks
         assert settings_list is not None
 
         for settings in settings_list:
-            await self.add_task(settings)
+            try:
+                await self.add_task(settings)
+            except Exception as e:
+                submit_exception(e)
+
+        logger.info('Load all tasks complete')
 
     async def destroy_all_tasks(self) -> None:
+        logger.info('Destroying all tasks...')
         if not self._tasks:
             return
-        await asyncio.wait([t.destroy() for t in self._tasks.values()])
+        await asyncio.wait([
+            t.destroy() for t in self._tasks.values() if t.ready
+        ])
         self._tasks.clear()
+        logger.info('Successfully destroyed all task')
 
     def has_task(self, room_id: int) -> bool:
         return room_id in self._tasks
 
+    @retry(
+        reraise=True,
+        retry=retry_if_exception_type((
+            asyncio.TimeoutError, aiohttp.ClientError, ApiRequestError,
+        )),
+        wait=wait_exponential(max=10),
+        stop=stop_after_delay(60),
+    )
     async def add_task(self, settings: TaskSettings) -> None:
+        logger.info(f'Adding task {settings.room_id}...')
+
         task = RecordTask(settings.room_id)
         self._tasks[settings.room_id] = task
 
-        await self._settings_manager.apply_task_header_settings(
-            settings.room_id, settings.header, update_session=False
-        )
-        await task.setup()
+        try:
+            await self._settings_manager.apply_task_header_settings(
+                settings.room_id, settings.header, update_session=False
+            )
+            await task.setup()
 
-        self._settings_manager.apply_task_output_settings(
-            settings.room_id, settings.output
-        )
-        self._settings_manager.apply_task_danmaku_settings(
-            settings.room_id, settings.danmaku
-        )
-        self._settings_manager.apply_task_recorder_settings(
-            settings.room_id, settings.recorder
-        )
-        self._settings_manager.apply_task_postprocessing_settings(
-            settings.room_id, settings.postprocessing
-        )
+            self._settings_manager.apply_task_output_settings(
+                settings.room_id, settings.output
+            )
+            self._settings_manager.apply_task_danmaku_settings(
+                settings.room_id, settings.danmaku
+            )
+            self._settings_manager.apply_task_recorder_settings(
+                settings.room_id, settings.recorder
+            )
+            self._settings_manager.apply_task_postprocessing_settings(
+                settings.room_id, settings.postprocessing
+            )
 
-        if settings.enable_monitor:
-            await task.enable_monitor()
-        if settings.enable_recorder:
-            await task.enable_recorder()
+            if settings.enable_monitor:
+                await task.enable_monitor()
+            if settings.enable_recorder:
+                await task.enable_recorder()
+        except Exception as e:
+            logger.error(
+                f'Failed to add task {settings.room_id} due to: {repr(e)}'
+            )
+            del self._tasks[settings.room_id]
+            raise
+
+        logger.info(f'Successfully added task {settings.room_id}')
 
     async def remove_task(self, room_id: int) -> None:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         await task.disable_recorder(force=True)
         await task.disable_monitor()
         await task.destroy()
         del self._tasks[room_id]
 
     async def remove_all_tasks(self) -> None:
-        coros = [self.remove_task(i) for i in self._tasks]
+        coros = [
+            self.remove_task(i) for i, t in self._tasks.items() if t.ready
+        ]
         if coros:
             await asyncio.wait(coros)
 
     async def start_task(self, room_id: int) -> None:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         await task.update_info()
         await task.enable_monitor()
         await task.enable_recorder()
 
     async def stop_task(self, room_id: int, force: bool = False) -> None:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         await task.disable_recorder(force)
         await task.disable_monitor()
 
@@ -105,46 +148,47 @@ class RecordTaskManager:
         await self.disable_all_task_monitors()
 
     async def enable_task_monitor(self, room_id: int) -> None:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         await task.enable_monitor()
 
     async def disable_task_monitor(self, room_id: int) -> None:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         await task.disable_monitor()
 
     async def enable_all_task_monitors(self) -> None:
-        coros = [t.enable_monitor() for t in self._tasks.values()]
+        coros = [t.enable_monitor() for t in self._tasks.values() if t.ready]
         if coros:
             await asyncio.wait(coros)
 
     async def disable_all_task_monitors(self) -> None:
-        coros = [t.disable_monitor() for t in self._tasks.values()]
+        coros = [t.disable_monitor() for t in self._tasks.values() if t.ready]
         if coros:
             await asyncio.wait(coros)
 
     async def enable_task_recorder(self, room_id: int) -> None:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         await task.enable_recorder()
 
     async def disable_task_recorder(
             self, room_id: int, force: bool = False
     ) -> None:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         await task.disable_recorder(force)
 
     async def enable_all_task_recorders(self) -> None:
-        coros = [t.enable_recorder() for t in self._tasks.values()]
+        coros = [t.enable_recorder() for t in self._tasks.values() if t.ready]
         if coros:
             await asyncio.wait(coros)
 
     async def disable_all_task_recorders(self, force: bool = False) -> None:
-        coros = [t.disable_recorder(force) for t in self._tasks.values()]
+        coros = [
+            t.disable_recorder(force) for t in self._tasks.values() if t.ready
+        ]
         if coros:
             await asyncio.wait(coros)
 
     def get_task_data(self, room_id: int) -> TaskData:
-        task = self._get_task(room_id)
-        assert task.ready, "the task isn't ready yet, couldn't get task data!"
+        task = self._get_task(room_id, check_ready=True)
         return self._make_task_data(task)
 
     def get_all_task_data(self) -> Iterator[TaskData]:
@@ -152,39 +196,43 @@ class RecordTaskManager:
             yield self._make_task_data(task)
 
     def get_task_param(self, room_id: int) -> TaskParam:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         return self._make_task_param(task)
 
     def get_task_metadata(self, room_id: int) -> Optional[MetaData]:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         return task.metadata
+
+    def get_task_stream_profile(self, room_id: int) -> StreamProfile:
+        task = self._get_task(room_id, check_ready=True)
+        return task.stream_profile
 
     def get_task_video_file_details(
         self, room_id: int
     ) -> Iterator[VideoFileDetail]:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         yield from task.video_file_details
 
     def get_task_danmaku_file_details(
         self, room_id: int
     ) -> Iterator[DanmakuFileDetail]:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         yield from task.danmaku_file_details
 
     def can_cut_stream(self, room_id: int) -> bool:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         return task.can_cut_stream()
 
     def cut_stream(self, room_id: int) -> bool:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         return task.cut_stream()
 
     async def update_task_info(self, room_id: int) -> None:
-        task = self._get_task(room_id)
+        task = self._get_task(room_id, check_ready=True)
         await task.update_info()
 
     async def update_all_task_infos(self) -> None:
-        coros = [t.update_info() for t in self._tasks.values()]
+        coros = [t.update_info() for t in self._tasks.values() if t.ready]
         if coros:
             await asyncio.wait(coros)
 
@@ -235,6 +283,7 @@ class RecordTaskManager:
         self, room_id: int, settings: RecorderSettings
     ) -> None:
         task = self._get_task(room_id)
+        task.stream_format = settings.stream_format
         task.quality_number = settings.quality_number
         task.read_timeout = settings.read_timeout
         task.disconnection_timeout = settings.disconnection_timeout
@@ -249,11 +298,15 @@ class RecordTaskManager:
         task.inject_extra_metadata = settings.inject_extra_metadata
         task.delete_source = settings.delete_source
 
-    def _get_task(self, room_id: int) -> RecordTask:
+    def _get_task(self, room_id: int, check_ready: bool = False) -> RecordTask:
         try:
-            return self._tasks[room_id]
+            task = self._tasks[room_id]
         except KeyError:
             raise NotFoundError(f'no task for the room {room_id}')
+        else:
+            if check_ready and not task.ready:
+                raise NotFoundError(f'the task {room_id} is not ready yet')
+            return task
 
     def _make_task_param(self, task: RecordTask) -> TaskParam:
         return TaskParam(
@@ -270,6 +323,7 @@ class RecordTaskManager:
             record_super_chat=task.record_super_chat,
             save_cover=task.save_cover,
             save_raw_danmaku=task.save_raw_danmaku,
+            stream_format=task.stream_format,
             quality_number=task.quality_number,
             read_timeout=task.read_timeout,
             disconnection_timeout=task.disconnection_timeout,

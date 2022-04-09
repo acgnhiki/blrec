@@ -1,0 +1,39 @@
+$grid-width: 200px;
+
+.statistics {
+  --grid-width: #{$grid-width};
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--grid-width));
+  gap: 1em;
+  justify-content: center;
+  margin: 0 auto;
+
+  @media screen and (max-width: 1024px) {
+    --grid-width: 180px;
+  }
+
+  @media screen and (max-width: 720px) {
+    --grid-width: 160px;
+  }
+
+  @media screen and (max-width: 680px) {
+    --grid-width: 140px;
+  }
+
+  @media screen and (max-width: 480px) {
+    --grid-width: 120px;
+  }
+}
+
+.stream-host {
+  grid-column: 1 / 3;
+  grid-row: 1;
+}
+
+.dl-rate-chart {
+  width: 100%;
+  height: 300px;
+  margin: 0;
+  // margin-top: 2em;
+}

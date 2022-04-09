@@ -1,3 +1,4 @@
+import ssl
 import logging
 import asyncio
 import smtplib
@@ -62,10 +63,18 @@ class EmailService(MessagingProvider):
         msg['To'] = self.dst_addr
         msg.set_content(content, subtype=msg_type, charset='utf-8')
 
-        with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port) as smtp:
-            # smtp.set_debuglevel(1)
-            smtp.login(self.src_addr, self.auth_code)
-            smtp.send_message(msg, self.src_addr, self.dst_addr)
+        try:
+            with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port) as smtp:
+                # smtp.set_debuglevel(1)
+                smtp.login(self.src_addr, self.auth_code)
+                smtp.send_message(msg, self.src_addr, self.dst_addr)
+        except ssl.SSLError:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port) as smtp:
+                # smtp.set_debuglevel(1)
+                context = ssl.create_default_context()
+                smtp.starttls(context=context)
+                smtp.login(self.src_addr, self.auth_code)
+                smtp.send_message(msg, self.src_addr, self.dst_addr)
 
     def _check_parameters(self) -> None:
         if not self.src_addr:
@@ -105,7 +114,7 @@ class PushplusResponse(TypedDict):
 
 
 class Pushplus(MessagingProvider):
-    url = 'http://pushplus.hxtrip.com/send'
+    url = 'http://www.pushplus.plus/send'
 
     def __init__(self, token: str = '', topic: str = '') -> None:
         super().__init__()

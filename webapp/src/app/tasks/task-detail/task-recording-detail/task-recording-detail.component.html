@@ -2,23 +2,50 @@
   <div class="statistics">
     <nz-statistic
       [nzTitle]="'录制用时'"
-      [nzValue]="taskStatus.elapsed | duration"
+      [nzValueTemplate]="recordingElapsed"
     ></nz-statistic>
+    <ng-template #recordingElapsed>{{
+      taskStatus.rec_elapsed | duration
+    }}</ng-template>
+
     <nz-statistic
       [nzTitle]="'录制速度'"
-      [nzValue]="taskStatus.data_rate | speed"
+      [nzValueTemplate]="recordingRate"
     ></nz-statistic>
+    <ng-template #recordingRate>{{
+      taskStatus.rec_rate | datarate
+    }}</ng-template>
+
     <nz-statistic
-      [nzTitle]="'已录数据'"
-      [nzValue]="taskStatus.data_count | filesize: { spacer: '' }"
+      [nzTitle]="'录制总计'"
+      [nzValueTemplate]="recordedTotal"
     ></nz-statistic>
+    <ng-template #recordedTotal>{{
+      taskStatus.rec_total | filesize: { spacer: " " }
+    }}</ng-template>
+
     <nz-statistic
-      [nzTitle]="'弹幕数量'"
-      [nzValue]="(taskStatus.danmu_count | number: '1.0-2')!"
+      [nzTitle]="'录制画质'"
+      [nzValueTemplate]="recordingQuality"
     ></nz-statistic>
+    <ng-template #recordingQuality>{{
+      (taskStatus.real_quality_number | quality)! +
+        " " +
+        "(" +
+        taskStatus.real_quality_number +
+        ")"
+    }}</ng-template>
+
     <nz-statistic
-      [nzTitle]="'所录画质'"
-      [nzValue]="(taskStatus.real_quality_number | quality)!"
+      [nzTitle]="'弹幕总计'"
+      [nzValue]="(taskStatus.danmu_total | number: '1.0-2')!"
     ></nz-statistic>
   </div>
+  <div
+    class="rec-rate-chart"
+    echarts
+    [loading]="loading"
+    [options]="initialChartOptions"
+    [merge]="updatedChartOptions"
+  ></div>
 </nz-card>

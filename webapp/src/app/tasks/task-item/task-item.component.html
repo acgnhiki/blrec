@@ -35,6 +35,11 @@
         {{ data.room_info.title }}
       </h2>
 
+      <app-info-panel
+        *ngIf="showInfoPanel"
+        [data]="data"
+        (close)="showInfoPanel = false"
+      ></app-info-panel>
       <app-status-display [status]="data.task_status"></app-status-display>
     </div>
   </a>
@@ -199,6 +204,7 @@
       <li nz-menu-item (click)="stopTask(true)">强制停止任务</li>
       <li nz-menu-item (click)="disableRecorder(true)">强制关闭录制</li>
       <li nz-menu-item (click)="updateTaskInfo()">刷新数据</li>
+      <li nz-menu-item (click)="showInfoPanel = true">显示录制信息</li>
     </ul>
   </ng-template>
 </nz-dropdown-menu>

@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 import asyncio
 from typing import Awaitable, TypeVar, final
@@ -102,18 +103,38 @@ class AsyncStoppableMixin(ABC):
 _T = TypeVar('_T')
 
 
-class AsyncCooperationMix(ABC):
+class AsyncCooperationMixin(ABC):
     def __init__(self) -> None:
         super().__init__()
         self._loop = asyncio.get_running_loop()
 
     def _handle_exception(self, exc: BaseException) -> None:
-        from ..exception import submit_exception  # XXX circular import
+        from ..exception import submit_exception
 
         async def wrapper() -> None:
+            # call submit_exception in a coroutine
+            # workaround for `RuntimeError: no running event loop`
             submit_exception(exc)
         self._run_coroutine(wrapper())
 
     def _run_coroutine(self, coro: Awaitable[_T]) -> _T:
         future = asyncio.run_coroutine_threadsafe(coro, self._loop)
         return future.result()
+
+
+class SupportDebugMixin(ABC):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def _init_for_debug(self, room_id: int) -> None:
+        if (
+            (value := os.environ.get('DEBUG')) and
+            (value == '*' or room_id in value.split(','))
+        ):
+            self._debug = True
+            self._debug_dir = os.path.expanduser(f'~/.blrec/debug/{room_id}')
+            self._debug_dir = os.path.normpath(self._debug_dir)
+            os.makedirs(self._debug_dir, exist_ok=True)
+        else:
+            self._debug = False
+            self._debug_dir = ''

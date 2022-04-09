@@ -29,7 +29,7 @@
 ## 先决条件
 
     Python 3.8+
-    ffmpeg (如果需要转换 flv 为 mp4)
+    ffmpeg、 ffprobe
 
 ## 安装
 

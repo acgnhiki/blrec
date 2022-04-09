@@ -18,6 +18,8 @@ export interface DanmakuSettings {
 
 export type DanmakuOptions = Nullable<DanmakuSettings>;
 
+export type StreamFormat = 'flv' | 'ts' | 'fmp4';
+
 export type QualityNumber =
   | 20000 // 4K
   | 10000 // 原画
@@ -28,6 +30,7 @@ export type QualityNumber =
   | 80; // 流畅
 
 export interface RecorderSettings {
+  streamFormat: StreamFormat;
   qualityNumber: QualityNumber;
   readTimeout: number;
   disconnectionTimeout: number;
@@ -39,6 +42,7 @@ export type RecorderOptions = Nullable<RecorderSettings>;
 
 export enum DeleteStrategy {
   AUTO = 'auto',
+  SAFE = 'safe',
   NEVER = 'never',
 }
 
