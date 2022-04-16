@@ -16,9 +16,21 @@ logger = logging.getLogger(__name__)
 
 
 class FlvReader:
-    def __init__(self, stream: RandomIO) -> None:
+    def __init__(
+        self,
+        stream: RandomIO,
+        *,
+        backup_timestamp: bool = False,
+        restore_timestamp: bool = False,
+    ) -> None:
         self._stream = stream
-        self._parser = FlvParser(stream)
+        self._backup_timestamp = backup_timestamp
+        self._restore_timestamp = restore_timestamp
+        self._parser = FlvParser(
+            stream,
+            backup_timestamp=backup_timestamp,
+            restore_timestamp=restore_timestamp,
+        )
 
     def read_header(self) -> FlvHeader:
         header = self._parser.parse_header()

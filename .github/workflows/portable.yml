@@ -40,11 +40,6 @@ jobs:
       - name: Unzip Python archive
         run: Expand-Archive -LiteralPath "python.zip" -DestinationPath "build\python"
 
-      - name: Enter build directory
-        run: |
-          Set-Location -Path "build"
-          ls
-
       - name: Rename ffmpeg directory
         working-directory: build
         run: Rename-Item -Path $($env:FFMPEG_ARCHIVE_NAME).Substring(0, $($env:FFMPEG_ARCHIVE_NAME).Length - 4) "ffmpeg"
@@ -82,12 +77,6 @@ jobs:
       - name: Copy run.bat
         working-directory: build
         run: Copy-Item "${{ github.workspace }}\run.bat" -Destination ".\run.bat"
-
-      - name: Exit build directory
-        working-directory: build
-        run: |
-          ls
-          Set-Location -Path ".."
 
       - name: Zip files
         run: |

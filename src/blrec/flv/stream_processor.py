@@ -31,7 +31,8 @@ from .exceptions import (
     CutStream,
 )
 from .common import (
-    is_audio_tag, is_video_tag, is_metadata_tag, parse_metadata,
+    is_metadata_tag, parse_metadata, is_audio_tag, is_video_tag,
+    is_video_sequence_header, is_audio_sequence_header,
     is_audio_data_tag, is_video_data_tag, enrich_metadata, update_metadata,
     is_data_tag, read_tags_in_duration,
 )
@@ -63,6 +64,8 @@ class StreamProcessor:
         analyse_data: bool = False,
         dedup_join: bool = False,
         save_extra_metadata: bool = False,
+        backup_timestamp: bool = False,
+        restore_timestamp: bool = False,
     ) -> None:
         self._file_manager = file_manager
         self._parameters_checker = ParametersChecker()
@@ -79,6 +82,8 @@ class StreamProcessor:
         self._analyse_data = analyse_data
         self._dedup_join = dedup_join
         self._save_x_metadata = save_extra_metadata
+        self._backup_timestamp = backup_timestamp
+        self._restore_timestamp = restore_timestamp
 
         self._cancelled: bool = False
         self._finalized: bool = False
@@ -223,7 +228,12 @@ class StreamProcessor:
     def _process_stream(self, stream: RandomIO) -> None:
         logger.debug(f'Processing the {self._stream_count}th stream...')
 
-        self._in_reader = FlvReaderWithTimestampFix(stream)
+        self._in_reader = FlvReaderWithTimestampFix(
+            stream,
+            backup_timestamp=self._backup_timestamp,
+            restore_timestamp=self._restore_timestamp,
+        )
+
         flv_header = self._read_header()
         self._has_audio = flv_header.has_audio()
 
@@ -552,18 +562,23 @@ class StreamProcessor:
         return header
 
     def _ensure_ts_correct(self, tag: FlvTag) -> None:
-        if not is_audio_data_tag(tag) or not is_video_data_tag(tag):
+        if not is_audio_data_tag(tag) and not is_video_data_tag(tag):
             return
         if tag.timestamp + self._delta < 0:
-            self._delta = -tag.timestamp
-            logger.warning('Incorrect timestamp: {}, new delta: {}'.format(
-                tag, self._delta
-            ))
+            self._delta = (
+                self._last_tags[0].timestamp +
+                self._in_reader.calc_interval(tag) - tag.timestamp
+            )
+            logger.warning(
+                f'Incorrect timestamp, updated delta: {self._delta}\n'
+                f'last output tag: {self._last_tags[0]}\n'
+                f'current tag: {tag}'
+            )
 
     def _correct_ts(self, tag: FlvTag, delta: int) -> FlvTag:
         if delta == 0 and tag.timestamp >= 0:
             return tag
-        return tag.evolve(timestamp=max(0, tag.timestamp + delta))
+        return tag.evolve(timestamp=tag.timestamp + delta)
 
     def _calc_delta_duplicated(self, last_duplicated_tag: FlvTag) -> int:
         return self._last_tags[0].timestamp - last_duplicated_tag.timestamp
@@ -764,8 +779,17 @@ class RobustFlvReader(FlvReader):
 
 
 class FlvReaderWithTimestampFix(RobustFlvReader):
-    def __init__(self, stream: RandomIO) -> None:
-        super().__init__(stream)
+    def __init__(
+        self,
+        stream: RandomIO,
+        backup_timestamp: bool = False,
+        restore_timestamp: bool = False,
+    ) -> None:
+        super().__init__(
+            stream,
+            backup_timestamp=backup_timestamp,
+            restore_timestamp=restore_timestamp,
+        )
         self._last_tag: Optional[FlvTag] = None
         self._last_video_tag: Optional[VideoTag] = None
         self._last_audio_tag: Optional[AudioTag] = None
@@ -842,11 +866,17 @@ class FlvReaderWithTimestampFix(RobustFlvReader):
         if is_video_tag(tag):
             if self._last_video_tag is None:
                 return False
-            return tag.timestamp <= self._last_video_tag.timestamp
+            if is_video_sequence_header(self._last_video_tag):
+                return tag.timestamp < self._last_video_tag.timestamp
+            else:
+                return tag.timestamp <= self._last_video_tag.timestamp
         elif is_audio_tag(tag):
             if self._last_audio_tag is None:
                 return False
-            return tag.timestamp <= self._last_audio_tag.timestamp
+            if is_audio_sequence_header(self._last_audio_tag):
+                return tag.timestamp < self._last_audio_tag.timestamp
+            else:
+                return tag.timestamp <= self._last_audio_tag.timestamp
         else:
             return False
 

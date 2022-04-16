@@ -28,7 +28,7 @@ export function toBitRateString(
   let unit: string;
 
   if (bitrate <= 0) {
-    return '0 kbps/s';
+    return '0' + spacer + 'kbps';
   }
 
   if (bitrate < 1e6) {
@@ -60,7 +60,7 @@ export function toByteRateString(
   let unit: string;
 
   if (rate <= 0) {
-    return '0B/s';
+    return '0' + spacer + 'B/s';
   }
 
   if (rate < 1e3) {

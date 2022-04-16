@@ -1,8 +1,10 @@
 <nz-modal
   nzTitle="修改文件路径模板"
   nzCentered
-  [nzFooter]="modalFooter"
   [(nzVisible)]="visible"
+  [nzOkDisabled]="control.invalid || control.value.trim() === value"
+  (nzOnOk)="handleConfirm()"
+  (nzOnCancel)="handleCancel()"
 >
   <ng-container *nzModalContent>
     <form nz-form [formGroup]="settingsForm">

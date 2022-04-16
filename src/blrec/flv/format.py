@@ -37,8 +37,15 @@ __all__ = 'FlvParser', 'FlvDumper'
 
 
 class FlvParser:
-    def __init__(self, stream: RandomIO) -> None:
+    def __init__(
+        self,
+        stream: RandomIO,
+        backup_timestamp: bool = False,
+        restore_timestamp: bool = False,
+    ) -> None:
         self._stream = stream
+        self._backup_timestamp = backup_timestamp
+        self._restore_timestamp = restore_timestamp
         self._reader = StructReader(stream)
 
     def parse_header(self) -> FlvHeader:
@@ -108,19 +115,42 @@ class FlvParser:
 
     def parse_flv_tag_header(self, data: bytes) -> FlvTagHeader:
         reader = StructReader(BytesIO(data))
+
         flag = reader.read_ui8()
         filtered = bool(flag & 0b0010_0000)
         if filtered:
             raise FlvDataError('Unsupported Filtered FLV Tag', data)
+
         tag_type = TagType(flag & 0b0001_1111)
         data_size = reader.read_ui24()
         timestamp = reader.read_ui24()
         timestamp_extended = reader.read_ui8()
-        timestamp = timestamp_extended << 24 | timestamp
         stream_id = reader.read_ui24()
-        return FlvTagHeader(
-            filtered, tag_type, data_size, timestamp, stream_id
-        )
+
+        if self._backup_timestamp:
+            return FlvTagHeader(
+                filtered=filtered,
+                tag_type=tag_type,
+                data_size=data_size,
+                timestamp=timestamp_extended << 24 | timestamp,
+                stream_id=timestamp,
+            )
+        elif self._restore_timestamp:
+            return FlvTagHeader(
+                filtered=filtered,
+                tag_type=tag_type,
+                data_size=data_size,
+                timestamp=stream_id,
+                stream_id=stream_id,
+            )
+        else:
+            return FlvTagHeader(
+                filtered=filtered,
+                tag_type=tag_type,
+                data_size=data_size,
+                timestamp=timestamp_extended << 24 | timestamp,
+                stream_id=stream_id,
+            )
 
     def parse_audio_tag_header(self, data: bytes) -> AudioTagHeader:
         reader = StructReader(BytesIO(data))

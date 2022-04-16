@@ -84,6 +84,7 @@ class FLVStreamRecorder(
                     analyse_data=True,
                     dedup_join=True,
                     save_extra_metadata=True,
+                    backup_timestamp=True,
                 )
 
                 def update_size(size: int) -> None:
@@ -182,6 +183,7 @@ class FLVStreamRecorder(
                 url = self._get_live_stream_url()
             except FlvStreamCorruptedError as e:
                 logger.warning(repr(e))
+                self._use_candidate_stream = not self._use_candidate_stream
                 url = self._get_live_stream_url()
 
     def _streaming(self, url: str) -> None:

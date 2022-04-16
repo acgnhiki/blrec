@@ -387,6 +387,7 @@ class HLSStreamRecorder(
                 analyse_data=True,
                 dedup_join=True,
                 save_extra_metadata=True,
+                backup_timestamp=True,
             )
             self._stream_processor.size_updates.subscribe(update_size)
 

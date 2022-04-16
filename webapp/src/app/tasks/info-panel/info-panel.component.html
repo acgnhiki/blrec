@@ -86,7 +86,7 @@
       <span class="label">下载速度</span>
       <app-wave-graph [value]="data.task_status.dl_rate"></app-wave-graph>
       <span class="value">
-        {{ data.task_status.dl_rate | datarate: { bitrate: true } }}
+        {{ data.task_status.dl_rate * 8 | datarate: { bitrate: true } }}
       </span>
     </li>
     <li class="info-item">
