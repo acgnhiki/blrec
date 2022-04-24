@@ -1,14 +1,16 @@
+import re
 import os
 import io
 import errno
 import shlex
 import logging
-from threading import Thread, Event
+from threading import Thread, Condition
 from subprocess import Popen, PIPE, CalledProcessError
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 
 from ..utils.mixins import StoppableMixin, SupportDebugMixin
+from ..utils.io import wait_for
 
 
 logger = logging.getLogger(__name__)
@@ -17,15 +19,21 @@ logger = logging.getLogger(__name__)
 __all__ = 'StreamRemuxer',
 
 
+class FFmpegError(Exception):
+    pass
+
+
 class StreamRemuxer(StoppableMixin, SupportDebugMixin):
+    _ERROR_PATTERN = re.compile(
+        r'\b(error|failed|missing|invalid|corrupt)\b', re.IGNORECASE
+    )
+
     def __init__(self, room_id: int, bufsize: int = 1024 * 1024) -> None:
         super().__init__()
         self._room_id = room_id
         self._bufsize = bufsize
         self._exception: Optional[Exception] = None
-        self._subprocess_setup = Event()
-        self._MAX_ERROR_MESSAGES = 10
-        self._error_messages: List[str] = []
+        self._ready = Condition()
         self._env = None
 
         self._init_for_debug(room_id)
@@ -50,15 +58,22 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
 
     def __enter__(self):  # type: ignore
         self.start()
-        self.wait_for_subprocess()
+        self.wait()
         return self
 
     def __exit__(self, exc_type, value, traceback):  # type: ignore
         self.stop()
         self.raise_for_exception()
 
-    def wait_for_subprocess(self) -> None:
-        self._subprocess_setup.wait()
+    def wait(self, timeout: Optional[float] = None) -> bool:
+        with self._ready:
+            return self._ready.wait(timeout=timeout)
+
+    def restart(self) -> None:
+        logger.debug('Restarting stream remuxer...')
+        self.stop()
+        self.start()
+        logger.debug('Restarted stream remuxer')
 
     def raise_for_exception(self) -> None:
         if not self.exception:
@@ -85,12 +100,17 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
     def _run(self) -> None:
         logger.debug('Started stream remuxer')
         self._exception = None
-        self._error_messages.clear()
-        self._subprocess_setup.clear()
         try:
             self._run_subprocess()
-        except BrokenPipeError:
-            pass
+        except BrokenPipeError as e:
+            logger.debug(repr(e))
+        except FFmpegError as e:
+            if not self._stopped:
+                logger.warning(repr(e))
+            else:
+                logger.debug(repr(e))
+        except TimeoutError as e:
+            logger.debug(repr(e))
         except Exception as e:
             # OSError: [Errno 22] Invalid argument
             # https://stackoverflow.com/questions/23688492/oserror-errno-22-invalid-argument-in-subprocess
@@ -100,43 +120,43 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
                 self._exception = e
                 logger.exception(e)
         finally:
+            self._stopped = True
             logger.debug('Stopped stream remuxer')
 
     def _run_subprocess(self) -> None:
-        cmd = 'ffmpeg -i pipe:0 -c copy -f flv pipe:1'
+        cmd = 'ffmpeg -xerror -i pipe:0 -c copy -copyts -f flv pipe:1'
         args = shlex.split(cmd)
 
         with Popen(
             args, stdin=PIPE, stdout=PIPE, stderr=PIPE,
             bufsize=self._bufsize, env=self._env,
         ) as self._subprocess:
-            self._subprocess_setup.set()
-            assert self._subprocess.stderr is not None
+            with self._ready:
+                self._ready.notify_all()
 
-            while not self._stopped:
-                data = self._subprocess.stderr.readline()
-                if not data:
-                    if self._subprocess.poll() is not None:
-                        break
-                    else:
-                        continue
-                line = data.decode('utf-8', errors='backslashreplace')
-                if self._debug:
-                    logger.debug('ffmpeg: %s', line)
-                self._check_error(line)
+            assert self._subprocess.stderr is not None
+            with io.TextIOWrapper(
+                self._subprocess.stderr,
+                encoding='utf-8',
+                errors='backslashreplace'
+            ) as stderr:
+                while not self._stopped:
+                    line = wait_for(stderr.readline, timeout=10)
+                    if not line:
+                        if self._subprocess.poll() is not None:
+                            break
+                        else:
+                            continue
+                    if self._debug:
+                        logger.debug('ffmpeg: %s', line)
+                    self._check_error(line)
 
         if not self._stopped and self._subprocess.returncode not in (0, 255):
             # 255: Exiting normally, received signal 2.
-            raise CalledProcessError(
-                self._subprocess.returncode,
-                cmd=cmd,
-                output='\n'.join(self._error_messages),
-            )
+            raise CalledProcessError(self._subprocess.returncode, cmd=cmd)
 
     def _check_error(self, line: str) -> None:
-        if 'error' not in line.lower() and 'failed' not in line.lower():
+        match = self._ERROR_PATTERN.search(line)
+        if not match:
             return
-        logger.warning(f'ffmpeg error: {line}')
-        self._error_messages.append(line)
-        if len(self._error_messages) > self._MAX_ERROR_MESSAGES:
-            self._error_messages.remove(self._error_messages[0])
+        raise FFmpegError(line)

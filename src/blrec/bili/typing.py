@@ -1,7 +1,10 @@
 from typing import Any, Dict, Literal, Mapping
 
 
-Danmaku = Mapping[str, Any]
+ApiPlatform = Literal[
+    'web',
+    'android',
+]
 
 QualityNumber = Literal[
     20000,  # 4K
@@ -26,3 +29,5 @@ StreamCodec = Literal[
 
 JsonResponse = Dict[str, Any]
 ResponseData = Dict[str, Any]
+
+Danmaku = Mapping[str, Any]

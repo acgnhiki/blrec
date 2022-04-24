@@ -3,12 +3,12 @@ import time
 import errno
 import logging
 from queue import Queue, Empty
-from threading import Thread, Event, Lock
+from threading import Thread, Event, Lock, Condition
 from datetime import datetime
 from contextlib import suppress
 from urllib.parse import urlparse
 
-from typing import Set, Optional
+from typing import List, Set, Optional
 
 import urllib3
 import requests
@@ -30,10 +30,12 @@ from tenacity import (
 from .stream_remuxer import StreamRemuxer
 from .stream_analyzer import ffprobe, StreamProfile
 from .base_stream_recorder import BaseStreamRecorder, StreamProxy
+from .exceptions import FailedToFetchSegments
 from .retry import wait_exponential_for_same_exceptions, before_sleep_log
 from ..bili.live import Live
 from ..bili.typing import StreamFormat, QualityNumber
 from ..flv.stream_processor import StreamProcessor
+from ..flv.exceptions import FlvDataError, FlvStreamCorruptedError
 from ..utils.mixins import (
     AsyncCooperationMixin, AsyncStoppableMixin, SupportDebugMixin
 )
@@ -81,6 +83,9 @@ class HLSStreamRecorder(
             duration_limit=duration_limit,
         )
         self._init_for_debug(self._live.room_id)
+        self._init_section_data: Optional[bytes] = None
+        self._ready_to_fetch_segments = Condition()
+        self._failed_to_fetch_segments = Event()
         self._stream_analysed_lock = Lock()
         self._last_segment_uris: Set[str] = set()
 
@@ -95,52 +100,54 @@ class HLSStreamRecorder(
                 )
                 self._playlist_debug_file = open(path, 'wt', encoding='utf-8')
 
-            with StreamRemuxer(self._live.room_id) as self._stream_remuxer:
-                with requests.Session() as self._session:
-                    self._session.headers.update(self._live.headers)
+            self._session = requests.Session()
+            self._session.headers.update(self._live.headers)
 
-                    self._segment_queue: Queue[Segment] = Queue(maxsize=1000)
-                    self._segment_data_queue: Queue[bytes] = Queue(maxsize=100)
-                    self._stream_host_available = Event()
+            self._stream_remuxer = StreamRemuxer(self._live.room_id)
+            self._segment_queue: Queue[Segment] = Queue(maxsize=1000)
+            self._segment_data_queue: Queue[bytes] = Queue(maxsize=100)
+            self._stream_host_available = Event()
 
-                    self._segment_fetcher_thread = Thread(
-                        target=self._run_segment_fetcher,
-                        name=f'SegmentFetcher::{self._live.room_id}',
-                        daemon=True,
-                    )
-                    self._segment_fetcher_thread.start()
+            self._segment_fetcher_thread = Thread(
+                target=self._run_segment_fetcher,
+                name=f'SegmentFetcher::{self._live.room_id}',
+                daemon=True,
+            )
+            self._segment_fetcher_thread.start()
 
-                    self._segment_data_feeder_thread = Thread(
-                        target=self._run_segment_data_feeder,
-                        name=f'SegmentDataFeeder::{self._live.room_id}',
-                        daemon=True,
-                    )
-                    self._segment_data_feeder_thread.start()
+            self._segment_data_feeder_thread = Thread(
+                target=self._run_segment_data_feeder,
+                name=f'SegmentDataFeeder::{self._live.room_id}',
+                daemon=True,
+            )
+            self._segment_data_feeder_thread.start()
 
-                    self._stream_processor_thread = Thread(
-                        target=self._run_stream_processor,
-                        name=f'StreamProcessor::{self._live.room_id}',
-                        daemon=True,
-                    )
-                    self._stream_processor_thread.start()
+            self._stream_processor_thread = Thread(
+                target=self._run_stream_processor,
+                name=f'StreamProcessor::{self._live.room_id}',
+                daemon=True,
+            )
+            self._stream_processor_thread.start()
 
-                    try:
-                        self._main_loop()
-                    finally:
-                        if self._stream_processor is not None:
-                            self._stream_processor.cancel()
-                        self._segment_fetcher_thread.join(timeout=10)
-                        self._segment_data_feeder_thread.join(timeout=10)
-                        self._last_segment_uris.clear()
-                        del self._segment_queue
-                        del self._segment_data_queue
+            try:
+                self._main_loop()
+            finally:
+                if self._stream_processor is not None:
+                    self._stream_processor.cancel()
+                self._stream_processor_thread.join(timeout=10)
+                self._segment_fetcher_thread.join(timeout=10)
+                self._segment_data_feeder_thread.join(timeout=10)
+                self._stream_remuxer.stop()
+                self._stream_remuxer.raise_for_exception()
+                self._last_segment_uris.clear()
+                del self._segment_queue
+                del self._segment_data_queue
         except TryAgain:
             pass
         except Exception as e:
             self._handle_exception(e)
         finally:
-            with suppress(Exception):
-                self._stream_processor_thread.join(timeout=10)
+            self._stopped = True
             with suppress(Exception):
                 self._playlist_debug_file.close()
             self._emit_event('stream_recording_stopped')
@@ -201,6 +208,8 @@ class HLSStreamRecorder(
             except requests.exceptions.ConnectionError as e:
                 logger.warning(repr(e))
                 self._wait_for_connection_error()
+            except FailedToFetchSegments:
+                url = self._get_live_stream_url()
             except RetryError as e:
                 logger.warning(repr(e))
 
@@ -212,6 +221,14 @@ class HLSStreamRecorder(
             self._stream_analysed = False
 
         while not self._stopped:
+            if self._failed_to_fetch_segments.is_set():
+                with self._segment_queue.mutex:
+                    self._segment_queue.queue.clear()
+                with self._ready_to_fetch_segments:
+                    self._ready_to_fetch_segments.notify_all()
+                self._failed_to_fetch_segments.clear()
+                raise FailedToFetchSegments()
+
             content = self._fetch_playlist(url)
             playlist = m3u8.loads(content, uri=url)
 
@@ -252,8 +269,10 @@ class HLSStreamRecorder(
 
             if playlist.is_endlist:
                 logger.debug('playlist ended')
-                self._stopped = True
-                break
+                self._run_coroutine(self._live.update_room_info())
+                if not self._live.is_living():
+                    self._stopped = True
+                    break
 
             time.sleep(1)
 
@@ -272,6 +291,8 @@ class HLSStreamRecorder(
         assert self._stream_remuxer is not None
         init_section = None
         self._init_section_data = None
+        num_of_continuously_failed = 0
+        self._failed_to_fetch_segments.clear()
 
         while not self._stopped:
             try:
@@ -307,6 +328,13 @@ class HLSStreamRecorder(
                     except requests.exceptions.HTTPError as e:
                         logger.warning(f'Failed to fetch segment: {repr(e)}')
                         if e.response.status_code in (403, 404, 599):
+                            num_of_continuously_failed += 1
+                            if num_of_continuously_failed >= 3:
+                                self._failed_to_fetch_segments.set()
+                                with self._ready_to_fetch_segments:
+                                    self._ready_to_fetch_segments.wait()
+                                    num_of_continuously_failed = 0
+                                    self._failed_to_fetch_segments.clear()
                             break
                     except requests.exceptions.ConnectionError as e:
                         logger.warning(repr(e))
@@ -315,6 +343,7 @@ class HLSStreamRecorder(
                         logger.warning(repr(e))
                         break
                     else:
+                        num_of_continuously_failed = 0
                         break
 
     def _run_segment_data_feeder(self) -> None:
@@ -329,6 +358,8 @@ class HLSStreamRecorder(
 
     def _segment_data_feeder(self) -> None:
         assert self._stream_remuxer is not None
+        MAX_SEGMENT_DATA_CACHE = 3
+        segment_data_cache: List[bytes] = []
         bytes_io = io.BytesIO()
         segment_count = 0
 
@@ -359,10 +390,41 @@ class HLSStreamRecorder(
                             bytes_io = io.BytesIO()
                             segment_count = 0
                             self._stream_analysed = True
+
             try:
+                if self._stream_remuxer.stopped:
+                    self._stream_remuxer.start()
+                    while True:
+                        ready = self._stream_remuxer.wait(timeout=1)
+                        if self._stopped:
+                            return
+                        if ready:
+                            break
+                    if segment_data_cache:
+                        if self._init_section_data:
+                            self._stream_remuxer.input.write(
+                                self._init_section_data
+                            )
+                        for cached_data in segment_data_cache:
+                            if cached_data == self._init_section_data:
+                                continue
+                            self._stream_remuxer.input.write(cached_data)
+
                 self._stream_remuxer.input.write(data)
-            except BrokenPipeError:
-                return
+            except BrokenPipeError as e:
+                if not self._stopped:
+                    logger.warning(repr(e))
+                else:
+                    logger.debug(repr(e))
+            except ValueError as e:
+                if not self._stopped:
+                    logger.warning(repr(e))
+                else:
+                    logger.debug(repr(e))
+
+            segment_data_cache.append(data)
+            if len(segment_data_cache) > MAX_SEGMENT_DATA_CACHE:
+                segment_data_cache.pop(0)
 
     def _run_stream_processor(self) -> None:
         logger.debug('Stream processor thread started')
@@ -392,15 +454,44 @@ class HLSStreamRecorder(
             self._stream_processor.size_updates.subscribe(update_size)
 
             try:
-                self._stream_host_available.wait()
-                self._stream_processor.set_metadata(self._make_metadata())
-                self._stream_processor.process_stream(
-                    StreamProxy(self._stream_remuxer.output),  # type: ignore
-                )
+                while not self._stopped:
+                    while True:
+                        ready = self._stream_remuxer.wait(timeout=1)
+                        if self._stopped:
+                            return
+                        if ready:
+                            break
+
+                    self._stream_host_available.wait()
+                    self._stream_processor.set_metadata(self._make_metadata())
+
+                    try:
+                        self._stream_processor.process_stream(
+                            StreamProxy(
+                                self._stream_remuxer.output,
+                                read_timeout=10,
+                            )  # type: ignore
+                        )
+                    except BrokenPipeError as e:
+                        logger.debug(repr(e))
+                    except TimeoutError as e:
+                        logger.debug(repr(e))
+                        self._stream_remuxer.stop()
+                    except FlvDataError as e:
+                        logger.warning(repr(e))
+                        self._stream_remuxer.stop()
+                    except FlvStreamCorruptedError as e:
+                        logger.warning(repr(e))
+                        self._stream_remuxer.stop()
+                    except ValueError as e:
+                        logger.warning(repr(e))
+                        self._stream_remuxer.stop()
             except Exception as e:
                 if not self._stopped:
                     logger.exception(e)
                     self._handle_exception(e)
+                else:
+                    logger.debug(repr(e))
             finally:
                 self._stream_processor.finalize()
                 self._progress_bar = None

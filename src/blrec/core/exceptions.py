@@ -1,0 +1,3 @@
+
+class FailedToFetchSegments(Exception):
+    pass

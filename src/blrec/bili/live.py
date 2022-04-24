@@ -15,7 +15,9 @@ from tenacity import (
 
 from .api import AppApi, WebApi
 from .models import LiveStatus, RoomInfo, UserInfo
-from .typing import StreamFormat, QualityNumber, StreamCodec, ResponseData
+from .typing import (
+    ApiPlatform, StreamFormat, QualityNumber, StreamCodec, ResponseData
+)
 from .exceptions import (
     LiveRoomHidden, LiveRoomLocked, LiveRoomEncrypted, NoStreamAvailable,
     NoStreamFormatAvailable, NoStreamCodecAvailable, NoStreamQualityAvailable,
@@ -177,12 +179,14 @@ class Live:
     async def get_live_stream_urls(
         self,
         qn: QualityNumber = 10000,
+        *,
+        api_platform: ApiPlatform = 'android',
         stream_format: StreamFormat = 'flv',
         stream_codec: StreamCodec = 'avc',
     ) -> List[str]:
-        try:
+        if api_platform == 'android':
             info = await self._appapi.get_room_play_info(self._room_id, qn)
-        except Exception:
+        else:
             info = await self._webapi.get_room_play_info(self._room_id, qn)
 
         self._check_room_play_info(info)

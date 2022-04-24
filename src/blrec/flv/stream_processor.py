@@ -33,8 +33,7 @@ from .exceptions import (
 from .common import (
     is_metadata_tag, parse_metadata, is_audio_tag, is_video_tag,
     is_video_sequence_header, is_audio_sequence_header,
-    is_audio_data_tag, is_video_data_tag, enrich_metadata, update_metadata,
-    is_data_tag, read_tags_in_duration,
+    enrich_metadata, update_metadata, is_data_tag, read_tags_in_duration,
 )
 from ..path import extra_metadata_path
 if TYPE_CHECKING:
@@ -562,18 +561,26 @@ class StreamProcessor:
         return header
 
     def _ensure_ts_correct(self, tag: FlvTag) -> None:
-        if not is_audio_data_tag(tag) and not is_video_data_tag(tag):
+        if not tag.timestamp + self._delta < 0:
             return
-        if tag.timestamp + self._delta < 0:
+        logger.warning(
+            f'Incorrect timestamp: {tag.timestamp + self._delta}\n'
+            f'last output tag: {self._last_tags[0]}\n'
+            f'current tag: {tag}'
+        )
+        if tag.is_audio_tag() or tag.is_video_tag():
             self._delta = (
                 self._last_tags[0].timestamp +
                 self._in_reader.calc_interval(tag) - tag.timestamp
             )
-            logger.warning(
-                f'Incorrect timestamp, updated delta: {self._delta}\n'
-                f'last output tag: {self._last_tags[0]}\n'
-                f'current tag: {tag}'
+            logger.debug(f'Updated delta: {self._delta}')
+        elif tag.is_script_tag():
+            self._delta = (
+                self._last_tags[0].timestamp - tag.timestamp
             )
+            logger.debug(f'Updated delta: {self._delta}')
+        else:
+            pass
 
     def _correct_ts(self, tag: FlvTag, delta: int) -> FlvTag:
         if delta == 0 and tag.timestamp >= 0:

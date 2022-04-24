@@ -1,5 +1,12 @@
 # 更新日志
 
+## 1.6.2
+
+- 忽略 Windows 注册表 JavaScript MIME 设置 (issue #12, 27)
+- 修复 HLS 录制出错 (issue #39, 41)
+- 修 bug (issue #47)
+- Windows 绿色版默认主机绑定 0.0.0.0 并加上 api key
+
 ## 1.6.1
 
 - 修复 bug (issue #37, 38, 40)

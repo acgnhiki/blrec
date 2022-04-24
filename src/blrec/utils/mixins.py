@@ -1,6 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 import asyncio
+import threading
 from typing import Awaitable, TypeVar, final
 
 
@@ -8,24 +9,28 @@ class SwitchableMixin(ABC):
     def __init__(self) -> None:
         super().__init__()
         self._enabled = False
+        self._enabled_lock = threading.Lock()
 
     @property
     def enabled(self) -> bool:
-        return self._enabled
+        with self._enabled_lock:
+            return self._enabled
 
     @final
     def enable(self) -> None:
-        if self._enabled:
-            return
-        self._enabled = True
-        self._do_enable()
+        with self._enabled_lock:
+            if self._enabled:
+                return
+            self._enabled = True
+            self._do_enable()
 
     @final
     def disable(self) -> None:
-        if not self._enabled:
-            return
-        self._enabled = False
-        self._do_disable()
+        with self._enabled_lock:
+            if not self._enabled:
+                return
+            self._enabled = False
+            self._do_disable()
 
     @abstractmethod
     def _do_enable(self) -> None:
@@ -40,24 +45,28 @@ class StoppableMixin(ABC):
     def __init__(self) -> None:
         super().__init__()
         self._stopped = True
+        self._stopped_lock = threading.Lock()
 
     @property
     def stopped(self) -> bool:
-        return self._stopped
+        with self._stopped_lock:
+            return self._stopped
 
     @final
     def start(self) -> None:
-        if not self._stopped:
-            return
-        self._stopped = False
-        self._do_start()
+        with self._stopped_lock:
+            if not self._stopped:
+                return
+            self._stopped = False
+            self._do_start()
 
     @final
     def stop(self) -> None:
-        if self._stopped:
-            return
-        self._stopped = True
-        self._do_stop()
+        with self._stopped_lock:
+            if self._stopped:
+                return
+            self._stopped = True
+            self._do_stop()
 
     @abstractmethod
     def _do_start(self) -> None:

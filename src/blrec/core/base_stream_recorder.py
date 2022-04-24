@@ -34,10 +34,11 @@ from .stream_analyzer import StreamProfile
 from .statistics import StatisticsCalculator
 from ..event.event_emitter import EventListener, EventEmitter
 from ..bili.live import Live
-from ..bili.typing import StreamFormat, QualityNumber
+from ..bili.typing import ApiPlatform, StreamFormat, QualityNumber
 from ..bili.helpers import get_quality_name
 from ..flv.data_analyser import MetaData
 from ..flv.stream_processor import StreamProcessor, BaseOutputFileManager
+from ..utils.io import wait_for
 from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin
 from ..path import escape_path
 from ..logging.room_id import aio_task_with_room_id
@@ -102,7 +103,8 @@ class BaseStreamRecorder(
         self._quality_number = quality_number
         self._real_stream_format: Optional[StreamFormat] = None
         self._real_quality_number: Optional[QualityNumber] = None
-        self._use_candidate_stream: bool = False
+        self._api_platform: ApiPlatform = 'android'
+        self._use_alternative_stream: bool = False
         self.buffer_size = buffer_size or io.DEFAULT_BUFFER_SIZE  # bytes
         self.read_timeout = read_timeout or 3  # seconds
         self.disconnection_timeout = disconnection_timeout or 600  # seconds
@@ -268,7 +270,8 @@ class BaseStreamRecorder(
         self._stream_url = ''
         self._stream_host = ''
         self._stream_profile = {}
-        self._use_candidate_stream = False
+        self._api_platform = 'android'
+        self._use_alternative_stream = False
         self._connection_recovered.clear()
         self._thread = Thread(
             target=self._run, name=f'StreamRecorder::{self._live.room_id}'
@@ -287,6 +290,12 @@ class BaseStreamRecorder(
     def _run(self) -> None:
         raise NotImplementedError()
 
+    def _rotate_api_platform(self) -> None:
+        if self._api_platform == 'android':
+            self._api_platform = 'web'
+        else:
+            self._api_platform = 'android'
+
     @retry(
         reraise=True,
         retry=retry_if_exception_type((
@@ -300,11 +309,16 @@ class BaseStreamRecorder(
         fmt = self._real_stream_format or self.stream_format
         logger.info(
             f'Getting the live stream url... qn: {qn}, format: {fmt}, '
-            f'use_candidate_stream: {self._use_candidate_stream}'
+            f'api platform: {self._api_platform}, '
+            f'use alternative stream: {self._use_alternative_stream}'
         )
         try:
             urls = self._run_coroutine(
-                self._live.get_live_stream_urls(qn, fmt)
+                self._live.get_live_stream_urls(
+                    qn,
+                    api_platform=self._api_platform,
+                    stream_format=fmt,
+                )
             )
         except NoStreamQualityAvailable:
             logger.info(
@@ -332,6 +346,10 @@ class BaseStreamRecorder(
         except NoStreamCodecAvailable as e:
             logger.warning(repr(e))
             raise TryAgain
+        except Exception as e:
+            logger.warning(f'Failed to get live stream urls: {repr(e)}')
+            self._rotate_api_platform()
+            raise TryAgain
         else:
             logger.info(
                 f'Adopted the stream format ({fmt}) and quality ({qn})'
@@ -339,17 +357,19 @@ class BaseStreamRecorder(
             self._real_quality_number = qn
             self._real_stream_format = fmt
 
-        if not self._use_candidate_stream:
+        if not self._use_alternative_stream:
             url = urls[0]
         else:
             try:
                 url = urls[1]
             except IndexError:
+                self._use_alternative_stream = False
+                self._rotate_api_platform()
                 logger.info(
-                    'No candidate stream url available, '
-                    'will using the primary stream url instead.'
+                    'No alternative stream url available, will using the primary'
+                    f' stream url from {self._api_platform} api instead.'
                 )
-                url = urls[0]
+                raise TryAgain
         logger.info(f"Got live stream url: '{url}'")
 
         return url
@@ -441,8 +461,14 @@ B站直播录像
 
 
 class StreamProxy(io.RawIOBase):
-    def __init__(self, stream: io.BufferedIOBase) -> None:
+    def __init__(
+        self,
+        stream: io.BufferedIOBase,
+        *,
+        read_timeout: Optional[float] = None,
+    ) -> None:
         self._stream = stream
+        self._read_timmeout = read_timeout
         self._offset = 0
         self._size_updates = Subject()
 
@@ -465,7 +491,14 @@ class StreamProxy(io.RawIOBase):
         return True
 
     def read(self, size: int = -1) -> bytes:
-        data = self._stream.read(size)
+        if self._stream.closed:
+            raise EOFError
+        if self._read_timmeout:
+            data = wait_for(
+                self._stream.read, args=(size, ), timeout=self._read_timmeout
+            )
+        else:
+            data = self._stream.read(size)
         self._offset += len(data)
         self._size_updates.on_next(len(data))
         return data
@@ -474,7 +507,14 @@ class StreamProxy(io.RawIOBase):
         return self._offset
 
     def readinto(self, b: Any) -> int:
-        n = self._stream.readinto(b)
+        if self._stream.closed:
+            raise EOFError
+        if self._read_timmeout:
+            n = wait_for(
+                self._stream.readinto, args=(b, ), timeout=self._read_timmeout
+            )
+        else:
+            n = self._stream.readinto(b)
         self._offset += n
         self._size_updates.on_next(n)
         return n

@@ -116,8 +116,8 @@ class FlvTagHeader:
     filtered: bool
     tag_type: TagType
     data_size: int = attr.ib(validator=[non_negative_integer_validator])
-    timestamp: int = attr.ib(validator=[non_negative_integer_validator])
-    stream_id: int = attr.ib(validator=[non_negative_integer_validator])
+    timestamp: int
+    stream_id: int
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)

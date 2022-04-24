@@ -106,6 +106,7 @@ class FLVStreamRecorder(
         except Exception as e:
             self._handle_exception(e)
         finally:
+            self._stopped = True
             if self._stream_processor is not None:
                 self._stream_processor.finalize()
                 self._stream_processor = None
@@ -151,7 +152,6 @@ class FLVStreamRecorder(
                 except Exception as e:
                     logger.exception(e)
                     self._handle_exception(e)
-                    self._stopped = True
 
     def _streaming_loop(self) -> None:
         url = self._get_live_stream_url()
@@ -177,13 +177,12 @@ class FLVStreamRecorder(
             except requests.exceptions.ConnectionError as e:
                 logger.warning(repr(e))
                 self._wait_for_connection_error()
-            except FlvDataError as e:
+            except (FlvDataError, FlvStreamCorruptedError) as e:
                 logger.warning(repr(e))
-                self._use_candidate_stream = not self._use_candidate_stream
-                url = self._get_live_stream_url()
-            except FlvStreamCorruptedError as e:
-                logger.warning(repr(e))
-                self._use_candidate_stream = not self._use_candidate_stream
+                if not self._use_alternative_stream:
+                    self._use_alternative_stream = True
+                else:
+                    self._rotate_api_platform()
                 url = self._get_live_stream_url()
 
     def _streaming(self, url: str) -> None:

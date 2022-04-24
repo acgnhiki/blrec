@@ -6,6 +6,7 @@ from fastapi import FastAPI, status, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 from pydantic import ValidationError
 from pkg_resources import resource_filename
 
@@ -142,6 +143,20 @@ class WebAppFiles(StaticFiles):
         if path == '404.html':
             path = 'index.html'
         return await super().lookup_path(path)
+
+    def file_response(self, full_path: str, *args, **kwargs) -> Response:  # type: ignore # noqa
+        # ignore MIME types from Windows registry
+        # workaround for https://github.com/acgnhiki/blrec/issues/12
+        response = super().file_response(full_path, *args, **kwargs)
+        if full_path.endswith('.js'):
+            js_media_type = 'application/javascript'
+            if response.media_type != js_media_type:
+                response.media_type = js_media_type
+                headers = response.headers
+                headers['content-type'] = js_media_type
+                response.raw_headers = headers.raw
+                del response._headers
+        return response
 
 
 directory = resource_filename(__name__, '../data/webapp')

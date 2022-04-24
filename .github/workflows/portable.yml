@@ -78,6 +78,10 @@ jobs:
         working-directory: build
         run: Copy-Item "${{ github.workspace }}\run.bat" -Destination ".\run.bat"
 
+      - name: Copy run.ps1
+        working-directory: build
+        run: Copy-Item "${{ github.workspace }}\run.ps1" -Destination ".\run.ps1"
+
       - name: Zip files
         run: |
           ls build
