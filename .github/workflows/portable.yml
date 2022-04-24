@@ -85,7 +85,7 @@ jobs:
       - name: Zip files
         run: |
           ls build
-          Compress-Archive -Path @("build\run.bat", "build\python", "build\ffmpeg") -DestinationPath "dist\blrec-${{ github.ref_name }}-win64.zip"
+          Compress-Archive -Path @("build\run.bat", "build\run.ps1", "build\python", "build\ffmpeg") -DestinationPath "dist\blrec-${{ github.ref_name }}-win64.zip"
           ls dist
 
       - name: Upload distributions to release
