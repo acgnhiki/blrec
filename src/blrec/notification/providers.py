@@ -12,7 +12,7 @@ import aiohttp
 from ..utils.patterns import Singleton
 
 
-__all__ = 'MessagingProvider', 'EmailService', 'Serverchan', 'Pushplus'
+__all__ = 'MessagingProvider', 'EmailService', 'Serverchan', 'Pushplus', 'Telegram'
 
 
 logger = logging.getLogger(__name__)
@@ -143,3 +143,38 @@ class Pushplus(MessagingProvider):
                 response = cast(PushplusResponse, await res.json())
                 if response['code'] != 200:
                     raise HTTPException(response['code'], response['msg'])
+
+class TelegramResponse(TypedDict):
+    ok: bool
+    result: dict
+
+class Telegram(MessagingProvider):
+    def __init__(self, token: str = '', chatid: str = '') -> None:
+        super().__init__()
+        self.token = token
+        self.chatid = chatid
+
+    async def send_message(self, title: str, content: str) -> None:
+        self._check_parameters()
+        await self._post_message(title, content)
+
+    def _check_parameters(self) -> None:
+        if not self.token:
+            raise ValueError('No token supplied')
+        if not self.chatid:
+            raise ValueError('No chatid supplied')
+        
+    async def _post_message(self, title: str, content: str) -> None:
+        url = f'https://api.telegram.org/bot{self.token}/sendMessage'
+        payload = {
+            'chatid': self.chatid,
+            'text': title + '\n' + content,
+            'parse_mode': 'HTML',
+        }
+
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.post(url, json=payload) as res:
+                response = cast(TelegramResponse, await res.json())
+                print(response)
+                if not response['ok']:
+                    raise HTTPException(response['result']['error_code'], response['result']['description'])

@@ -14,6 +14,7 @@ from .providers import (
     MessagingProvider,
     Serverchan,
     Pushplus,
+    Telegram,
 )
 from .message import (
     make_live_info_content,
@@ -36,7 +37,8 @@ __all__ = (
     'MessageNotifier',
     'EmailNotifier',
     'ServerchanNotifier',
-    'PushplusNotifier'
+    'PushplusNotifier',
+    'TelegramNotifier',
 )
 
 
@@ -198,3 +200,14 @@ class PushplusNotifier(MessageNotifier):
     def _do_disable(self) -> None:
         super()._do_disable()
         logger.debug('Disabled Pushplus notifier')
+
+class TelegramNotifier(MessageNotifier):
+    provider = Telegram.get_instance()
+
+    def _do_enable(self) -> None:
+        super()._do_enable()
+        logger.debug('Enabled Telegram notifier')
+
+    def _do_disable(self) -> None:
+        super()._do_disable()
+        logger.debug('Disabled Telegram notifier')

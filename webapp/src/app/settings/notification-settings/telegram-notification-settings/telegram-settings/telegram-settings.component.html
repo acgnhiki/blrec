@@ -1,0 +1,60 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label required"
+      nzFor="token"
+      nzNoColon
+      nzRequired
+      >token</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control input"
+      nzHasFeedback
+      [nzErrorTip]="tokenErrorTip"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        tokenControl.valid && !syncStatus.token ? 'warning' : tokenControl
+      "
+    >
+      <input id="token" type="text" required nz-input formControlName="token" />
+      <ng-template #tokenErrorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入 token！
+        </ng-container>
+        <ng-container *ngIf="control.hasError('pattern')">
+          token 无效
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzFor="chatid" nzNoColon nzRequired
+      >chatid</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control input"
+      nzHasFeedback
+      [nzErrorTip]="chatidErrorTip"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        chatidControl.valid && !syncStatus.chatid ? 'warning' : chatidControl
+      "
+    >
+      <input
+        id="chatid"
+        type="text"
+        required
+        nz-input
+        formControlName="chatid"
+      />
+      <ng-template #chatidErrorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入 chatid！
+        </ng-container>
+        <ng-container *ngIf="control.hasError('pattern')">
+          chatid 无效
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+</form>

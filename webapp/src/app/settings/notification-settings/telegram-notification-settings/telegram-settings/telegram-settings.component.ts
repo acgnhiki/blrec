@@ -6,34 +6,33 @@ import {
   OnChanges,
   ChangeDetectorRef,
 } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 
-import { Observable } from 'rxjs';
 import mapValues from 'lodash-es/mapValues';
 
-import { NotifierSettings } from '../../../../shared/setting.model';
+import { TelegramSettings } from '../../../shared/setting.model';
+import { filterValueChanges } from '../../../shared/rx-operators';
 import {
   SettingsSyncService,
   SyncStatus,
   calcSyncStatus,
-} from '../../../../shared/services/settings-sync.service';
+} from '../../../shared/services/settings-sync.service';
 import { SYNC_FAILED_WARNING_TIP } from 'src/app/settings/shared/constants/form';
 
 @Component({
-  selector: 'app-notifier-settings',
-  templateUrl: './notifier-settings.component.html',
-  styleUrls: ['./notifier-settings.component.scss'],
+  selector: 'app-telegram-settings',
+  templateUrl: './telegram-settings.component.html',
+  styleUrls: ['./telegram-settings.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NotifierSettingsComponent implements OnInit, OnChanges {
-  @Input() settings!: NotifierSettings;
-  @Input() keyOfSettings!:
-    | 'emailNotification'
-    | 'serverchanNotification'
-    | 'pushplusNotification'
-    | 'telegramNotification';
-
-  syncStatus!: SyncStatus<NotifierSettings>;
+export class TelegramSettingsComponent implements OnInit, OnChanges {
+  @Input() settings!: TelegramSettings;
+  syncStatus!: SyncStatus<TelegramSettings>;
 
   readonly settingsForm: FormGroup;
   readonly syncFailedWarningTip = SYNC_FAILED_WARNING_TIP;
@@ -44,12 +43,17 @@ export class NotifierSettingsComponent implements OnInit, OnChanges {
     private settingsSyncService: SettingsSyncService
   ) {
     this.settingsForm = formBuilder.group({
-      enabled: [''],
+      token: ['', [Validators.required, Validators.pattern(/^[0-9]{8,10}:[a-zA-Z0-9_-]{35}$/)]],
+      chatid: ['', [Validators.required, Validators.pattern(/^(-|[0-9]){0,}$/)]],
     });
   }
 
-  get enabledControl() {
-    return this.settingsForm.get('enabled') as FormControl;
+  get tokenControl() {
+    return this.settingsForm.get('token') as FormControl;
+  }
+
+  get chatidControl() {
+    return this.settingsForm.get('chatid') as FormControl;
   }
 
   ngOnChanges(): void {
@@ -60,9 +64,11 @@ export class NotifierSettingsComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.settingsSyncService
       .syncSettings(
-        this.keyOfSettings,
+        'telegramNotification',
         this.settings,
-        this.settingsForm.valueChanges as Observable<NotifierSettings>
+        this.settingsForm.valueChanges.pipe(
+          filterValueChanges<TelegramSettings>(this.settingsForm)
+        )
       )
       .subscribe((detail) => {
         this.syncStatus = { ...this.syncStatus, ...calcSyncStatus(detail) };

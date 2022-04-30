@@ -23,11 +23,13 @@ from .models import (
     EmailSettings,
     ServerchanSettings,
     PushplusSettings,
+    TelegramSettings,
     NotifierSettings,
     NotificationSettings,
     EmailNotificationSettings,
     ServerchanNotificationSettings,
     PushplusNotificationSettings,
+    TelegramNotificationSettings,
     WebHookSettings,
 )
 from .typing import KeyOfSettings, KeySetOfSettings
@@ -63,11 +65,13 @@ __all__ = (
     'EmailSettings',
     'ServerchanSettings',
     'PushplusSettings',
+    'TelegramSettings',
     'NotifierSettings',
     'NotificationSettings',
     'EmailNotificationSettings',
     'ServerchanNotificationSettings',
     'PushplusNotificationSettings',
+    'TelegramNotificationSettings',
     'WebHookSettings',
 
     'update_settings',

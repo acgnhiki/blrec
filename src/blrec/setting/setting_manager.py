@@ -21,7 +21,7 @@ from .models import (
 )
 from .typing import KeySetOfSettings
 from ..webhook import WebHook
-from ..notification import Notifier, EmailService, Serverchan, Pushplus
+from ..notification import Notifier, EmailService, Serverchan, Pushplus, Telegram
 from ..logging import configure_logger
 from ..exception import NotFoundError
 if TYPE_CHECKING:
@@ -340,6 +340,13 @@ class SettingsManager:
         self._apply_notifier_settings(notifier, settings)
         self._apply_notification_settings(notifier, settings)
 
+    def apply_telegram_notification_settings(self) -> None:
+        notifier = self._app._telegram_notifier
+        settings = self._settings.telegram_notification
+        self._apply_telegram_settings(notifier.provider)
+        self._apply_notifier_settings(notifier, settings)
+        self._apply_notification_settings(notifier, settings)
+
     def apply_webhooks_settings(self) -> None:
         webhooks = [WebHook.from_settings(s) for s in self._settings.webhooks]
         self._app._webhook_emitter.webhooks = webhooks
@@ -357,6 +364,10 @@ class SettingsManager:
     def _apply_pushplus_settings(self, pushplus: Pushplus) -> None:
         pushplus.token = self._settings.pushplus_notification.token
         pushplus.topic = self._settings.pushplus_notification.topic
+
+    def _apply_telegram_settings(self, telegram: Telegram) -> None:
+        telegram.token = self._settings.telegram_notification.token
+        telegram.chatid = self._settings.telegram_notification.chatid
 
     def _apply_notifier_settings(
         self, notifier: Notifier, settings: NotifierSettings
