@@ -14,6 +14,7 @@ from typing import (
 
 
 import toml
+from blrec.notification.providers import Telegram
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field, BaseSettings, validator, PrivateAttr
 from pydantic.networks import HttpUrl, EmailStr
@@ -52,11 +53,13 @@ __all__ = (
     'EmailSettings',
     'ServerchanSettings',
     'PushplusSettings',
+    'TelegramSettings',
     'NotifierSettings',
     'NotificationSettings',
     'EmailNotificationSettings',
     'ServerchanNotificationSettings',
     'PushplusNotificationSettings',
+    'TelegramNotificationSettings',
     'WebHookSettings',
 )
 
@@ -353,6 +356,20 @@ class PushplusSettings(BaseModel):
             raise ValueError('token is invalid')
         return value
 
+class TelegramSettings(BaseModel):
+    token: str = ''
+    chatid: str = ''
+
+    @validator('token')
+    def _validate_token(cls, value: str) -> str:
+        if value != '' and not re.fullmatch(r'[0-9]{8,10}:[a-zA-Z0-9_-]{35}', value):
+            raise ValueError('token is invalid')
+        return value
+    @validator('chatid')
+    def _validate_chatid(cls, value: str) -> str:
+        if value != '' and not re.fullmatch(r'(-|[0-9]){0,}', value):
+            raise ValueError('chatid is invalid')
+        return value
 
 class NotifierSettings(BaseModel):
     enabled: bool = False
@@ -382,6 +399,10 @@ class PushplusNotificationSettings(
 ):
     pass
 
+class TelegramNotificationSettings(
+    TelegramSettings,NotifierSettings, NotificationSettings
+):
+    pass
 
 class WebHookEventSettings(BaseModel):
     live_began: bool = True
@@ -425,6 +446,8 @@ class Settings(BaseModel):
         ServerchanNotificationSettings()
     pushplus_notification: PushplusNotificationSettings = \
         PushplusNotificationSettings()
+    telegram_notification: TelegramNotificationSettings = \
+        TelegramNotificationSettings()
     webhooks: Annotated[List[WebHookSettings], Field(max_items=50)] = []
 
     @classmethod
@@ -472,6 +495,7 @@ class SettingsIn(BaseModel):
     email_notification: Optional[EmailNotificationSettings] = None
     serverchan_notification: Optional[ServerchanNotificationSettings] = None
     pushplus_notification: Optional[PushplusNotificationSettings] = None
+    telegram_notification: Optional[TelegramNotificationSettings] = None
     webhooks: Optional[List[WebHookSettings]] = None
 
 

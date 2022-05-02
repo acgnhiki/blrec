@@ -52,5 +52,6 @@ AliasKeyOfSettings = Literal[
     'emailNotification',
     'serverchanNotification',
     'pushplusNotification',
+    'telegramNotification',
     'webhooks',
 ]

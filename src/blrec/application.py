@@ -32,6 +32,7 @@ from .notification import (
     EmailNotifier,
     ServerchanNotifier,
     PushplusNotifier,
+    TelegramNotifier,
 )
 from .webhook import WebHookEmitter
 
@@ -327,9 +328,11 @@ class Application:
         self._email_notifier = EmailNotifier()
         self._serverchan_notifier = ServerchanNotifier()
         self._pushplus_notifier = PushplusNotifier()
+        self._telegram_notifier = TelegramNotifier()
         self._settings_manager.apply_email_notification_settings()
         self._settings_manager.apply_serverchan_notification_settings()
         self._settings_manager.apply_pushplus_notification_settings()
+        self._settings_manager.apply_telegram_notification_settings()
 
     def _setup_webhooks(self) -> None:
         self._webhook_emitter = WebHookEmitter()
@@ -359,9 +362,11 @@ class Application:
         self._email_notifier.disable()
         self._serverchan_notifier.disable()
         self._pushplus_notifier.disable()
+        self._telegram_notifier.disable()
         del self._email_notifier
         del self._serverchan_notifier
         del self._pushplus_notifier
+        del self._telegram_notifier
 
     def _destroy_webhooks(self) -> None:
         self._webhook_emitter.disable()

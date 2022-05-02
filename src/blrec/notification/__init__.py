@@ -4,12 +4,14 @@ from .notifiers import (
     EmailNotifier,
     ServerchanNotifier,
     PushplusNotifier,
+    TelegramNotifier,
 )
 from .providers import (
     MessagingProvider,
     EmailService,
     Serverchan,
     Pushplus,
+    Telegram,
 )
 
 
@@ -18,10 +20,12 @@ __all__ = (
     'EmailService',
     'Serverchan',
     'Pushplus',
+    'Telegram',
 
     'Notifier',
     'MessageNotifier',
     'EmailNotifier',
     'ServerchanNotifier',
     'PushplusNotifier',
+    'TelegramNotifier',
 )

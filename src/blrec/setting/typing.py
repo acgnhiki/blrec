@@ -14,6 +14,7 @@ KeyOfSettings = Literal[
     'email_notification',
     'serverchan_notification',
     'pushplus_notification',
+    'telegram_notification',
     'webhooks',
 ]
 

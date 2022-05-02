@@ -28,6 +28,7 @@ import { SettingsResolver } from './shared/services/settings.resolver';
 import { EmailNotificationSettingsResolver } from './shared/services/email-notification-settings.resolver';
 import { ServerchanNotificationSettingsResolver } from './shared/services/serverchan-notification-settings.resolver';
 import { PushplusNotificationSettingsResolver } from './shared/services/pushplus-notification-settings.resolver';
+import { TelegramNotificationSettingsResolver } from './shared/services/telegram-notification-settings.resolver';
 import { WebhookSettingsResolver } from './shared/services/webhook-settings.resolver';
 import { SettingsRoutingModule } from './settings-routing.module';
 import { SettingsComponent } from './settings.component';
@@ -50,6 +51,8 @@ import { ServerchanNotificationSettingsComponent } from './notification-settings
 import { ServerchanSettingsComponent } from './notification-settings/serverchan-notification-settings/serverchan-settings/serverchan-settings.component';
 import { PushplusNotificationSettingsComponent } from './notification-settings/pushplus-notification-settings/pushplus-notification-settings.component';
 import { PushplusSettingsComponent } from './notification-settings/pushplus-notification-settings/pushplus-settings/pushplus-settings.component';
+import { TelegramNotificationSettingsComponent } from './notification-settings/telegram-notification-settings/telegram-notification-settings.component';
+import { TelegramSettingsComponent } from './notification-settings/telegram-notification-settings/telegram-settings/telegram-settings.component';
 import { NotifierSettingsComponent } from './notification-settings/shared/components/notifier-settings/notifier-settings.component';
 import { WebhookManagerComponent } from './webhook-settings/webhook-manager/webhook-manager.component';
 import { WebhookEditDialogComponent } from './webhook-settings/webhook-edit-dialog/webhook-edit-dialog.component';
@@ -80,6 +83,8 @@ import { PathTemplateEditDialogComponent } from './output-settings/path-template
     ServerchanSettingsComponent,
     PushplusNotificationSettingsComponent,
     PushplusSettingsComponent,
+    TelegramNotificationSettingsComponent,
+    TelegramSettingsComponent,
     NotifierSettingsComponent,
     WebhookManagerComponent,
     WebhookEditDialogComponent,
@@ -121,6 +126,7 @@ import { PathTemplateEditDialogComponent } from './output-settings/path-template
     EmailNotificationSettingsResolver,
     ServerchanNotificationSettingsResolver,
     PushplusNotificationSettingsResolver,
+    TelegramNotificationSettingsResolver,
     WebhookSettingsResolver,
   ],
 })

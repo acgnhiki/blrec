@@ -134,6 +134,13 @@ export interface PushplusSettings {
 
 export const KEYS_OF_PUSHPLUS_SETTINGS = ['token', 'topic'] as const;
 
+export interface TelegramSettings {
+  token: string;
+  chatid: string;
+}
+
+export const KEYS_OF_TELEGRAM_SETTINGS = ['token', 'chatid'] as const;
+
 export interface NotifierSettings {
   enabled: boolean;
 }
@@ -163,6 +170,10 @@ export type ServerchanNotificationSettings = ServerchanSettings &
   NotificationSettings;
 
 export type PushplusNotificationSettings = PushplusSettings &
+  NotifierSettings &
+  NotificationSettings;
+
+export type TelegramNotificationSettings = TelegramSettings &
   NotifierSettings &
   NotificationSettings;
 
@@ -201,6 +212,7 @@ export interface Settings {
   emailNotification: EmailNotificationSettings;
   serverchanNotification: ServerchanNotificationSettings;
   pushplusNotification: PushplusNotificationSettings;
+  telegramNotification: TelegramNotificationSettings;
   webhooks: WebhookSettings[];
 }
 
