@@ -21,7 +21,9 @@ from .models import (
 )
 from .typing import KeySetOfSettings
 from ..webhook import WebHook
-from ..notification import Notifier, EmailService, Serverchan, Pushplus, Telegram
+from ..notification import (
+    Notifier, EmailService, Serverchan, Pushplus, Telegram
+)
 from ..logging import configure_logger
 from ..exception import NotFoundError
 if TYPE_CHECKING:

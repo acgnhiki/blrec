@@ -201,6 +201,7 @@ class PushplusNotifier(MessageNotifier):
         super()._do_disable()
         logger.debug('Disabled Pushplus notifier')
 
+
 class TelegramNotifier(MessageNotifier):
     provider = Telegram.get_instance()
 

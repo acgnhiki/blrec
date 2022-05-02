@@ -14,7 +14,6 @@ from typing import (
 
 
 import toml
-from blrec.notification.providers import Telegram
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import Field, BaseSettings, validator, PrivateAttr
 from pydantic.networks import HttpUrl, EmailStr
@@ -356,20 +355,25 @@ class PushplusSettings(BaseModel):
             raise ValueError('token is invalid')
         return value
 
+
 class TelegramSettings(BaseModel):
     token: str = ''
     chatid: str = ''
 
     @validator('token')
     def _validate_token(cls, value: str) -> str:
-        if value != '' and not re.fullmatch(r'[0-9]{8,10}:[a-zA-Z0-9_-]{35}', value):
+        if value != '' and not re.fullmatch(
+            r'[0-9]{8,10}:[a-zA-Z0-9_-]{35}', value
+        ):
             raise ValueError('token is invalid')
         return value
+
     @validator('chatid')
     def _validate_chatid(cls, value: str) -> str:
         if value != '' and not re.fullmatch(r'(-|[0-9]){0,}', value):
             raise ValueError('chatid is invalid')
         return value
+
 
 class NotifierSettings(BaseModel):
     enabled: bool = False
@@ -399,10 +403,12 @@ class PushplusNotificationSettings(
 ):
     pass
 
+
 class TelegramNotificationSettings(
-    TelegramSettings,NotifierSettings, NotificationSettings
+    TelegramSettings, NotifierSettings, NotificationSettings
 ):
     pass
+
 
 class WebHookEventSettings(BaseModel):
     live_began: bool = True
