@@ -6,35 +6,33 @@ import {
   OnChanges,
   ChangeDetectorRef,
 } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 
-import { Observable } from 'rxjs';
 import mapValues from 'lodash-es/mapValues';
 
-import { NotifierSettings } from '../../../../shared/setting.model';
+import { PushdeerSettings } from '../../../shared/setting.model';
+import { filterValueChanges } from '../../../shared/rx-operators';
 import {
   SettingsSyncService,
   SyncStatus,
   calcSyncStatus,
-} from '../../../../shared/services/settings-sync.service';
+} from '../../../shared/services/settings-sync.service';
 import { SYNC_FAILED_WARNING_TIP } from 'src/app/settings/shared/constants/form';
 
 @Component({
-  selector: 'app-notifier-settings',
-  templateUrl: './notifier-settings.component.html',
-  styleUrls: ['./notifier-settings.component.scss'],
+  selector: 'app-pushdeer-settings',
+  templateUrl: './pushdeer-settings.component.html',
+  styleUrls: ['./pushdeer-settings.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NotifierSettingsComponent implements OnInit, OnChanges {
-  @Input() settings!: NotifierSettings;
-  @Input() keyOfSettings!:
-    | 'emailNotification'
-    | 'serverchanNotification'
-    | 'pushdeerNotification'
-    | 'pushplusNotification'
-    | 'telegramNotification';
-
-  syncStatus!: SyncStatus<NotifierSettings>;
+export class PushdeerSettingsComponent implements OnInit, OnChanges {
+  @Input() settings!: PushdeerSettings;
+  syncStatus!: SyncStatus<PushdeerSettings>;
 
   readonly settingsForm: FormGroup;
   readonly syncFailedWarningTip = SYNC_FAILED_WARNING_TIP;
@@ -45,12 +43,20 @@ export class NotifierSettingsComponent implements OnInit, OnChanges {
     private settingsSyncService: SettingsSyncService
   ) {
     this.settingsForm = formBuilder.group({
-      enabled: [''],
+      server: ['', [Validators.pattern(/^https?:\/\/.+/)]],
+      pushkey: [
+        '',
+        [Validators.required, Validators.pattern(/^[a-zA-Z\d]{41}$/)],
+      ],
     });
   }
 
-  get enabledControl() {
-    return this.settingsForm.get('enabled') as FormControl;
+  get serverControl() {
+    return this.settingsForm.get('server') as FormControl;
+  }
+
+  get pushkeyControl() {
+    return this.settingsForm.get('pushkey') as FormControl;
   }
 
   ngOnChanges(): void {
@@ -61,9 +67,11 @@ export class NotifierSettingsComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.settingsSyncService
       .syncSettings(
-        this.keyOfSettings,
+        'pushdeerNotification',
         this.settings,
-        this.settingsForm.valueChanges as Observable<NotifierSettings>
+        this.settingsForm.valueChanges.pipe(
+          filterValueChanges<Partial<PushdeerSettings>>(this.settingsForm)
+        )
       )
       .subscribe((detail) => {
         this.syncStatus = { ...this.syncStatus, ...calcSyncStatus(detail) };

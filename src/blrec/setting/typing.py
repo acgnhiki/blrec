@@ -13,6 +13,7 @@ KeyOfSettings = Literal[
     'space',
     'email_notification',
     'serverchan_notification',
+    'pushdeer_notification',
     'pushplus_notification',
     'telegram_notification',
     'webhooks',

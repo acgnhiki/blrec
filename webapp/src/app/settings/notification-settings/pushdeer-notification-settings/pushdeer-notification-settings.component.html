@@ -1,0 +1,24 @@
+<app-sub-page pageTitle="PushDeer 通知">
+  <ng-template appSubPageContent>
+    <app-page-section>
+      <app-notifier-settings
+        [settings]="notifierSettings"
+        keyOfSettings="pushdeerNotification"
+      ></app-notifier-settings>
+    </app-page-section>
+
+    <app-page-section name="PushDeer">
+      <app-pushdeer-settings
+        [settings]="pushdeerSettings"
+      ></app-pushdeer-settings>
+    </app-page-section>
+
+    <app-page-section name="事件">
+      <app-event-settings
+        [settings]="notificationSettings"
+        keyOfSettings="pushdeerNotification"
+      ></app-event-settings>
+    </app-page-section>
+  </ng-template>
+</app-sub-page>
+

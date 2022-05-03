@@ -27,6 +27,7 @@ import { SharedModule } from '../shared/shared.module';
 import { SettingsResolver } from './shared/services/settings.resolver';
 import { EmailNotificationSettingsResolver } from './shared/services/email-notification-settings.resolver';
 import { ServerchanNotificationSettingsResolver } from './shared/services/serverchan-notification-settings.resolver';
+import { PushdeerNotificationSettingsResolver } from './shared/services/pushdeer-notification-settings.resolver';
 import { PushplusNotificationSettingsResolver } from './shared/services/pushplus-notification-settings.resolver';
 import { TelegramNotificationSettingsResolver } from './shared/services/telegram-notification-settings.resolver';
 import { WebhookSettingsResolver } from './shared/services/webhook-settings.resolver';
@@ -49,6 +50,8 @@ import { EmailNotificationSettingsComponent } from './notification-settings/emai
 import { EmailSettingsComponent } from './notification-settings/email-notification-settings/email-settings/email-settings.component';
 import { ServerchanNotificationSettingsComponent } from './notification-settings/serverchan-notification-settings/serverchan-notification-settings.component';
 import { ServerchanSettingsComponent } from './notification-settings/serverchan-notification-settings/serverchan-settings/serverchan-settings.component';
+import { PushdeerNotificationSettingsComponent } from './notification-settings/pushdeer-notification-settings/pushdeer-notification-settings.component';
+import { PushdeerSettingsComponent } from './notification-settings/pushdeer-notification-settings/pushdeer-settings/pushdeer-settings.component';
 import { PushplusNotificationSettingsComponent } from './notification-settings/pushplus-notification-settings/pushplus-notification-settings.component';
 import { PushplusSettingsComponent } from './notification-settings/pushplus-notification-settings/pushplus-settings/pushplus-settings.component';
 import { TelegramNotificationSettingsComponent } from './notification-settings/telegram-notification-settings/telegram-notification-settings.component';
@@ -81,6 +84,8 @@ import { PathTemplateEditDialogComponent } from './output-settings/path-template
     EmailSettingsComponent,
     ServerchanNotificationSettingsComponent,
     ServerchanSettingsComponent,
+    PushdeerNotificationSettingsComponent,
+    PushdeerSettingsComponent,
     PushplusNotificationSettingsComponent,
     PushplusSettingsComponent,
     TelegramNotificationSettingsComponent,
@@ -125,6 +130,7 @@ import { PathTemplateEditDialogComponent } from './output-settings/path-template
     SettingsResolver,
     EmailNotificationSettingsResolver,
     ServerchanNotificationSettingsResolver,
+    PushdeerNotificationSettingsResolver,
     PushplusNotificationSettingsResolver,
     TelegramNotificationSettingsResolver,
     WebhookSettingsResolver,

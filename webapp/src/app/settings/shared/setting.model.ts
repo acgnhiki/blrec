@@ -127,6 +127,13 @@ export interface ServerchanSettings {
 
 export const KEYS_OF_SERVERCHAN_SETTINGS = ['sendkey'] as const;
 
+export interface PushdeerSettings {
+  server: string;
+  pushkey: string;
+}
+
+export const KEYS_OF_PUSHDEER_SETTINGS = ['server', 'pushkey'] as const;
+
 export interface PushplusSettings {
   token: string;
   topic: string;
@@ -166,6 +173,10 @@ export type EmailNotificationSettings = EmailSettings &
   NotificationSettings;
 
 export type ServerchanNotificationSettings = ServerchanSettings &
+  NotifierSettings &
+  NotificationSettings;
+
+export type PushdeerNotificationSettings = PushdeerSettings &
   NotifierSettings &
   NotificationSettings;
 
@@ -211,6 +222,7 @@ export interface Settings {
   space: SpaceSettings;
   emailNotification: EmailNotificationSettings;
   serverchanNotification: ServerchanNotificationSettings;
+  pushdeerNotification: PushdeerNotificationSettings;
   pushplusNotification: PushplusNotificationSettings;
   telegramNotification: TelegramNotificationSettings;
   webhooks: WebhookSettings[];

@@ -51,12 +51,14 @@ __all__ = (
     'SpaceSettings',
     'EmailSettings',
     'ServerchanSettings',
+    'PushdeerSettings',
     'PushplusSettings',
     'TelegramSettings',
     'NotifierSettings',
     'NotificationSettings',
     'EmailNotificationSettings',
     'ServerchanNotificationSettings',
+    'PushdeerNotificationSettings',
     'PushplusNotificationSettings',
     'TelegramNotificationSettings',
     'WebHookSettings',
@@ -345,6 +347,23 @@ class ServerchanSettings(BaseModel):
         return value
 
 
+class PushdeerSettings(BaseModel):
+    server: str = ''
+    pushkey: str = ''
+
+    @validator('server')
+    def _validate_server(cls, value: str) -> str:
+        if value != '' and not re.fullmatch(r'https?://.+', value):
+            raise ValueError('server is invalid')
+        return value
+
+    @validator('pushkey')
+    def _validate_pushkey(cls, value: str) -> str:
+        if value != '' and not re.fullmatch(r'[a-zA-Z\d]{41}', value):
+            raise ValueError('pushkey is invalid')
+        return value
+
+
 class PushplusSettings(BaseModel):
     token: str = ''
     topic: str = ''
@@ -394,6 +413,12 @@ class EmailNotificationSettings(
 
 class ServerchanNotificationSettings(
     ServerchanSettings, NotifierSettings, NotificationSettings
+):
+    pass
+
+
+class PushdeerNotificationSettings(
+    PushdeerSettings, NotifierSettings, NotificationSettings
 ):
     pass
 
@@ -450,6 +475,8 @@ class Settings(BaseModel):
     email_notification: EmailNotificationSettings = EmailNotificationSettings()
     serverchan_notification: ServerchanNotificationSettings = \
         ServerchanNotificationSettings()
+    pushdeer_notification: PushdeerNotificationSettings = \
+        PushdeerNotificationSettings()
     pushplus_notification: PushplusNotificationSettings = \
         PushplusNotificationSettings()
     telegram_notification: TelegramNotificationSettings = \
@@ -500,6 +527,7 @@ class SettingsIn(BaseModel):
     space: Optional[SpaceSettings] = None
     email_notification: Optional[EmailNotificationSettings] = None
     serverchan_notification: Optional[ServerchanNotificationSettings] = None
+    pushdeer_notification: Optional[PushdeerNotificationSettings] = None
     pushplus_notification: Optional[PushplusNotificationSettings] = None
     telegram_notification: Optional[TelegramNotificationSettings] = None
     webhooks: Optional[List[WebHookSettings]] = None

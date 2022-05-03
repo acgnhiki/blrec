@@ -3,6 +3,7 @@ from .notifiers import (
     MessageNotifier,
     EmailNotifier,
     ServerchanNotifier,
+    PushdeerNotifier,
     PushplusNotifier,
     TelegramNotifier,
 )
@@ -10,6 +11,7 @@ from .providers import (
     MessagingProvider,
     EmailService,
     Serverchan,
+    Pushdeer,
     Pushplus,
     Telegram,
 )
@@ -19,6 +21,7 @@ __all__ = (
     'MessagingProvider',
     'EmailService',
     'Serverchan',
+    'Pushdeer',
     'Pushplus',
     'Telegram',
 
@@ -26,6 +29,7 @@ __all__ = (
     'MessageNotifier',
     'EmailNotifier',
     'ServerchanNotifier',
+    'PushdeerNotifier',
     'PushplusNotifier',
     'TelegramNotifier',
 )

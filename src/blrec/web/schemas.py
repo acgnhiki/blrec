@@ -51,6 +51,7 @@ AliasKeyOfSettings = Literal[
     'space',
     'emailNotification',
     'serverchanNotification',
+    'pushdeerNotification',
     'pushplusNotification',
     'telegramNotification',
     'webhooks',

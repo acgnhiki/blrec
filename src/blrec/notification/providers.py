@@ -1,19 +1,24 @@
-import ssl
-import logging
 import asyncio
+import logging
 import smtplib
+import ssl
 from abc import ABC, abstractmethod
-from typing import TypedDict, cast, Literal
 from email.message import EmailMessage
 from http.client import HTTPException
+from typing import Final, Literal, TypedDict, cast
+from urllib.parse import urljoin
 
 import aiohttp
 
 from ..utils.patterns import Singleton
 
-
 __all__ = (
-    'MessagingProvider', 'EmailService', 'Serverchan', 'Pushplus', 'Telegram'
+    'MessagingProvider',
+    'EmailService',
+    'Serverchan',
+    'Pushdeer',
+    'Pushplus',
+    'Telegram',
 )
 
 
@@ -107,6 +112,44 @@ class Serverchan(MessagingProvider):
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.post(url, data=payload):
                 pass
+
+
+class PushdeerResponse(TypedDict):
+    code: int
+    content: str
+    error: str
+
+
+class Pushdeer(MessagingProvider):
+    _server: Final = 'https://api2.pushdeer.com'
+    _endpoint: Final = '/message/push'
+
+    def __init__(self, server: str = '', pushkey: str = '') -> None:
+        super().__init__()
+        self.server = server
+        self.pushkey = pushkey
+
+    async def send_message(self, title: str, content: str) -> None:
+        self._check_parameters()
+        await self._post_message(title, content)
+
+    def _check_parameters(self) -> None:
+        if not self.pushkey:
+            raise ValueError('No pushkey supplied')
+
+    async def _post_message(self, title: str, content: str) -> None:
+        url = urljoin(self.server or self._server, self._endpoint)
+        payload = {
+            'pushkey': self.pushkey,
+            'text': title,
+            'desp': content,
+            'type': 'text',
+        }
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.post(url, json=payload) as res:
+                response = cast(PushdeerResponse, await res.json())
+                if response['code'] != 0:
+                    raise HTTPException(response['code'], response['error'])
 
 
 class PushplusResponse(TypedDict):

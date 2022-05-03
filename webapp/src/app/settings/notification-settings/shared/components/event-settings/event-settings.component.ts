@@ -30,6 +30,7 @@ export class EventSettingsComponent implements OnInit, OnChanges {
   @Input() keyOfSettings!:
     | 'emailNotification'
     | 'serverchanNotification'
+    | 'pushdeerNotification'
     | 'pushplusNotification'
     | 'telegramNotification';
 

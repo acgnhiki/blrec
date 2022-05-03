@@ -22,7 +22,7 @@ from .models import (
 from .typing import KeySetOfSettings
 from ..webhook import WebHook
 from ..notification import (
-    Notifier, EmailService, Serverchan, Pushplus, Telegram
+    Notifier, EmailService, Serverchan, Pushdeer, Pushplus, Telegram
 )
 from ..logging import configure_logger
 from ..exception import NotFoundError
@@ -335,6 +335,13 @@ class SettingsManager:
         self._apply_notifier_settings(notifier, settings)
         self._apply_notification_settings(notifier, settings)
 
+    def apply_pushdeer_notification_settings(self) -> None:
+        notifier = self._app._pushdeer_notifier
+        settings = self._settings.pushdeer_notification
+        self._apply_pushdeer_settings(notifier.provider)
+        self._apply_notifier_settings(notifier, settings)
+        self._apply_notification_settings(notifier, settings)
+
     def apply_pushplus_notification_settings(self) -> None:
         notifier = self._app._pushplus_notifier
         settings = self._settings.pushplus_notification
@@ -362,6 +369,10 @@ class SettingsManager:
 
     def _apply_serverchan_settings(self, serverchan: Serverchan) -> None:
         serverchan.sendkey = self._settings.serverchan_notification.sendkey
+
+    def _apply_pushdeer_settings(self, pushdeer: Pushdeer) -> None:
+        pushdeer.server = self._settings.pushdeer_notification.server
+        pushdeer.pushkey = self._settings.pushdeer_notification.pushkey
 
     def _apply_pushplus_settings(self, pushplus: Pushplus) -> None:
         pushplus.token = self._settings.pushplus_notification.token

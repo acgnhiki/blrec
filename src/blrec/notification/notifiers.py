@@ -13,6 +13,7 @@ from .providers import (
     EmailService,
     MessagingProvider,
     Serverchan,
+    Pushdeer,
     Pushplus,
     Telegram,
 )
@@ -37,6 +38,7 @@ __all__ = (
     'MessageNotifier',
     'EmailNotifier',
     'ServerchanNotifier',
+    'PushdeerNotifier',
     'PushplusNotifier',
     'TelegramNotifier',
 )
@@ -188,6 +190,18 @@ class ServerchanNotifier(MessageNotifier):
     def _do_disable(self) -> None:
         super()._do_disable()
         logger.debug('Disabled Serverchan notifier')
+
+
+class PushdeerNotifier(MessageNotifier):
+    provider = Pushdeer.get_instance()
+
+    def _do_enable(self) -> None:
+        super()._do_enable()
+        logger.debug('Enabled Pushdeer notifier')
+
+    def _do_disable(self) -> None:
+        super()._do_disable()
+        logger.debug('Disabled Pushdeer notifier')
 
 
 class PushplusNotifier(MessageNotifier):
