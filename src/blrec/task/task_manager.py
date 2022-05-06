@@ -285,10 +285,12 @@ class RecordTaskManager:
         task = self._get_task(room_id)
         task.stream_format = settings.stream_format
         task.quality_number = settings.quality_number
+        task.fmp4_stream_timeout = settings.fmp4_stream_timeout
         task.read_timeout = settings.read_timeout
         task.disconnection_timeout = settings.disconnection_timeout
         task.buffer_size = settings.buffer_size
         task.save_cover = settings.save_cover
+        task.cover_save_strategy = settings.cover_save_strategy
 
     def apply_task_postprocessing_settings(
         self, room_id: int, settings: PostprocessingSettings
@@ -322,9 +324,11 @@ class RecordTaskManager:
             record_guard_buy=task.record_guard_buy,
             record_super_chat=task.record_super_chat,
             save_cover=task.save_cover,
+            cover_save_strategy=task.cover_save_strategy,
             save_raw_danmaku=task.save_raw_danmaku,
             stream_format=task.stream_format,
             quality_number=task.quality_number,
+            fmp4_stream_timeout=task.fmp4_stream_timeout,
             read_timeout=task.read_timeout,
             disconnection_timeout=task.disconnection_timeout,
             buffer_size=task.buffer_size,

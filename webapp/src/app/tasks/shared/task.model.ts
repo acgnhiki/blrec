@@ -91,8 +91,8 @@ export interface TaskStatus {
   readonly rec_rate: number;
   readonly danmu_total: number;
   readonly danmu_rate: number;
-  readonly real_stream_format: StreamFormat;
-  readonly real_quality_number: QualityNumber;
+  readonly real_stream_format: StreamFormat | null;
+  readonly real_quality_number: QualityNumber | null;
   readonly recording_path: string | null;
   readonly postprocessor_status: PostprocessorStatus;
   readonly postprocessing_path: string | null;

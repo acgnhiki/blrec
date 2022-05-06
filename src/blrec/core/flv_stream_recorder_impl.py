@@ -1,51 +1,33 @@
 import io
-import errno
 import logging
+from typing import Optional
 from urllib.parse import urlparse
 
-from typing import Optional
-
-import urllib3
 import requests
+import urllib3
+from tenacity import TryAgain
 from tqdm import tqdm
-from tenacity import (
-    retry_if_result,
-    retry_if_not_exception_type,
-    Retrying,
-    TryAgain,
-)
 
-from .stream_analyzer import StreamProfile
-from .base_stream_recorder import BaseStreamRecorder, StreamProxy
-from .retry import wait_exponential_for_same_exceptions, before_sleep_log
 from ..bili.live import Live
-from ..bili.typing import StreamFormat, QualityNumber
-from ..flv.stream_processor import StreamProcessor
-from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin
+from ..bili.typing import QualityNumber
 from ..flv.exceptions import FlvDataError, FlvStreamCorruptedError
-from ..bili.exceptions import (
-    LiveRoomHidden, LiveRoomLocked, LiveRoomEncrypted, NoStreamAvailable,
-)
+from ..flv.stream_processor import StreamProcessor
+from .stream_analyzer import StreamProfile
+from .stream_recorder_impl import StreamProxy, StreamRecorderImpl
 
-
-__all__ = 'FLVStreamRecorder',
+__all__ = 'FLVStreamRecorderImpl',
 
 
 logger = logging.getLogger(__name__)
 
 
-class FLVStreamRecorder(
-    BaseStreamRecorder,
-    AsyncCooperationMixin,
-    AsyncStoppableMixin,
-):
+class FLVStreamRecorderImpl(StreamRecorderImpl):
     def __init__(
         self,
         live: Live,
         out_dir: str,
         path_template: str,
         *,
-        stream_format: StreamFormat = 'flv',
         quality_number: QualityNumber = 10000,
         buffer_size: Optional[int] = None,
         read_timeout: Optional[int] = None,
@@ -57,7 +39,7 @@ class FLVStreamRecorder(
             live=live,
             out_dir=out_dir,
             path_template=path_template,
-            stream_format=stream_format,
+            stream_format='flv',
             quality_number=quality_number,
             buffer_size=buffer_size,
             read_timeout=read_timeout,
@@ -73,6 +55,7 @@ class FLVStreamRecorder(
                 desc='Recording',
                 unit='B',
                 unit_scale=True,
+                unit_divisor=1024,
                 postfix=self._make_pbar_postfix(),
             ) as progress_bar:
                 self._progress_bar = progress_bar
@@ -115,43 +98,6 @@ class FLVStreamRecorder(
             self._rec_calculator.freeze()
             self._emit_event('stream_recording_stopped')
             logger.debug('Stream recorder thread stopped')
-
-    def _main_loop(self) -> None:
-        for attempt in Retrying(
-            reraise=True,
-            retry=(
-                retry_if_result(lambda r: not self._stopped) |
-                retry_if_not_exception_type((OSError, NotImplementedError))
-            ),
-            wait=wait_exponential_for_same_exceptions(max=60),
-            before_sleep=before_sleep_log(logger, logging.DEBUG, 'main_loop'),
-        ):
-            with attempt:
-                try:
-                    self._streaming_loop()
-                except NoStreamAvailable as e:
-                    logger.warning(f'No stream available: {repr(e)}')
-                    if not self._stopped:
-                        raise TryAgain
-                except OSError as e:
-                    logger.critical(repr(e), exc_info=e)
-                    if e.errno == errno.ENOSPC:
-                        # OSError(28, 'No space left on device')
-                        self._handle_exception(e)
-                        self._stopped = True
-                    raise TryAgain
-                except LiveRoomHidden:
-                    logger.error('The live room has been hidden!')
-                    self._stopped = True
-                except LiveRoomLocked:
-                    logger.error('The live room has been locked!')
-                    self._stopped = True
-                except LiveRoomEncrypted:
-                    logger.error('The live room has been encrypted!')
-                    self._stopped = True
-                except Exception as e:
-                    logger.exception(e)
-                    self._handle_exception(e)
 
     def _streaming_loop(self) -> None:
         url = self._get_live_stream_url()

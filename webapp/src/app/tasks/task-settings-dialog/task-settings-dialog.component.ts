@@ -30,6 +30,7 @@ import {
   BUFFER_OPTIONS,
   DELETE_STRATEGIES,
   SPLIT_FILE_TIP,
+  COVER_SAVE_STRATEGIES,
 } from '../../settings/shared/constants/form';
 
 type OptionsModel = NonNullable<TaskOptions>;
@@ -67,10 +68,13 @@ export class TaskSettingsDialogComponent implements OnChanges {
   readonly streamFormatOptions = cloneDeep(STREAM_FORMAT_OPTIONS) as Mutable<
     typeof STREAM_FORMAT_OPTIONS
   >;
+  readonly fmp4StreamTimeoutOptions = cloneDeep(TIMEOUT_OPTIONS) as Mutable<
+    typeof TIMEOUT_OPTIONS
+  >;
   readonly qualityOptions = cloneDeep(QUALITY_OPTIONS) as Mutable<
     typeof QUALITY_OPTIONS
   >;
-  readonly timeoutOptions = cloneDeep(TIMEOUT_OPTIONS) as Mutable<
+  readonly readTimeoutOptions = cloneDeep(TIMEOUT_OPTIONS) as Mutable<
     typeof TIMEOUT_OPTIONS
   >;
   readonly disconnectionTimeoutOptions = cloneDeep(
@@ -81,6 +85,9 @@ export class TaskSettingsDialogComponent implements OnChanges {
   >;
   readonly deleteStrategies = cloneDeep(DELETE_STRATEGIES) as Mutable<
     typeof DELETE_STRATEGIES
+  >;
+  readonly coverSaveStrategies = cloneDeep(COVER_SAVE_STRATEGIES) as Mutable<
+    typeof COVER_SAVE_STRATEGIES
   >;
 
   model!: OptionsModel;

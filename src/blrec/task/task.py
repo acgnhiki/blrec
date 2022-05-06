@@ -19,6 +19,7 @@ from ..bili.live_monitor import LiveMonitor
 from ..bili.typing import StreamFormat, QualityNumber
 from ..core import Recorder
 from ..core.stream_analyzer import StreamProfile
+from ..core.cover_downloader import CoverSaveStrategy
 from ..postprocess import Postprocessor, PostprocessorStatus, DeleteStrategy
 from ..postprocess.remuxer import RemuxProgress
 from ..flv.metadata_injector import InjectProgress
@@ -258,6 +259,14 @@ class RecordTask:
         self._recorder.save_cover = value
 
     @property
+    def cover_save_strategy(self) -> CoverSaveStrategy:
+        return self._recorder.cover_save_strategy
+
+    @cover_save_strategy.setter
+    def cover_save_strategy(self, value: CoverSaveStrategy) -> None:
+        self._recorder.cover_save_strategy = value
+
+    @property
     def save_raw_danmaku(self) -> bool:
         return self._recorder.save_raw_danmaku
 
@@ -282,11 +291,19 @@ class RecordTask:
         self._recorder.quality_number = value
 
     @property
-    def real_stream_format(self) -> StreamFormat:
+    def fmp4_stream_timeout(self) -> int:
+        return self._recorder.fmp4_stream_timeout
+
+    @fmp4_stream_timeout.setter
+    def fmp4_stream_timeout(self, value: int) -> None:
+        self._recorder.fmp4_stream_timeout = value
+
+    @property
+    def real_stream_format(self) -> Optional[StreamFormat]:
         return self._recorder.real_stream_format
 
     @property
-    def real_quality_number(self) -> QualityNumber:
+    def real_quality_number(self) -> Optional[QualityNumber]:
         return self._recorder.real_quality_number
 
     @property

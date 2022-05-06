@@ -3,5 +3,11 @@
         {
             "path": "."
         }
-    ]
+    ],
+    "settings": {
+        "python.linting.mypyPath": "mypy",
+        "python.linting.flake8Path": "flake8",
+        "python.formatting.blackPath": "black",
+        "python.sortImports.path": "isort"
+    }
 }

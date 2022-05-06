@@ -61,12 +61,20 @@ class VideoRemuxer:
         in_path: str,
         out_path: str,
         metadata_path: Optional[str] = None,
+        *,
+        remove_filler_data: bool = False,
     ) -> RemuxResult:
+        cmd = f'ffmpeg -i "{in_path}"'
         if metadata_path is not None:
-            cmd = f'ffmpeg -i "{in_path}" -i "{metadata_path}" ' \
-                f'-map_metadata 1 -codec copy "{out_path}" -y'
-        else:
-            cmd = f'ffmpeg -i "{in_path}" -codec copy "{out_path}" -y'
+            cmd += f' -i "{metadata_path}" -map_metadata 1'
+        cmd += ' -codec copy'
+        if remove_filler_data:
+            # https://forum.doom9.org/showthread.php?t=152051
+            # ISO_IEC_14496-10_2020(E)
+            # Table 7-1 – NAL unit type codes, syntax element categories, and NAL unit type classes  # noqa
+            # 7.4.2.7 Filler data RBSP semantics
+            cmd += ' -bsf:v filter_units=remove_types=12'
+        cmd += f' "{out_path}" -y'
 
         args = shlex.split(cmd)
         out_lines: List[str] = []
@@ -140,6 +148,7 @@ def remux_video(
     metadata_path: Optional[str] = None,
     *,
     report_progress: bool = False,
+    remove_filler_data: bool = False,
 ) -> Observable:
     def subscribe(
         observer: Observer[Union[RemuxProgress, RemuxResult]],
@@ -167,7 +176,12 @@ def remux_video(
                     )
 
                 try:
-                    result = remuxer.remux(in_path, out_path, metadata_path)
+                    result = remuxer.remux(
+                        in_path,
+                        out_path,
+                        metadata_path,
+                        remove_filler_data=remove_filler_data,
+                    )
                 except Exception as e:
                     observer.on_error(e)
                 else:

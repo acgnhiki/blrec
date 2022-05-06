@@ -5,7 +5,7 @@ import ssl
 from abc import ABC, abstractmethod
 from email.message import EmailMessage
 from http.client import HTTPException
-from typing import Final, Literal, TypedDict, cast
+from typing import Final, Literal, TypedDict, Dict, Any, cast
 from urllib.parse import urljoin
 
 import aiohttp
@@ -192,7 +192,7 @@ class Pushplus(MessagingProvider):
 
 class TelegramResponse(TypedDict):
     ok: bool
-    result: dict
+    result: Dict[str, Any]
 
 
 class Telegram(MessagingProvider):

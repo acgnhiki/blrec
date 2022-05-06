@@ -1,53 +1,61 @@
+import asyncio
+import errno
 import io
+import logging
 import os
 import re
 import time
-import asyncio
-import logging
 from abc import ABC, abstractmethod
-from threading import Thread, Event
-from datetime import datetime, timezone, timedelta
 from collections import OrderedDict
-
-from typing import Any, BinaryIO, Dict, Iterator, Optional, Tuple
+from datetime import datetime, timedelta, timezone
+from threading import Thread
+from typing import Any, BinaryIO, Dict, Final, Iterator, Optional, Tuple
 
 import aiohttp
 import urllib3
-from tqdm import tqdm
-from rx.subject import Subject
 from rx.core import Observable
+from rx.subject import Subject
 from tenacity import (
+    Retrying,
+    TryAgain,
     retry,
-    wait_none,
-    wait_fixed,
+    retry_if_exception_type,
+    retry_if_not_exception_type,
+    retry_if_result,
+    stop_after_attempt,
+    stop_after_delay,
     wait_chain,
     wait_exponential,
-    stop_after_delay,
-    stop_after_attempt,
-    retry_if_exception_type,
-    TryAgain,
+    wait_fixed,
+    wait_none,
 )
+from tqdm import tqdm
 
-from .. import __version__, __prog__, __github__
-from .stream_remuxer import StreamRemuxer
-from .stream_analyzer import StreamProfile
-from .statistics import StatisticsCalculator
-from ..event.event_emitter import EventListener, EventEmitter
-from ..bili.live import Live
-from ..bili.typing import ApiPlatform, StreamFormat, QualityNumber
+from .. import __github__, __prog__, __version__
+from ..bili.exceptions import (
+    LiveRoomEncrypted,
+    LiveRoomHidden,
+    LiveRoomLocked,
+    NoStreamAvailable,
+    NoStreamFormatAvailable,
+    NoStreamQualityAvailable,
+)
 from ..bili.helpers import get_quality_name
+from ..bili.live import Live
+from ..bili.typing import ApiPlatform, QualityNumber, StreamFormat
+from ..event.event_emitter import EventEmitter, EventListener
 from ..flv.data_analyser import MetaData
-from ..flv.stream_processor import StreamProcessor, BaseOutputFileManager
+from ..flv.stream_processor import BaseOutputFileManager, StreamProcessor
+from ..logging.room_id import aio_task_with_room_id
+from ..path import escape_path
 from ..utils.io import wait_for
 from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin
-from ..path import escape_path
-from ..logging.room_id import aio_task_with_room_id
-from ..bili.exceptions import (
-    NoStreamFormatAvailable, NoStreamCodecAvailable, NoStreamQualityAvailable,
-)
+from .retry import before_sleep_log, wait_exponential_for_same_exceptions
+from .statistics import StatisticsCalculator
+from .stream_analyzer import StreamProfile
+from .stream_remuxer import StreamRemuxer
 
-
-__all__ = 'BaseStreamRecorder', 'StreamRecorderEventListener', 'StreamProxy'
+__all__ = 'StreamRecorderImpl',
 
 
 logger = logging.getLogger(__name__)
@@ -67,7 +75,7 @@ class StreamRecorderEventListener(EventListener):
         ...
 
 
-class BaseStreamRecorder(
+class StreamRecorderImpl(
     EventEmitter[StreamRecorderEventListener],
     AsyncCooperationMixin,
     AsyncStoppableMixin,
@@ -99,9 +107,8 @@ class BaseStreamRecorder(
             live, out_dir, path_template, buffer_size
         )
 
-        self._stream_format = stream_format
+        self._stream_format: Final = stream_format
         self._quality_number = quality_number
-        self._real_stream_format: Optional[StreamFormat] = None
         self._real_quality_number: Optional[QualityNumber] = None
         self._api_platform: ApiPlatform = 'android'
         self._use_alternative_stream: bool = False
@@ -115,8 +122,6 @@ class BaseStreamRecorder(
         self._stream_url: str = ''
         self._stream_host: str = ''
         self._stream_profile: StreamProfile = {}
-
-        self._connection_recovered = Event()
 
         def on_file_created(args: Tuple[str, int]) -> None:
             logger.info(f"Video file created: '{args[0]}'")
@@ -177,11 +182,6 @@ class BaseStreamRecorder(
     def stream_format(self) -> StreamFormat:
         return self._stream_format
 
-    @stream_format.setter
-    def stream_format(self, value: StreamFormat) -> None:
-        self._stream_format = value
-        self._real_stream_format = None
-
     @property
     def quality_number(self) -> QualityNumber:
         return self._quality_number
@@ -189,15 +189,12 @@ class BaseStreamRecorder(
     @quality_number.setter
     def quality_number(self, value: QualityNumber) -> None:
         self._quality_number = value
-        self._real_quality_number = None
 
     @property
-    def real_stream_format(self) -> StreamFormat:
-        return self._real_stream_format or self.stream_format
-
-    @property
-    def real_quality_number(self) -> QualityNumber:
-        return self._real_quality_number or self.quality_number
+    def real_quality_number(self) -> Optional[QualityNumber]:
+        if self.stopped:
+            return None
+        return self._real_quality_number
 
     @property
     def filesize_limit(self) -> int:
@@ -263,16 +260,20 @@ class BaseStreamRecorder(
         if self._progress_bar is not None:
             self._progress_bar.set_postfix_str(self._make_pbar_postfix())
 
-    async def _do_start(self) -> None:
-        logger.debug('Starting stream recorder...')
+    def _reset(self) -> None:
         self._dl_calculator.reset()
         self._rec_calculator.reset()
         self._stream_url = ''
         self._stream_host = ''
         self._stream_profile = {}
         self._api_platform = 'android'
+        self._real_quality_number = None
         self._use_alternative_stream = False
-        self._connection_recovered.clear()
+        self._fall_back_stream_format = False
+
+    async def _do_start(self) -> None:
+        logger.debug('Starting stream recorder...')
+        self._reset()
         self._thread = Thread(
             target=self._run, name=f'StreamRecorder::{self._live.room_id}'
         )
@@ -290,6 +291,44 @@ class BaseStreamRecorder(
     def _run(self) -> None:
         raise NotImplementedError()
 
+    @abstractmethod
+    def _streaming_loop(self) -> None:
+        raise NotImplementedError()
+
+    def _main_loop(self) -> None:
+        for attempt in Retrying(
+            reraise=True,
+            retry=(
+                retry_if_result(lambda r: not self._stopped) |
+                retry_if_not_exception_type((NotImplementedError))
+            ),
+            wait=wait_exponential_for_same_exceptions(max=60),
+            before_sleep=before_sleep_log(logger, logging.DEBUG, 'main_loop'),
+        ):
+            with attempt:
+                try:
+                    self._streaming_loop()
+                except (NoStreamAvailable, NoStreamFormatAvailable) as e:
+                    logger.warning(f'Failed to get live stream url: {repr(e)}')
+                except OSError as e:
+                    logger.critical(repr(e), exc_info=e)
+                    if e.errno == errno.ENOSPC:
+                        # OSError(28, 'No space left on device')
+                        self._handle_exception(e)
+                        self._stopped = True
+                except LiveRoomHidden:
+                    logger.error('The live room has been hidden!')
+                    self._stopped = True
+                except LiveRoomLocked:
+                    logger.error('The live room has been locked!')
+                    self._stopped = True
+                except LiveRoomEncrypted:
+                    logger.error('The live room has been encrypted!')
+                    self._stopped = True
+                except Exception as e:
+                    logger.exception(e)
+                    self._handle_exception(e)
+
     def _rotate_api_platform(self) -> None:
         if self._api_platform == 'android':
             self._api_platform = 'web'
@@ -305,8 +344,8 @@ class BaseStreamRecorder(
         stop=stop_after_attempt(300),
     )
     def _get_live_stream_url(self) -> str:
+        fmt = self._stream_format
         qn = self._real_quality_number or self.quality_number
-        fmt = self._real_stream_format or self.stream_format
         logger.info(
             f'Getting the live stream url... qn: {qn}, format: {fmt}, '
             f'api platform: {self._api_platform}, '
@@ -327,35 +366,11 @@ class BaseStreamRecorder(
             )
             self._real_quality_number = 10000
             raise TryAgain
-        except NoStreamFormatAvailable:
-            if fmt == 'fmp4':
-                logger.info(
-                    'The specified stream format (fmp4) is not available, '
-                    'falling back to stream format (ts).'
-                )
-                self._real_stream_format = 'ts'
-            elif fmt == 'ts':
-                logger.info(
-                    'The specified stream format (ts) is not available, '
-                    'falling back to stream format (flv).'
-                )
-                self._real_stream_format = 'flv'
-            else:
-                raise NotImplementedError(fmt)
-            raise TryAgain
-        except NoStreamCodecAvailable as e:
-            logger.warning(repr(e))
-            raise TryAgain
-        except Exception as e:
-            logger.warning(f'Failed to get live stream urls: {repr(e)}')
-            self._rotate_api_platform()
-            raise TryAgain
         else:
             logger.info(
                 f'Adopted the stream format ({fmt}) and quality ({qn})'
             )
             self._real_quality_number = qn
-            self._real_stream_format = fmt
 
         if not self._use_alternative_stream:
             url = urls[0]
@@ -366,8 +381,9 @@ class BaseStreamRecorder(
                 self._use_alternative_stream = False
                 self._rotate_api_platform()
                 logger.info(
-                    'No alternative stream url available, will using the primary'
-                    f' stream url from {self._api_platform} api instead.'
+                    'No alternative stream url available, '
+                    'will using the primary stream url '
+                    f'from {self._api_platform} api instead.'
                 )
                 raise TryAgain
         logger.info(f"Got live stream url: '{url}'")
@@ -380,16 +396,7 @@ class BaseStreamRecorder(
         logger.debug(f'Retry {name} after {seconds} seconds')
         time.sleep(seconds)
 
-    def _wait_for_connection_error(self) -> None:
-        Thread(
-            target=self._conectivity_checker,
-            name=f'ConectivityChecker::{self._live.room_id}',
-            daemon=True,
-        ).start()
-        self._connection_recovered.wait()
-        self._connection_recovered.clear()
-
-    def _conectivity_checker(self, check_interval: int = 3) -> None:
+    def _wait_for_connection_error(self, check_interval: int = 3) -> None:
         timeout = self.disconnection_timeout
         logger.info(f'Waiting {timeout} seconds for connection recovery... ')
         timebase = time.monotonic()
@@ -397,11 +404,10 @@ class BaseStreamRecorder(
             if timeout is not None and time.monotonic() - timebase > timeout:
                 logger.error(f'Connection not recovered in {timeout} seconds')
                 self._stopped = True
-                self._connection_recovered.set()
+                break
             time.sleep(check_interval)
         else:
             logger.info('Connection recovered')
-            self._connection_recovered.set()
 
     def _make_pbar_postfix(self) -> str:
         return '{room_id} - {user_name}: {room_title}'.format(
@@ -434,7 +440,7 @@ B站直播录像
 房间号：{self._live.room_info.room_id}
 开播时间：{live_start_time}
 流主机: {self._stream_host}
-流格式：{self._real_stream_format}
+流格式：{self._stream_format}
 流画质：{stream_quality}
 录制程序：{__prog__} v{__version__} {__github__}''',
             'description': OrderedDict({
@@ -446,7 +452,7 @@ B站直播录像
                 'ParentArea': self._live.room_info.parent_area_name,
                 'LiveStartTime': str(live_start_time),
                 'StreamHost': self._stream_host,
-                'StreamFormat': self._real_stream_format,
+                'StreamFormat': self._stream_format,
                 'StreamQuality': stream_quality,
                 'Recorder': f'{__prog__} v{__version__} {__github__}',
             })

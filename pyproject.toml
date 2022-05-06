@@ -4,3 +4,13 @@ requires = [
     "wheel >= 0.37, < 0.38.0",
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.py$'
+skip-string-normalization = true
+skip-magic-trailing-comma = true
+
+[tool.isort]
+profile = 'black'

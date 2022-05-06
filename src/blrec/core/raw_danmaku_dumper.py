@@ -12,9 +12,7 @@ from tenacity import (
 )
 
 from .raw_danmaku_receiver import RawDanmakuReceiver
-from .base_stream_recorder import (
-    BaseStreamRecorder, StreamRecorderEventListener
-)
+from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 from ..bili.live import Live
 from ..exception import exception_callback, submit_exception
 from ..event.event_emitter import EventListener, EventEmitter
@@ -45,7 +43,7 @@ class RawDanmakuDumper(
     def __init__(
         self,
         live: Live,
-        stream_recorder: BaseStreamRecorder,
+        stream_recorder: StreamRecorder,
         danmaku_receiver: RawDanmakuReceiver,
     ) -> None:
         super().__init__()
@@ -53,13 +51,7 @@ class RawDanmakuDumper(
         self._stream_recorder = stream_recorder
         self._receiver = danmaku_receiver
 
-    def change_stream_recorder(
-        self, stream_recorder: BaseStreamRecorder
-    ) -> None:
-        self._stream_recorder.remove_listener(self)
-        self._stream_recorder = stream_recorder
-        self._stream_recorder.add_listener(self)
-        logger.debug('Changed stream recorder')
+        self._lock: asyncio.Lock = asyncio.Lock()
 
     def _do_enable(self) -> None:
         self._stream_recorder.add_listener(self)
@@ -72,11 +64,13 @@ class RawDanmakuDumper(
     async def on_video_file_created(
         self, video_path: str, record_start_time: int
     ) -> None:
-        self._path = raw_danmaku_path(video_path)
-        self._start_dumping()
+        async with self._lock:
+            self._path = raw_danmaku_path(video_path)
+            self._start_dumping()
 
     async def on_video_file_completed(self, video_path: str) -> None:
-        await self._stop_dumping()
+        async with self._lock:
+            await self._stop_dumping()
 
     def _start_dumping(self) -> None:
         self._create_dump_task()

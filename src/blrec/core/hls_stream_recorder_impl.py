@@ -1,68 +1,57 @@
 import io
-import time
-import errno
 import logging
-from queue import Queue, Empty
-from threading import Thread, Event, Lock, Condition
-from datetime import datetime
+import time
 from contextlib import suppress
+from datetime import datetime
+from queue import Empty, Queue
+from threading import Condition, Event, Lock, Thread
+from typing import Final, List, Optional, Set
 from urllib.parse import urlparse
 
-from typing import List, Set, Optional
-
-import urllib3
-import requests
 import m3u8
+import requests
+import urllib3
 from m3u8.model import Segment
-from tqdm import tqdm
+from ordered_set import OrderedSet
 from tenacity import (
-    retry,
-    wait_exponential,
-    stop_after_delay,
-    retry_if_result,
-    retry_if_exception_type,
-    retry_if_not_exception_type,
+    RetryError,
     Retrying,
     TryAgain,
-    RetryError,
+    retry,
+    retry_if_exception_type,
+    retry_if_not_exception_type,
+    retry_if_result,
+    stop_after_delay,
+    wait_exponential,
 )
+from tqdm import tqdm
 
-from .stream_remuxer import StreamRemuxer
-from .stream_analyzer import ffprobe, StreamProfile
-from .base_stream_recorder import BaseStreamRecorder, StreamProxy
-from .exceptions import FailedToFetchSegments
-from .retry import wait_exponential_for_same_exceptions, before_sleep_log
 from ..bili.live import Live
-from ..bili.typing import StreamFormat, QualityNumber
-from ..flv.stream_processor import StreamProcessor
+from ..bili.typing import QualityNumber
 from ..flv.exceptions import FlvDataError, FlvStreamCorruptedError
-from ..utils.mixins import (
-    AsyncCooperationMixin, AsyncStoppableMixin, SupportDebugMixin
-)
-from ..bili.exceptions import (
-    LiveRoomHidden, LiveRoomLocked, LiveRoomEncrypted, NoStreamAvailable,
-)
+from ..flv.stream_processor import StreamProcessor
+from ..utils.mixins import SupportDebugMixin
+from .stream_analyzer import StreamProfile, ffprobe
+from .stream_recorder_impl import StreamProxy, StreamRecorderImpl
+from .stream_remuxer import StreamRemuxer
 
-
-__all__ = 'HLSStreamRecorder',
+__all__ = 'HLSStreamRecorderImpl',
 
 
 logger = logging.getLogger(__name__)
 
 
-class HLSStreamRecorder(
-    BaseStreamRecorder,
-    AsyncCooperationMixin,
-    AsyncStoppableMixin,
-    SupportDebugMixin,
-):
+class FailedToFetchSegments(Exception):
+    pass
+
+
+class HLSStreamRecorderImpl(StreamRecorderImpl, SupportDebugMixin):
     def __init__(
         self,
         live: Live,
         out_dir: str,
         path_template: str,
         *,
-        stream_format: StreamFormat = 'flv',
         quality_number: QualityNumber = 10000,
         buffer_size: Optional[int] = None,
         read_timeout: Optional[int] = None,
@@ -74,7 +63,7 @@ class HLSStreamRecorder(
             live=live,
             out_dir=out_dir,
             path_template=path_template,
-            stream_format=stream_format,
+            stream_format='fmp4',
             quality_number=quality_number,
             buffer_size=buffer_size,
             read_timeout=read_timeout,
@@ -87,7 +76,8 @@ class HLSStreamRecorder(
         self._ready_to_fetch_segments = Condition()
         self._failed_to_fetch_segments = Event()
         self._stream_analysed_lock = Lock()
-        self._last_segment_uris: Set[str] = set()
+        self._last_seg_uris: OrderedSet[str] = OrderedSet()
+        self._MAX_LAST_SEG_URIS: Final[int] = 30
 
     def _run(self) -> None:
         logger.debug('Stream recorder thread started')
@@ -103,7 +93,10 @@ class HLSStreamRecorder(
             self._session = requests.Session()
             self._session.headers.update(self._live.headers)
 
-            self._stream_remuxer = StreamRemuxer(self._live.room_id)
+            self._stream_remuxer = StreamRemuxer(
+                self._live.room_id,
+                remove_filler_data=True,
+            )
             self._segment_queue: Queue[Segment] = Queue(maxsize=1000)
             self._segment_data_queue: Queue[bytes] = Queue(maxsize=100)
             self._stream_host_available = Event()
@@ -139,7 +132,7 @@ class HLSStreamRecorder(
                 self._segment_data_feeder_thread.join(timeout=10)
                 self._stream_remuxer.stop()
                 self._stream_remuxer.raise_for_exception()
-                self._last_segment_uris.clear()
+                self._last_seg_uris.clear()
                 del self._segment_queue
                 del self._segment_data_queue
         except TryAgain:
@@ -152,44 +145,6 @@ class HLSStreamRecorder(
                 self._playlist_debug_file.close()
             self._emit_event('stream_recording_stopped')
             logger.debug('Stream recorder thread stopped')
-
-    def _main_loop(self) -> None:
-        for attempt in Retrying(
-            reraise=True,
-            retry=(
-                retry_if_result(lambda r: not self._stopped) |
-                retry_if_not_exception_type((OSError, NotImplementedError))
-            ),
-            wait=wait_exponential_for_same_exceptions(max=60),
-            before_sleep=before_sleep_log(logger, logging.DEBUG, 'main_loop'),
-        ):
-            with attempt:
-                try:
-                    self._streaming_loop()
-                except NoStreamAvailable as e:
-                    logger.warning(f'No stream available: {repr(e)}')
-                    if not self._stopped:
-                        raise TryAgain
-                except OSError as e:
-                    logger.critical(repr(e), exc_info=e)
-                    if e.errno == errno.ENOSPC:
-                        # OSError(28, 'No space left on device')
-                        self._handle_exception(e)
-                        self._stopped = True
-                    raise TryAgain
-                except LiveRoomHidden:
-                    logger.error('The live room has been hidden!')
-                    self._stopped = True
-                except LiveRoomLocked:
-                    logger.error('The live room has been locked!')
-                    self._stopped = True
-                except LiveRoomEncrypted:
-                    logger.error('The live room has been encrypted!')
-                    self._stopped = True
-                except Exception as e:
-                    logger.exception(e)
-                    self._handle_exception(e)
-                    self._stopped = True
 
     def _streaming_loop(self) -> None:
         url = self._get_live_stream_url()
@@ -247,32 +202,29 @@ class HLSStreamRecorder(
                     self._stream_analysed = False
                 continue
 
-            uris: Set[str] = set()
+            curr_seg_uris: Set[str] = set()
             for seg in playlist.segments:
-                uris.add(seg.uri)
-                if seg.uri not in self._last_segment_uris:
+                curr_seg_uris.add(seg.uri)
+                if seg.uri not in self._last_seg_uris:
                     self._segment_queue.put(seg, timeout=60)
+                    self._last_seg_uris.add(seg.uri)
+                    if len(self._last_seg_uris) > self._MAX_LAST_SEG_URIS:
+                        self._last_seg_uris.pop(0)
 
             if (
-                self._last_segment_uris and
-                not uris.intersection(self._last_segment_uris)
+                self._last_seg_uris and
+                not curr_seg_uris.intersection(self._last_seg_uris)
             ):
                 logger.debug(
                     'segments broken!\n'
-                    f'last segments: {self._last_segment_uris}\n'
-                    f'current segments: {uris}'
+                    f'last segments uris: {self._last_seg_uris}\n'
+                    f'current segments uris: {curr_seg_uris}'
                 )
                 with self._stream_analysed_lock:
                     self._stream_analysed = False
 
-            self._last_segment_uris = uris
-
             if playlist.is_endlist:
                 logger.debug('playlist ended')
-                self._run_coroutine(self._live.update_room_info())
-                if not self._live.is_living():
-                    self._stopped = True
-                    break
 
             time.sleep(1)
 
@@ -338,7 +290,7 @@ class HLSStreamRecorder(
                             break
                     except requests.exceptions.ConnectionError as e:
                         logger.warning(repr(e))
-                        self._connection_recovered.wait()
+                        self._wait_for_connection_error()
                     except RetryError as e:
                         logger.warning(repr(e))
                         break
@@ -434,6 +386,7 @@ class HLSStreamRecorder(
             desc='Recording',
             unit='B',
             unit_scale=True,
+            unit_divisor=1024,
             postfix=self._make_pbar_postfix(),
         ) as progress_bar:
             self._progress_bar = progress_bar

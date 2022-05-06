@@ -1,4 +1,4 @@
-import { DeleteStrategy } from '../setting.model';
+import { CoverSaveStrategy, DeleteStrategy } from '../setting.model';
 
 import range from 'lodash-es/range';
 
@@ -52,9 +52,14 @@ export const DELETE_STRATEGIES = [
   { label: '从不', value: DeleteStrategy.NEVER },
 ] as const;
 
+export const COVER_SAVE_STRATEGIES = [
+  { label: '默认', value: CoverSaveStrategy.DEFAULT },
+  { label: '去重', value: CoverSaveStrategy.DEDUP },
+] as const;
+
 export const STREAM_FORMAT_OPTIONS = [
   { label: 'FLV', value: 'flv' },
-  { label: 'HLS (ts)', value: 'ts' },
+  // { label: 'HLS (ts)', value: 'ts' },
   { label: 'HLS (fmp4)', value: 'fmp4' },
 ] as const;
 

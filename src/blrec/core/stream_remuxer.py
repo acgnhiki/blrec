@@ -1,22 +1,20 @@
-import re
-import os
-import io
 import errno
-import shlex
+import io
 import logging
-from threading import Thread, Condition
-from subprocess import Popen, PIPE, CalledProcessError
+import os
+import re
+import shlex
+from subprocess import PIPE, CalledProcessError, Popen
+from threading import Condition, Thread
 from typing import Optional, cast
 
-
-from ..utils.mixins import StoppableMixin, SupportDebugMixin
 from ..utils.io import wait_for
-
+from ..utils.mixins import StoppableMixin, SupportDebugMixin
 
 logger = logging.getLogger(__name__)
 
 
-__all__ = 'StreamRemuxer',
+__all__ = ('StreamRemuxer',)
 
 
 class FFmpegError(Exception):
@@ -28,10 +26,10 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
         r'\b(error|failed|missing|invalid|corrupt)\b', re.IGNORECASE
     )
 
-    def __init__(self, room_id: int, bufsize: int = 1024 * 1024) -> None:
+    def __init__(self, room_id: int, remove_filler_data: bool = False) -> None:
         super().__init__()
         self._room_id = room_id
-        self._bufsize = bufsize
+        self._remove_filler_data = remove_filler_data
         self._exception: Optional[Exception] = None
         self._ready = Condition()
         self._env = None
@@ -83,9 +81,7 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
     def _do_start(self) -> None:
         logger.debug('Starting stream remuxer...')
         self._thread = Thread(
-            target=self._run,
-            name=f'StreamRemuxer::{self._room_id}',
-            daemon=True,
+            target=self._run, name=f'StreamRemuxer::{self._room_id}', daemon=True
         )
         self._thread.start()
 
@@ -124,21 +120,21 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
             logger.debug('Stopped stream remuxer')
 
     def _run_subprocess(self) -> None:
-        cmd = 'ffmpeg -xerror -i pipe:0 -c copy -copyts -f flv pipe:1'
+        cmd = 'ffmpeg -xerror -i pipe:0 -c copy -copyts'
+        if self._remove_filler_data:
+            cmd += ' -bsf:v filter_units=remove_types=12'
+        cmd += ' -f flv pipe:1'
         args = shlex.split(cmd)
 
         with Popen(
-            args, stdin=PIPE, stdout=PIPE, stderr=PIPE,
-            bufsize=self._bufsize, env=self._env,
+            args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=self._env
         ) as self._subprocess:
             with self._ready:
                 self._ready.notify_all()
 
             assert self._subprocess.stderr is not None
             with io.TextIOWrapper(
-                self._subprocess.stderr,
-                encoding='utf-8',
-                errors='backslashreplace'
+                self._subprocess.stderr, encoding='utf-8', errors='backslashreplace'
             ) as stderr:
                 while not self._stopped:
                     line = wait_for(stderr.readline, timeout=10)

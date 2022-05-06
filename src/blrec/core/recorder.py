@@ -1,35 +1,28 @@
 from __future__ import annotations
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Iterator, Optional, Type
+from typing import Iterator, Optional
 
-import aiohttp
-import aiofiles
 import humanize
-from tenacity import retry, wait_fixed, stop_after_attempt
 
-from .danmaku_receiver import DanmakuReceiver
-from .danmaku_dumper import DanmakuDumper, DanmakuDumperEventListener
-from .raw_danmaku_receiver import RawDanmakuReceiver
-from .raw_danmaku_dumper import RawDanmakuDumper, RawDanmakuDumperEventListener
-from .base_stream_recorder import (
-    BaseStreamRecorder, StreamRecorderEventListener
-)
-from .stream_analyzer import StreamProfile
-from .flv_stream_recorder import FLVStreamRecorder
-from .hls_stream_recorder import HLSStreamRecorder
-from ..event.event_emitter import EventListener, EventEmitter
-from ..flv.data_analyser import MetaData
-from ..bili.live import Live
-from ..bili.models import RoomInfo
 from ..bili.danmaku_client import DanmakuClient
-from ..bili.live_monitor import LiveMonitor, LiveEventListener
-from ..bili.typing import StreamFormat, QualityNumber
-from ..utils.mixins import AsyncStoppableMixin
-from ..path import cover_path
+from ..bili.live import Live
+from ..bili.live_monitor import LiveEventListener, LiveMonitor
+from ..bili.models import RoomInfo
+from ..bili.typing import QualityNumber, StreamFormat
+from ..event.event_emitter import EventEmitter, EventListener
+from ..flv.data_analyser import MetaData
 from ..logging.room_id import aio_task_with_room_id
-
+from ..utils.mixins import AsyncStoppableMixin
+from .cover_downloader import CoverDownloader, CoverSaveStrategy
+from .danmaku_dumper import DanmakuDumper, DanmakuDumperEventListener
+from .danmaku_receiver import DanmakuReceiver
+from .raw_danmaku_dumper import RawDanmakuDumper, RawDanmakuDumperEventListener
+from .raw_danmaku_receiver import RawDanmakuReceiver
+from .stream_analyzer import StreamProfile
+from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 
 __all__ = 'RecorderEventListener', 'Recorder'
 
@@ -47,29 +40,19 @@ class RecorderEventListener(EventListener):
     async def on_recording_cancelled(self, recorder: Recorder) -> None:
         ...
 
-    async def on_video_file_created(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_video_file_created(self, recorder: Recorder, path: str) -> None:
         ...
 
-    async def on_video_file_completed(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_video_file_completed(self, recorder: Recorder, path: str) -> None:
         ...
 
-    async def on_danmaku_file_created(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_danmaku_file_created(self, recorder: Recorder, path: str) -> None:
         ...
 
-    async def on_danmaku_file_completed(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_danmaku_file_completed(self, recorder: Recorder, path: str) -> None:
         ...
 
-    async def on_raw_danmaku_file_created(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_raw_danmaku_file_created(self, recorder: Recorder, path: str) -> None:
         ...
 
     async def on_raw_danmaku_file_completed(
@@ -96,6 +79,7 @@ class Recorder(
         *,
         stream_format: StreamFormat = 'flv',
         quality_number: QualityNumber = 10000,
+        fmp4_stream_timeout: int = 10,
         buffer_size: Optional[int] = None,
         read_timeout: Optional[int] = None,
         disconnection_timeout: Optional[int] = None,
@@ -107,6 +91,7 @@ class Recorder(
         record_guard_buy: bool = False,
         record_super_chat: bool = False,
         save_cover: bool = False,
+        cover_save_strategy: CoverSaveStrategy = CoverSaveStrategy.DEFAULT,
         save_raw_danmaku: bool = False,
     ) -> None:
         super().__init__()
@@ -114,23 +99,18 @@ class Recorder(
         self._live = live
         self._danmaku_client = danmaku_client
         self._live_monitor = live_monitor
-        self.save_cover = save_cover
         self.save_raw_danmaku = save_raw_danmaku
 
         self._recording: bool = False
         self._stream_available: bool = False
 
-        cls: Type[BaseStreamRecorder]
-        if stream_format == 'flv':
-            cls = FLVStreamRecorder
-        else:
-            cls = HLSStreamRecorder
-        self._stream_recorder = cls(
+        self._stream_recorder = StreamRecorder(
             self._live,
             out_dir=out_dir,
             path_template=path_template,
             stream_format=stream_format,
             quality_number=quality_number,
+            fmp4_stream_timeout=fmp4_stream_timeout,
             buffer_size=buffer_size,
             read_timeout=read_timeout,
             disconnection_timeout=disconnection_timeout,
@@ -151,9 +131,14 @@ class Recorder(
         )
         self._raw_danmaku_receiver = RawDanmakuReceiver(danmaku_client)
         self._raw_danmaku_dumper = RawDanmakuDumper(
+            self._live, self._stream_recorder, self._raw_danmaku_receiver
+        )
+
+        self._cover_downloader = CoverDownloader(
             self._live,
             self._stream_recorder,
-            self._raw_danmaku_receiver,
+            save_cover=save_cover,
+            cover_save_strategy=cover_save_strategy,
         )
 
     @property
@@ -181,11 +166,19 @@ class Recorder(
         self._stream_recorder.quality_number = value
 
     @property
-    def real_stream_format(self) -> StreamFormat:
+    def fmp4_stream_timeout(self) -> int:
+        return self._stream_recorder.fmp4_stream_timeout
+
+    @fmp4_stream_timeout.setter
+    def fmp4_stream_timeout(self, value: int) -> None:
+        self._stream_recorder.fmp4_stream_timeout = value
+
+    @property
+    def real_stream_format(self) -> Optional[StreamFormat]:
         return self._stream_recorder.real_stream_format
 
     @property
-    def real_quality_number(self) -> QualityNumber:
+    def real_quality_number(self) -> Optional[QualityNumber]:
         return self._stream_recorder.real_quality_number
 
     @property
@@ -251,6 +244,22 @@ class Recorder(
     @record_super_chat.setter
     def record_super_chat(self, value: bool) -> None:
         self._danmaku_dumper.record_super_chat = value
+
+    @property
+    def save_cover(self) -> bool:
+        return self._cover_downloader.save_cover
+
+    @save_cover.setter
+    def save_cover(self, value: bool) -> None:
+        self._cover_downloader.save_cover = value
+
+    @property
+    def cover_save_strategy(self) -> CoverSaveStrategy:
+        return self._cover_downloader.cover_save_strategy
+
+    @cover_save_strategy.setter
+    def cover_save_strategy(self, value: CoverSaveStrategy) -> None:
+        self._cover_downloader.cover_save_strategy = value
 
     @property
     def stream_url(self) -> str:
@@ -375,15 +384,11 @@ class Recorder(
         self._print_changed_room_info(room_info)
         self._stream_recorder.update_progress_bar_info()
 
-    async def on_video_file_created(
-        self, path: str, record_start_time: int
-    ) -> None:
+    async def on_video_file_created(self, path: str, record_start_time: int) -> None:
         await self._emit('video_file_created', self, path)
 
     async def on_video_file_completed(self, path: str) -> None:
         await self._emit('video_file_completed', self, path)
-        if self.save_cover:
-            await self._save_cover_image(path)
 
     async def on_danmaku_file_created(self, path: str) -> None:
         await self._emit('danmaku_file_created', self, path)
@@ -426,7 +431,6 @@ class Recorder(
     async def _start_recording(self) -> None:
         if self._recording:
             return
-        self._change_stream_recorder()
         self._recording = True
 
         if self.save_raw_danmaku:
@@ -434,6 +438,7 @@ class Recorder(
             self._raw_danmaku_receiver.start()
         self._danmaku_dumper.enable()
         self._danmaku_receiver.start()
+        self._cover_downloader.enable()
 
         await self._prepare()
         if self._stream_available:
@@ -455,6 +460,7 @@ class Recorder(
             self._raw_danmaku_receiver.stop()
         self._danmaku_dumper.disable()
         self._danmaku_receiver.stop()
+        self._cover_downloader.disable()
 
         if self._stopped:
             logger.info('Recording Cancelled')
@@ -492,60 +498,6 @@ class Recorder(
             if not self._stream_recorder.stopped:
                 await self.stop()
 
-    def _change_stream_recorder(self) -> None:
-        if self._recording:
-            logger.debug('Can not change stream recorder while recording')
-            return
-
-        cls: Type[BaseStreamRecorder]
-        if self.stream_format == 'flv':
-            cls = FLVStreamRecorder
-        else:
-            cls = HLSStreamRecorder
-
-        if self._stream_recorder.__class__ == cls:
-            return
-
-        self._stream_recorder.remove_listener(self)
-        self._stream_recorder = cls(
-            self._live,
-            out_dir=self.out_dir,
-            path_template=self.path_template,
-            stream_format=self.stream_format,
-            quality_number=self.quality_number,
-            buffer_size=self.buffer_size,
-            read_timeout=self.read_timeout,
-            disconnection_timeout=self.disconnection_timeout,
-            filesize_limit=self.filesize_limit,
-            duration_limit=self.duration_limit,
-        )
-        self._stream_recorder.add_listener(self)
-
-        self._danmaku_dumper.change_stream_recorder(self._stream_recorder)
-        self._raw_danmaku_dumper.change_stream_recorder(self._stream_recorder)
-
-        logger.debug(f'Changed stream recorder to {cls.__name__}')
-
-    @aio_task_with_room_id
-    async def _save_cover_image(self, video_path: str) -> None:
-        try:
-            await self._live.update_info()
-            url = self._live.room_info.cover
-            ext = url.rsplit('.', 1)[-1]
-            path = cover_path(video_path, ext)
-            await self._save_file(url, path)
-        except Exception as e:
-            logger.error(f'Failed to save cover image: {repr(e)}')
-        else:
-            logger.info(f'Saved cover image: {path}')
-
-    @retry(reraise=True, wait=wait_fixed(1), stop=stop_after_attempt(3))
-    async def _save_file(self, url: str, path: str) -> None:
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url) as response:
-                async with aiofiles.open(path, 'wb') as file:
-                    await file.write(await response.read())
-
     def _print_waiting_message(self) -> None:
         logger.info('Waiting... until the live starts')
 
@@ -554,9 +506,7 @@ class Recorder(
         user_info = self._live.user_info
 
         if room_info.live_start_time > 0:
-            live_start_time = str(
-                datetime.fromtimestamp(room_info.live_start_time)
-            )
+            live_start_time = str(datetime.fromtimestamp(room_info.live_start_time))
         else:
             live_start_time = 'NULL'
 

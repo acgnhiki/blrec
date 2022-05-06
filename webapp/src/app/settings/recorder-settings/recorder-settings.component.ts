@@ -20,6 +20,7 @@ import {
   TIMEOUT_OPTIONS,
   DISCONNECTION_TIMEOUT_OPTIONS,
   SYNC_FAILED_WARNING_TIP,
+  COVER_SAVE_STRATEGIES,
 } from '../shared/constants/form';
 import { RecorderSettings } from '../shared/setting.model';
 import {
@@ -43,10 +44,13 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
   readonly streamFormatOptions = cloneDeep(STREAM_FORMAT_OPTIONS) as Mutable<
     typeof STREAM_FORMAT_OPTIONS
   >;
+  readonly fmp4StreamTimeoutOptions = cloneDeep(TIMEOUT_OPTIONS) as Mutable<
+    typeof TIMEOUT_OPTIONS
+  >;
   readonly qualityOptions = cloneDeep(QUALITY_OPTIONS) as Mutable<
     typeof QUALITY_OPTIONS
   >;
-  readonly timeoutOptions = cloneDeep(TIMEOUT_OPTIONS) as Mutable<
+  readonly readTimeoutOptions = cloneDeep(TIMEOUT_OPTIONS) as Mutable<
     typeof TIMEOUT_OPTIONS
   >;
   readonly disconnectionTimeoutOptions = cloneDeep(
@@ -54,6 +58,9 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
   ) as Mutable<typeof DISCONNECTION_TIMEOUT_OPTIONS>;
   readonly bufferOptions = cloneDeep(BUFFER_OPTIONS) as Mutable<
     typeof BUFFER_OPTIONS
+  >;
+  readonly coverSaveStrategies = cloneDeep(COVER_SAVE_STRATEGIES) as Mutable<
+    typeof COVER_SAVE_STRATEGIES
   >;
 
   constructor(
@@ -64,10 +71,12 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
     this.settingsForm = formBuilder.group({
       streamFormat: [''],
       qualityNumber: [''],
+      fmp4StreamTimeout: [''],
       readTimeout: [''],
       disconnectionTimeout: [''],
       bufferSize: [''],
       saveCover: [''],
+      coverSaveStrategy: [''],
     });
   }
 
@@ -77,6 +86,10 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
 
   get qualityNumberControl() {
     return this.settingsForm.get('qualityNumber') as FormControl;
+  }
+
+  get fmp4StreamTimeoutControl() {
+    return this.settingsForm.get('fmp4StreamTimeout') as FormControl;
   }
 
   get readTimeoutControl() {
@@ -93,6 +106,10 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
 
   get saveCoverControl() {
     return this.settingsForm.get('saveCover') as FormControl;
+  }
+
+  get coverSaveStrategyControl() {
+    return this.settingsForm.get('coverSaveStrategy') as FormControl;
   }
 
   ngOnChanges(): void {

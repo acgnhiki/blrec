@@ -6,6 +6,7 @@ import attr
 
 from ..bili.models import RoomInfo, UserInfo
 from ..bili.typing import StreamFormat, QualityNumber
+from ..core.cover_downloader import CoverSaveStrategy
 from ..postprocess import DeleteStrategy, PostprocessorStatus
 from ..postprocess.typing import Progress
 
@@ -32,8 +33,8 @@ class TaskStatus:
     rec_rate: float  # Number of Bytes per second
     danmu_total: int  # Number of Danmu in total
     danmu_rate: float  # Number of Danmu per minutes
-    real_stream_format: StreamFormat
-    real_quality_number: QualityNumber
+    real_stream_format: Optional[StreamFormat]
+    real_quality_number: Optional[QualityNumber]
     recording_path: Optional[str] = None
     postprocessor_status: PostprocessorStatus = PostprocessorStatus.WAITING
     postprocessing_path: Optional[str] = None
@@ -60,10 +61,12 @@ class TaskParam:
     # RecorderSettings
     stream_format: StreamFormat
     quality_number: QualityNumber
+    fmp4_stream_timeout: int
     read_timeout: int
     disconnection_timeout: Optional[int]
     buffer_size: int
     save_cover: bool
+    cover_save_strategy: CoverSaveStrategy
     # PostprocessingOptions
     remux_to_mp4: bool
     inject_extra_metadata: bool

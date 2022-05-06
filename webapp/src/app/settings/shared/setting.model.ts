@@ -29,13 +29,20 @@ export type QualityNumber =
   | 150 // 高清
   | 80; // 流畅
 
+export enum CoverSaveStrategy {
+  DEFAULT = 'default',
+  DEDUP = 'dedup',
+}
+
 export interface RecorderSettings {
   streamFormat: StreamFormat;
   qualityNumber: QualityNumber;
+  fmp4StreamTimeout: number;
   readTimeout: number;
   disconnectionTimeout: number;
   bufferSize: number;
   saveCover: boolean;
+  coverSaveStrategy: CoverSaveStrategy;
 }
 
 export type RecorderOptions = Nullable<RecorderSettings>;

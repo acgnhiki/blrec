@@ -245,6 +245,7 @@ class Postprocessor(
             out_path,
             metadata_path,
             report_progress=True,
+            remove_filler_data=True,
         ).subscribe(
             on_next,
             lambda e: future.set_exception(e),

@@ -20,6 +20,7 @@ from pydantic.networks import HttpUrl, EmailStr
 
 from ..bili.typing import StreamFormat, QualityNumber
 from ..postprocess import DeleteStrategy
+from ..core.cover_downloader import CoverSaveStrategy
 from ..logging.typing import LOG_LEVEL
 from ..utils.string import camel_case
 
@@ -144,12 +145,21 @@ class DanmakuSettings(DanmakuOptions):
 class RecorderOptions(BaseModel):
     stream_format: Optional[StreamFormat]
     quality_number: Optional[QualityNumber]
+    fmp4_stream_timeout: Optional[int]
     read_timeout: Optional[int]  # seconds
     disconnection_timeout: Optional[int]  # seconds
     buffer_size: Annotated[  # bytes
         Optional[int], Field(ge=4096, le=1024 ** 2 * 512, multiple_of=2)
     ]
     save_cover: Optional[bool]
+    cover_save_strategy: Optional[CoverSaveStrategy]
+
+    @validator('fmp4_stream_timeout')
+    def _validate_fmp4_stream_timeout(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None:
+            allowed_values = frozenset((3, 5, 10, 30, 60, 180, 300, 600))
+            cls._validate_with_collection(v, allowed_values)
+        return v
 
     @validator('read_timeout')
     def _validate_read_timeout(cls, value: Optional[int]) -> Optional[int]:
@@ -171,12 +181,14 @@ class RecorderOptions(BaseModel):
 class RecorderSettings(RecorderOptions):
     stream_format: StreamFormat = 'flv'
     quality_number: QualityNumber = 20000  # 4K, the highest quality.
+    fmp4_stream_timeout: int = 10
     read_timeout: int = 3
     disconnection_timeout: int = 600
     buffer_size: Annotated[
         int, Field(ge=4096, le=1024 ** 2 * 512, multiple_of=2)
     ] = 8192
     save_cover: bool = False
+    cover_save_strategy: CoverSaveStrategy = CoverSaveStrategy.DEFAULT
 
 
 class PostprocessingOptions(BaseModel):
@@ -465,8 +477,8 @@ class Settings(BaseModel):
     version: str = '1.0'
 
     tasks: Annotated[List[TaskSettings], Field(max_items=100)] = []
-    output: OutputSettings = OutputSettings()
-    logging: LoggingSettings = LoggingSettings()
+    output: OutputSettings = OutputSettings()  # type: ignore
+    logging: LoggingSettings = LoggingSettings()  # type: ignore
     header: HeaderSettings = HeaderSettings()
     danmaku: DanmakuSettings = DanmakuSettings()
     recorder: RecorderSettings = RecorderSettings()

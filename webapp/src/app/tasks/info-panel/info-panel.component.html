@@ -62,11 +62,19 @@
       <span class="label">格式画质</span
       ><span class="value">
         <span>
-          {{ data.task_status.real_stream_format }}
+          {{
+            data.task_status.real_stream_format
+              ? data.task_status.real_stream_format
+              : "N/A"
+          }}
         </span>
         <span>
-          {{ data.task_status.real_quality_number | quality }}
-          ({{ data.task_status.real_quality_number
+          {{
+            data.task_status.real_quality_number
+              ? (data.task_status.real_quality_number | quality)
+              : "N/A"
+          }}
+          ({{ data.task_status.real_quality_number ?? "N/A"
           }}<ng-container *ngIf="isBlurayStreamQuality()">, bluray</ng-container
           >)
         </span>

@@ -47,7 +47,11 @@
         nzTooltipTitle="录制画质"
         nzTooltipPlacement="leftTop"
       >
-        {{ status.real_quality_number | quality }}
+        {{
+          status.real_quality_number
+            ? (status.real_quality_number | quality)
+            : ""
+        }}
       </span>
     </p>
   </div>

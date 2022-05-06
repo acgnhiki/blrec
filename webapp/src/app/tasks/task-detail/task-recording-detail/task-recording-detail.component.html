@@ -29,11 +29,13 @@
       [nzValueTemplate]="recordingQuality"
     ></nz-statistic>
     <ng-template #recordingQuality>{{
-      (taskStatus.real_quality_number | quality)! +
-        " " +
-        "(" +
-        taskStatus.real_quality_number +
-        ")"
+      taskStatus.real_quality_number
+        ? (taskStatus.real_quality_number | quality) +
+          " " +
+          "(" +
+          taskStatus.real_quality_number +
+          ")"
+        : ""
     }}</ng-template>
 
     <nz-statistic

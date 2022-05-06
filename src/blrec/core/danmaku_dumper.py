@@ -12,9 +12,7 @@ from tenacity import (
 
 from .. import __version__, __prog__, __github__
 from .danmaku_receiver import DanmakuReceiver, DanmuMsg
-from .base_stream_recorder import (
-    BaseStreamRecorder, StreamRecorderEventListener
-)
+from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 from .statistics import StatisticsCalculator
 from ..bili.live import Live
 from ..exception import exception_callback, submit_exception
@@ -51,7 +49,7 @@ class DanmakuDumper(
     def __init__(
         self,
         live: Live,
-        stream_recorder: BaseStreamRecorder,
+        stream_recorder: StreamRecorder,
         danmaku_receiver: DanmakuReceiver,
         *,
         danmu_uname: bool = False,
@@ -72,6 +70,7 @@ class DanmakuDumper(
         self.record_guard_buy = record_guard_buy
         self.record_super_chat = record_super_chat
 
+        self._lock: asyncio.Lock = asyncio.Lock()
         self._path: Optional[str] = None
         self._files: List[str] = []
         self._calculator = StatisticsCalculator(interval=60)
@@ -91,14 +90,6 @@ class DanmakuDumper(
     @property
     def dumping_path(self) -> Optional[str]:
         return self._path
-
-    def change_stream_recorder(
-        self, stream_recorder: BaseStreamRecorder
-    ) -> None:
-        self._stream_recorder.remove_listener(self)
-        self._stream_recorder = stream_recorder
-        self._stream_recorder.add_listener(self)
-        logger.debug('Changed stream recorder')
 
     def _do_enable(self) -> None:
         self._stream_recorder.add_listener(self)
@@ -124,14 +115,16 @@ class DanmakuDumper(
     async def on_video_file_created(
         self, video_path: str, record_start_time: int
     ) -> None:
-        self._path = danmaku_path(video_path)
-        self._record_start_time = record_start_time
-        self._files.append(self._path)
-        self._start_dumping()
+        async with self._lock:
+            self._path = danmaku_path(video_path)
+            self._record_start_time = record_start_time
+            self._files.append(self._path)
+            self._start_dumping()
 
     async def on_video_file_completed(self, video_path: str) -> None:
-        await self._stop_dumping()
-        self._path = None
+        async with self._lock:
+            await self._stop_dumping()
+            self._path = None
 
     def _start_dumping(self) -> None:
         self._create_dump_task()

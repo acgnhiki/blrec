@@ -1,5 +1,23 @@
 # 更新日志
 
+## 1.7.0
+
+- 添加封面保存策略
+- 添加 Telegram bot 通知
+- 添加 PushDeer 通知
+- 废弃录制 HLS(ts) 流
+- 在设定时间内没有 fmp4 流自动切换录制 flv 流
+
+### P.S.
+
+录制 fmp4 流基本没什么问题了
+
+录制 fmp4 流基本不受网络波动影响，大概是不会录制到二压画质的。
+
+人气比较高会被二压的直播间大都是有 fmp4 流的。
+
+WEB 端直播播放器是 `Hls7Player` 的直播间支持录制 fmp4 流, `fMp4Player` 则不支持。
+
 ## 1.6.2
 
 - 忽略 Windows 注册表 JavaScript MIME 设置 (issue #12, 27)

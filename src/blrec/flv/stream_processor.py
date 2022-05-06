@@ -381,11 +381,26 @@ class StreamProcessor:
         bytes_io = io.BytesIO()
         writer = FlvWriter(bytes_io)
         writer.write_header(flv_header)
-        writer.write_tag(self._parameters_checker.last_metadata_tag)
-        writer.write_tag(self._parameters_checker.last_video_header_tag)
+        writer.write_tag(
+            self._correct_ts(
+                self._parameters_checker.last_metadata_tag,
+                -self._parameters_checker.last_metadata_tag.timestamp,
+            )
+        )
+        writer.write_tag(
+            self._correct_ts(
+                self._parameters_checker.last_video_header_tag,
+                -self._parameters_checker.last_video_header_tag.timestamp,
+            )
+        )
         if self._parameters_checker.last_audio_header_tag is not None:
-            writer.write_tag(self._parameters_checker.last_audio_header_tag)
-        writer.write_tag(first_data_tag)
+            writer.write_tag(
+                self._correct_ts(
+                    self._parameters_checker.last_audio_header_tag,
+                    -self._parameters_checker.last_audio_header_tag.timestamp,
+                )
+            )
+        writer.write_tag(self._correct_ts(first_data_tag, -first_data_tag.timestamp))
 
         def on_next(profile: StreamProfile) -> None:
             self._stream_profile_updates.on_next(profile)

@@ -119,15 +119,20 @@
           >
           <ng-template #streamFormatTip>
             <p>
-              选择要录制的直播流格式<br />
+              选择要录制的直播流格式
               <br />
-              FLV 网络不稳定容易中断丢失数据 <br />
-              HLS (ts) 基本不受本地网络影响 <br />
-              HLS (fmp4) 只有少数直播间支持 <br />
+              FLV: 网络不稳定容易中断丢失数据或录制到二压画质
               <br />
-              P.S.<br />
-              非 FLV 格式需要 ffmpeg<br />
-              HLS (fmp4) 不支持会自动切换到 HLS (ts)<br />
+              HLS (fmp4): 基本不受网络波动影响，但只有部分直播间支持。
+              <br />
+              P.S.
+              <br />
+              录制 HLS 流需要 ffmpeg
+              <br />
+              在设定时间内没有 fmp4 流会自动切换录制 flv 流
+              <br />
+              WEB 端直播播放器是 Hls7Player 的直播间支持录制 fmp4 流, fMp4Player
+              则不支持。
             </p>
           </ng-template>
           <nz-form-control class="setting-control select">
@@ -145,6 +150,46 @@
             (nzCheckedChange)="
               options.recorder.streamFormat = $event
                 ? globalSettings.recorder.streamFormat
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
+            [nzTooltipTitle]="fmp4StreamTimeoutTip"
+            >fmp4 流等待时间</nz-form-label
+          >
+          <ng-template #fmp4StreamTimeoutTip>
+            <p>
+              如果超过所设置的等待时间 fmp4 流还没有就切换为录制 flv 流
+              <br />
+              fmp4 流在刚推流是没有的，要过一会才有。
+              <br />
+              fmp4 流出现的时间和直播延迟有关，一般都在 10
+              秒内，但也有延迟比较大超过 1 分钟的。
+              <br />
+              推荐全局设置为 10 秒，个别延迟比较大的直播间单独设置。
+            </p>
+          </ng-template>
+          <nz-form-control class="setting-control select">
+            <nz-select
+              #fmp4StreamTimeout="ngModel"
+              name="fmp4StreamTimeout"
+              [(ngModel)]="model.recorder.fmp4StreamTimeout"
+              [disabled]="options.recorder.fmp4StreamTimeout === null"
+              [nzOptions]="fmp4StreamTimeoutOptions"
+            >
+            </nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.recorder.fmp4StreamTimeout !== null"
+            (nzCheckedChange)="
+              options.recorder.fmp4StreamTimeout = $event
+                ? globalSettings.recorder.fmp4StreamTimeout
                 : null
             "
             >覆盖全局设置</label
@@ -206,6 +251,45 @@
           <nz-form-label
             class="setting-label"
             nzNoColon
+            [nzTooltipTitle]="coverSaveStrategyTip"
+            >封面保存策略</nz-form-label
+          >
+          <ng-template #coverSaveStrategyTip>
+            <p>
+              默认:
+              每个分割的录播文件对应保存一个封面文件，不管封面是否相同。<br />
+              去重: 相同的封面只保存一次<br />
+              P.S.
+              <br />
+              判断是否相同是依据封面数据的 sha1，只在单次录制内有效。
+            </p>
+          </ng-template>
+          <nz-form-control class="setting-control select">
+            <nz-select
+              name="coverSaveStrategy"
+              [(ngModel)]="model.recorder.coverSaveStrategy"
+              [disabled]="
+                options.recorder.coverSaveStrategy === null ||
+                !options.recorder.saveCover
+              "
+              [nzOptions]="coverSaveStrategies"
+            ></nz-select>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.recorder.coverSaveStrategy !== null"
+            (nzCheckedChange)="
+              options.recorder.coverSaveStrategy = $event
+                ? globalSettings.recorder.coverSaveStrategy
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
+            nzNoColon
             nzTooltipTitle="超时时间设置得比较长相对不容易因网络不稳定而出现流中断，但是一旦出现中断就无法实现无缝拼接且漏录较多。"
             >数据读取超时</nz-form-label
           >
@@ -219,7 +303,7 @@
               name="readTimeout"
               [(ngModel)]="model.recorder.readTimeout"
               [disabled]="options.recorder.readTimeout === null"
-              [nzOptions]="timeoutOptions"
+              [nzOptions]="readTimeoutOptions"
             >
             </nz-select>
           </nz-form-control>

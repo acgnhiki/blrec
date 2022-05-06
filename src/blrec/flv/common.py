@@ -41,6 +41,8 @@ def read_tags_in_duration(
         yield tag
         if tag.timestamp > 0:
             break
+    else:
+        raise EOFError('no tags')
 
     start = tag.timestamp
     end = start + duration

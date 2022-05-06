@@ -32,10 +32,12 @@ export class TaskManagerService {
     return this.taskService.updateTaskInfo(roomId).pipe(
       tap(
         () => {
-          this.message.success('成功刷新任务的数据');
+          this.message.success(`[${roomId}] 成功刷新任务的数据`);
         },
         (error: HttpErrorResponse) => {
-          this.message.error(`刷新任务的数据出错: ${error.message}`);
+          this.message.error(
+            `[${roomId}] 刷新任务的数据出错: ${error.message}`
+          );
         }
       )
     );
@@ -101,10 +103,10 @@ export class TaskManagerService {
     return this.taskService.removeTask(roomId).pipe(
       tap(
         () => {
-          this.message.success('任务已删除');
+          this.message.success(`[${roomId}] 任务已删除`);
         },
         (error: HttpErrorResponse) => {
-          this.message.error(`删除任务出错: ${error.message}`);
+          this.message.error(`[${roomId}] 删除任务出错: ${error.message}`);
         }
       )
     );
@@ -129,18 +131,18 @@ export class TaskManagerService {
   }
 
   startTask(roomId: number): Observable<ResponseMessage> {
-    const messageId = this.message.loading('正在运行任务...', {
+    const messageId = this.message.loading(`[${roomId}] 正在运行任务...`, {
       nzDuration: 0,
     }).messageId;
     return this.taskService.startTask(roomId).pipe(
       tap(
         () => {
           this.message.remove(messageId);
-          this.message.success('成功运行任务');
+          this.message.success(`[${roomId}] 成功运行任务`);
         },
         (error: HttpErrorResponse) => {
           this.message.remove(messageId);
-          this.message.error(`运行任务出错: ${error.message}`);
+          this.message.error(`[${roomId}] 运行任务出错: ${error.message}`);
         }
       )
     );
@@ -168,18 +170,18 @@ export class TaskManagerService {
     roomId: number,
     force: boolean = false
   ): Observable<ResponseMessage> {
-    const messageId = this.message.loading('正在停止任务...', {
+    const messageId = this.message.loading(`[${roomId}] 正在停止任务...`, {
       nzDuration: 0,
     }).messageId;
     return this.taskService.stopTask(roomId, force).pipe(
       tap(
         () => {
           this.message.remove(messageId);
-          this.message.success('成功停止任务');
+          this.message.success(`[${roomId}] 成功停止任务`);
         },
         (error: HttpErrorResponse) => {
           this.message.remove(messageId);
-          this.message.error(`停止任务出错: ${error.message}`);
+          this.message.error(`[${roomId}] 停止任务出错: ${error.message}`);
         }
       )
     );
@@ -204,18 +206,18 @@ export class TaskManagerService {
   }
 
   enableRecorder(roomId: number): Observable<ResponseMessage> {
-    const messageId = this.message.loading('正在开启录制...', {
+    const messageId = this.message.loading(`[${roomId}] 正在开启录制...`, {
       nzDuration: 0,
     }).messageId;
     return this.taskService.enableTaskRecorder(roomId).pipe(
       tap(
         () => {
           this.message.remove(messageId);
-          this.message.success('成功开启录制');
+          this.message.success(`[${roomId}] 成功开启录制`);
         },
         (error: HttpErrorResponse) => {
           this.message.remove(messageId);
-          this.message.error(`开启录制出错: ${error.message}`);
+          this.message.error(`[${roomId}] 开启录制出错: ${error.message}`);
         }
       )
     );
@@ -248,18 +250,18 @@ export class TaskManagerService {
     roomId: number,
     force: boolean = false
   ): Observable<ResponseMessage> {
-    const messageId = this.message.loading('正在关闭录制...', {
+    const messageId = this.message.loading(`[${roomId}] 正在关闭录制...`, {
       nzDuration: 0,
     }).messageId;
     return this.taskService.disableTaskRecorder(roomId, force).pipe(
       tap(
         () => {
           this.message.remove(messageId);
-          this.message.success('成功关闭录制');
+          this.message.success(`[${roomId}] 成功关闭录制`);
         },
         (error: HttpErrorResponse) => {
           this.message.remove(messageId);
-          this.message.error(`关闭录制出错: ${error.message}`);
+          this.message.error(`[${roomId}] 关闭录制出错: ${error.message}`);
         }
       )
     );
@@ -287,13 +289,13 @@ export class TaskManagerService {
     return this.taskService.cutStream(roomId).pipe(
       tap(
         () => {
-          this.message.success('文件切割已触发');
+          this.message.success(`[${roomId}] 文件切割已触发`);
         },
         (error: HttpErrorResponse) => {
           if (error.status == 403) {
-            this.message.warning('时长太短不能切割，请稍后再试。');
+            this.message.warning(`[${roomId}] 时长太短不能切割，请稍后再试。`);
           } else {
-            this.message.error(`切割文件出错: ${error.message}`);
+            this.message.error(`[${roomId}] 切割文件出错: ${error.message}`);
           }
         }
       )
