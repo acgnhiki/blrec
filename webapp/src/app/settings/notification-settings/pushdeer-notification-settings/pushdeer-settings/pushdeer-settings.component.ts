@@ -46,7 +46,12 @@ export class PushdeerSettingsComponent implements OnInit, OnChanges {
       server: ['', [Validators.pattern(/^https?:\/\/.+/)]],
       pushkey: [
         '',
-        [Validators.required, Validators.pattern(/^[a-zA-Z\d]{41}$/)],
+        [
+          Validators.required,
+          Validators.pattern(
+            /^PDU\d+T[a-zA-Z\d]{32}(,PDU\d+T[a-zA-Z\d]{32}){0,99}$/
+          ),
+        ],
       ],
     });
   }
