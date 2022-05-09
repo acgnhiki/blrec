@@ -214,7 +214,7 @@ class Telegram(MessagingProvider):
     async def _post_message(self, title: str, content: str) -> None:
         url = f'https://api.telegram.org/bot{self.token}/sendMessage'
         payload = {
-            'chatid': self.chatid,
+            'chat_id': self.chatid,
             'text': title + '\n' + content,
             'parse_mode': 'HTML',
         }
