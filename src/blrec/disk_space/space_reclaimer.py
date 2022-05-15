@@ -7,19 +7,14 @@ import asyncio
 from functools import partial
 from typing import Iterable, List
 
-from tenacity import (
-    retry,
-    wait_none,
-    stop_after_attempt,
-    retry_if_exception_type,
-)
+from tenacity import retry, wait_none, stop_after_attempt, retry_if_exception_type
 
 from .helpers import delete_file, is_space_enough
 from .space_monitor import SpaceMonitor, DiskUsage, SpaceEventListener
 from ..utils.mixins import SwitchableMixin
 
 
-__all__ = 'SpaceReclaimer',
+__all__ = ('SpaceReclaimer',)
 
 
 logger = logging.getLogger(__name__)
@@ -33,11 +28,18 @@ class SpaceReclaimer(SpaceEventListener, SwitchableMixin):
         space_monitor: SpaceMonitor,
         path: str,
         *,
+        rec_ttl: int = 60 * 60 * 24,
         recycle_records: bool = False,
     ) -> None:
         super().__init__()
         self._space_monitor = space_monitor
         self.path = path
+        if value := os.environ.get('REC_TTL'):
+            try:
+                rec_ttl = int(value)
+            except Exception as e:
+                logger.warning(repr(e))
+        self.rec_ttl = rec_ttl
         self.recycle_records = recycle_records
 
     async def on_space_no_enough(
@@ -63,9 +65,8 @@ class SpaceReclaimer(SpaceEventListener, SwitchableMixin):
 
     async def _free_space_from_records(self, size: int) -> bool:
         logger.info('Free space from records ...')
-        # only delete files created 24 hours ago
-        max_ctime = datetime.now().timestamp() - 60 * 60 * 24
-        for path in await self._get_record_file_paths(max_ctime):
+        ts = datetime.now().timestamp() - self.rec_ttl
+        for path in await self._get_record_file_paths(ts):
             await delete_file(path)
             if is_space_enough(self.path, size):
                 return True
@@ -76,13 +77,15 @@ class SpaceReclaimer(SpaceEventListener, SwitchableMixin):
         wait=wait_none(),
         stop=stop_after_attempt(3),
     )
-    async def _get_record_file_paths(self, max_ctime: float) -> List[str]:
+    async def _get_record_file_paths(self, ts: float) -> List[str]:
         glob_path = os.path.join(self.path, '*/**/*.*')
         paths: Iterable[Path]
         paths = map(lambda p: Path(p), glob.iglob(glob_path, recursive=True))
         paths = filter(lambda p: p.suffix in self._SUFFIX_SET, paths)
-        paths = filter(lambda p: p.stat().st_ctime <= max_ctime, paths)
-        func = partial(sorted, paths, key=lambda p: p.stat().st_ctime)
+        paths = filter(lambda p: p.stat().st_mtime < ts > p.stat().st_atime, paths)
+        func = partial(
+            sorted, paths, key=lambda p: (p.stat().st_mtime, p.stat().st_atime)
+        )
         loop = asyncio.get_running_loop()
         path_list = await loop.run_in_executor(None, func)
         return list(map(str, path_list))

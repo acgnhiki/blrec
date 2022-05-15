@@ -1,16 +1,14 @@
-import logging
 import asyncio
+import logging
 import shutil
 from contextlib import suppress
 
-
-from .models import DiskUsage
-from .helpers import is_space_enough
-from ..event.event_emitter import EventListener, EventEmitter
+from ..event.event_emitter import EventEmitter, EventListener
 from ..exception import exception_callback
-from ..utils.mixins import SwitchableMixin
 from ..logging.room_id import aio_task_with_room_id
-
+from ..utils.mixins import AsyncStoppableMixin, SwitchableMixin
+from .helpers import is_space_enough
+from .models import DiskUsage
 
 __all__ = 'SpaceMonitor', 'SpaceEventListener'
 
@@ -25,7 +23,9 @@ class SpaceEventListener(EventListener):
         ...
 
 
-class SpaceMonitor(EventEmitter[SpaceEventListener], SwitchableMixin):
+class SpaceMonitor(
+    EventEmitter[SpaceEventListener], SwitchableMixin, AsyncStoppableMixin
+):
     def __init__(
         self,
         path: str,
@@ -40,24 +40,18 @@ class SpaceMonitor(EventEmitter[SpaceEventListener], SwitchableMixin):
         self._monitoring: bool = False
 
     def _do_enable(self) -> None:
-        asyncio.create_task(self._start())
+        asyncio.create_task(self.start())
         logger.debug('Enabled space monitor')
 
     def _do_disable(self) -> None:
-        asyncio.create_task(self._stop())
+        asyncio.create_task(self.stop())
         logger.debug('Disabled space monitor')
 
-    async def _start(self) -> None:
-        if self._monitoring:
-            return
+    async def _do_start(self) -> None:
         self._create_polling_task()
-        self._monitoring = True
 
-    async def _stop(self) -> None:
-        if not self._monitoring:
-            return
+    async def _do_stop(self) -> None:
         await self._cancel_polling_task()
-        self._monitoring = False
 
     def _create_polling_task(self) -> None:
         self._polling_task = asyncio.create_task(self._polling_loop())
@@ -78,6 +72,4 @@ class SpaceMonitor(EventEmitter[SpaceEventListener], SwitchableMixin):
 
     async def _emit_space_no_enough(self) -> None:
         usage = DiskUsage(*shutil.disk_usage(self.path))
-        await self._emit(
-            'space_no_enough', self.path, self.space_threshold, usage
-        )
+        await self._emit('space_no_enough', self.path, self.space_threshold, usage)

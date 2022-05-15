@@ -81,6 +81,7 @@ class AsyncStoppableMixin(ABC):
     def __init__(self) -> None:
         super().__init__()
         self._stopped = True
+        self._stopped_lock = asyncio.Lock()
 
     @property
     def stopped(self) -> bool:
@@ -88,17 +89,19 @@ class AsyncStoppableMixin(ABC):
 
     @final
     async def start(self) -> None:
-        if not self._stopped:
-            return
-        self._stopped = False
-        await self._do_start()
+        async with self._stopped_lock:
+            if not self._stopped:
+                return
+            self._stopped = False
+            await self._do_start()
 
     @final
     async def stop(self) -> None:
-        if self._stopped:
-            return
-        self._stopped = True
-        await self._do_stop()
+        async with self._stopped_lock:
+            if self._stopped:
+                return
+            self._stopped = True
+            await self._do_stop()
 
     @abstractmethod
     async def _do_start(self) -> None:
