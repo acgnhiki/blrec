@@ -13,7 +13,7 @@ from ..bili.live_monitor import LiveEventListener, LiveMonitor
 from ..bili.models import RoomInfo
 from ..bili.typing import QualityNumber, StreamFormat
 from ..event.event_emitter import EventEmitter, EventListener
-from ..flv.data_analyser import MetaData
+from ..flv.operators import MetaData, StreamProfile
 from ..logging.room_id import aio_task_with_room_id
 from ..utils.mixins import AsyncStoppableMixin
 from .cover_downloader import CoverDownloader, CoverSaveStrategy
@@ -21,7 +21,6 @@ from .danmaku_dumper import DanmakuDumper, DanmakuDumperEventListener
 from .danmaku_receiver import DanmakuReceiver
 from .raw_danmaku_dumper import RawDanmakuDumper, RawDanmakuDumperEventListener
 from .raw_danmaku_receiver import RawDanmakuReceiver
-from .stream_analyzer import StreamProfile
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 
 __all__ = 'RecorderEventListener', 'Recorder'
@@ -402,8 +401,8 @@ class Recorder(
     async def on_raw_danmaku_file_completed(self, path: str) -> None:
         await self._emit('raw_danmaku_file_completed', self, path)
 
-    async def on_stream_recording_stopped(self) -> None:
-        logger.debug('Stream recording stopped')
+    async def on_stream_recording_completed(self) -> None:
+        logger.debug('Stream recording completed')
         await self._stop_recording()
 
     async def _do_start(self) -> None:

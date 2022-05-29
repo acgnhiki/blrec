@@ -1,30 +1,27 @@
-import re
-import json
 import asyncio
+import json
+import re
 from typing import Dict, List, cast
 
 import aiohttp
 from jsonpath import jsonpath
-from tenacity import (
-    retry,
-    wait_exponential,
-    stop_after_delay,
-    retry_if_exception_type,
-)
-
+from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
 from .api import AppApi, WebApi
-from .models import LiveStatus, RoomInfo, UserInfo
-from .typing import (
-    ApiPlatform, StreamFormat, QualityNumber, StreamCodec, ResponseData
-)
 from .exceptions import (
-    LiveRoomHidden, LiveRoomLocked, LiveRoomEncrypted, NoStreamAvailable,
-    NoStreamFormatAvailable, NoStreamCodecAvailable, NoStreamQualityAvailable,
+    LiveRoomEncrypted,
+    LiveRoomHidden,
+    LiveRoomLocked,
+    NoAlternativeStreamAvailable,
+    NoStreamAvailable,
+    NoStreamCodecAvailable,
+    NoStreamFormatAvailable,
+    NoStreamQualityAvailable,
 )
+from .models import LiveStatus, RoomInfo, UserInfo
+from .typing import ApiPlatform, QualityNumber, ResponseData, StreamCodec, StreamFormat
 
-
-__all__ = 'Live',
+__all__ = ('Live',)
 
 
 _INFO_PATTERN = re.compile(
@@ -34,9 +31,7 @@ _LIVE_STATUS_PATTERN = re.compile(rb'"live_status"\s*:\s*(\d)')
 
 
 class Live:
-    def __init__(
-        self, room_id: int, user_agent: str = '', cookie: str = ''
-    ) -> None:
+    def __init__(self, room_id: int, user_agent: str = '', cookie: str = '') -> None:
         self._room_id = room_id
         self._user_agent = user_agent
         self._cookie = cookie
@@ -142,9 +137,7 @@ class Live:
         self._room_info = await self.get_room_info()
 
     @retry(
-        retry=retry_if_exception_type((
-            asyncio.TimeoutError, aiohttp.ClientError,
-        )),
+        retry=retry_if_exception_type((asyncio.TimeoutError, aiohttp.ClientError)),
         wait=wait_exponential(max=10),
         stop=stop_after_delay(60),
     )
@@ -158,9 +151,7 @@ class Live:
         return RoomInfo.from_data(room_info_data)
 
     @retry(
-        retry=retry_if_exception_type((
-            asyncio.TimeoutError, aiohttp.ClientError,
-        )),
+        retry=retry_if_exception_type((asyncio.TimeoutError, aiohttp.ClientError)),
         wait=wait_exponential(max=10),
         stop=stop_after_delay(60),
     )
@@ -176,14 +167,15 @@ class Live:
         # the timestamp on the server at the moment in seconds
         return await self._webapi.get_timestamp()
 
-    async def get_live_stream_urls(
+    async def get_live_stream_url(
         self,
         qn: QualityNumber = 10000,
         *,
         api_platform: ApiPlatform = 'android',
         stream_format: StreamFormat = 'flv',
         stream_codec: StreamCodec = 'avc',
-    ) -> List[str]:
+        select_alternative: bool = False,
+    ) -> str:
         if api_platform == 'android':
             info = await self._appapi.get_room_play_info(self._room_id, qn)
         else:
@@ -193,23 +185,30 @@ class Live:
 
         streams = jsonpath(info, '$.playurl_info.playurl.stream[*]')
         if not streams:
-            raise NoStreamAvailable(qn, stream_format, stream_codec)
-        formats = jsonpath(streams, f'$[*].format[?(@.format_name == "{stream_format}")]')  # noqa
+            raise NoStreamAvailable(stream_format, stream_codec, qn)
+        formats = jsonpath(
+            streams, f'$[*].format[?(@.format_name == "{stream_format}")]'
+        )
         if not formats:
-            raise NoStreamFormatAvailable(qn, stream_format, stream_codec)
-        codecs = jsonpath(formats, f'$[*].codec[?(@.codec_name == "{stream_codec}")]')  # noqa
+            raise NoStreamFormatAvailable(stream_format, stream_codec, qn)
+        codecs = jsonpath(formats, f'$[*].codec[?(@.codec_name == "{stream_codec}")]')
         if not codecs:
-            raise NoStreamCodecAvailable(qn, stream_format, stream_codec)
+            raise NoStreamCodecAvailable(stream_format, stream_codec, qn)
         codec = codecs[0]
 
         accept_qn = cast(List[QualityNumber], codec['accept_qn'])
         if qn not in accept_qn or codec['current_qn'] != qn:
-            raise NoStreamQualityAvailable(qn, stream_format, stream_codec)
+            raise NoStreamQualityAvailable(stream_format, stream_codec, qn)
 
-        return [
-            i['host'] + codec['base_url'] + i['extra']
-            for i in codec['url_info']
-        ]
+        urls = [i['host'] + codec['base_url'] + i['extra'] for i in codec['url_info']]
+
+        if not select_alternative:
+            return urls[0]
+
+        try:
+            return urls[1]
+        except IndexError:
+            raise NoAlternativeStreamAvailable(stream_format, stream_codec, qn)
 
     def _check_room_play_info(self, data: ResponseData) -> None:
         if data.get('is_hidden'):

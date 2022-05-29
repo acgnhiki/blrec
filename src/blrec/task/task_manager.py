@@ -13,8 +13,7 @@ from tenacity import (
 
 from .task import RecordTask
 from .models import TaskData, TaskParam, VideoFileDetail, DanmakuFileDetail
-from ..flv.data_analyser import MetaData
-from ..core.stream_analyzer import StreamProfile
+from ..flv.operators import MetaData, StreamProfile
 from ..exception import submit_exception, NotFoundError
 from ..bili.exceptions import ApiRequestError
 if TYPE_CHECKING:

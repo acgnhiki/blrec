@@ -1,28 +1,27 @@
 from __future__ import annotations
+
 import asyncio
 import logging
-from pathlib import PurePath
 from contextlib import suppress
+from pathlib import PurePath
 from typing import Any, Awaitable, Dict, Iterator, List, Optional, Union
 
-from rx.core.typing import Scheduler
-from rx.scheduler.threadpoolscheduler import ThreadPoolScheduler
+from reactivex.scheduler import ThreadPoolScheduler
 
-from .models import PostprocessorStatus, DeleteStrategy
-from .typing import Progress
-from .remuxer import remux_video, RemuxProgress, RemuxResult
-from .helpers import discard_file, get_extra_metadata
-from .ffmpeg_metadata import make_metadata_file
-from ..event.event_emitter import EventListener, EventEmitter
 from ..bili.live import Live
 from ..core import Recorder, RecorderEventListener
-from ..exception import submit_exception
-from ..utils.mixins import AsyncStoppableMixin, AsyncCooperationMixin
-from ..path import extra_metadata_path
-from ..flv.metadata_injector import inject_metadata, InjectProgress
+from ..event.event_emitter import EventEmitter, EventListener
+from ..exception import exception_callback, submit_exception
 from ..flv.helpers import is_valid_flv_file
+from ..flv.metadata_injection import InjectingProgress, inject_metadata
 from ..logging.room_id import aio_task_with_room_id
-
+from ..path import extra_metadata_path
+from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin, SupportDebugMixin
+from .ffmpeg_metadata import make_metadata_file
+from .helpers import discard_file, get_extra_metadata
+from .models import DeleteStrategy, PostprocessorStatus
+from .remux import RemuxingProgress, RemuxingResult, remux_video
+from .typing import Progress
 
 __all__ = (
     'Postprocessor',
@@ -47,6 +46,7 @@ class Postprocessor(
     RecorderEventListener,
     AsyncStoppableMixin,
     AsyncCooperationMixin,
+    SupportDebugMixin,
 ):
     def __init__(
         self,
@@ -58,6 +58,7 @@ class Postprocessor(
         delete_source: DeleteStrategy = DeleteStrategy.AUTO,
     ) -> None:
         super().__init__()
+        self._init_for_debug(live.room_id)
 
         self._live = live
         self._recorder = recorder
@@ -94,14 +95,10 @@ class Postprocessor(
         # clear completed files of previous recording
         self._completed_files.clear()
 
-    async def on_video_file_completed(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_video_file_completed(self, recorder: Recorder, path: str) -> None:
         self._queue.put_nowait(path)
 
-    async def on_danmaku_file_completed(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_danmaku_file_completed(self, recorder: Recorder, path: str) -> None:
         self._completed_files.append(path)
 
     async def _do_start(self) -> None:
@@ -110,6 +107,7 @@ class Postprocessor(
         self._queue: asyncio.Queue[str] = asyncio.Queue()
         self._scheduler = ThreadPoolScheduler()
         self._task = asyncio.create_task(self._worker())
+        self._task.add_done_callback(exception_callback)
 
         logger.debug('Started postprocessor')
 
@@ -150,12 +148,11 @@ class Postprocessor(
                 else:
                     result_path = video_path
 
-                await discard_file(extra_metadata_path(video_path), 'DEBUG')
+                if not self._debug:
+                    await discard_file(extra_metadata_path(video_path), 'DEBUG')
 
                 self._completed_files.append(result_path)
-                await self._emit(
-                    'video_postprocessing_completed', self, result_path,
-                )
+                await self._emit('video_postprocessing_completed', self, result_path)
             except Exception as exc:
                 submit_exception(exc)
             finally:
@@ -164,9 +161,13 @@ class Postprocessor(
     async def _inject_extra_metadata(self, path: str) -> str:
         try:
             metadata = await get_extra_metadata(path)
-            await self._inject_metadata(path, metadata, self._scheduler)
+            logger.info(f"Injecting metadata for '{path}' ...")
+            await self._inject_metadata(path, metadata)
         except Exception as e:
             logger.error(f"Failed to inject metadata for '{path}': {repr(e)}")
+            submit_exception(e)
+        else:
+            logger.info(f"Successfully injected metadata for '{path}'")
         return path
 
     async def _remux_flv_to_mp4(self, in_path: str) -> str:
@@ -174,12 +175,10 @@ class Postprocessor(
         logger.info(f"Remuxing '{in_path}' to '{out_path}' ...")
 
         metadata_path = await make_metadata_file(in_path)
-        remux_result = await self._remux_video(
-            in_path, out_path, metadata_path, self._scheduler
-        )
+        remux_result = await self._remux_video(in_path, out_path, metadata_path)
 
         if remux_result.is_successful():
-            logger.info(f"Successfully remux '{in_path}' to '{out_path}'")
+            logger.info(f"Successfully remuxed '{in_path}' to '{out_path}'")
             result_path = out_path
         elif remux_result.is_warned():
             logger.warning('Remuxing done, but ran into problems.')
@@ -192,65 +191,54 @@ class Postprocessor(
 
         logger.debug(f'ffmpeg output:\n{remux_result.output}')
 
-        await discard_file(metadata_path, 'DEBUG')
+        if not self._debug:
+            await discard_file(metadata_path, 'DEBUG')
         if self._should_delete_source_files(remux_result):
             await discard_file(in_path)
 
         return result_path
 
-    def _inject_metadata(
-        self,
-        path: str,
-        metadata: Dict[str, Any],
-        scheduler: Scheduler,
-    ) -> Awaitable[None]:
+    def _inject_metadata(self, path: str, metadata: Dict[str, Any]) -> Awaitable[None]:
         future: asyncio.Future[None] = asyncio.Future()
         self._postprocessing_path = path
 
-        def on_next(value: InjectProgress) -> None:
+        def on_next(value: InjectingProgress) -> None:
             self._postprocessing_progress = value
 
-        inject_metadata(
-            path,
-            metadata,
-            report_progress=True,
-            room_id=self._live.room_id,
-        ).subscribe(
-            on_next,
-            lambda e: future.set_exception(e),
-            lambda: future.set_result(None),
-            scheduler=scheduler,
+        subscription = inject_metadata(path, metadata, show_progress=True).subscribe(
+            on_next=on_next,
+            on_error=lambda e: future.set_exception(e),
+            on_completed=lambda: future.set_result(None),
+            scheduler=self._scheduler,
         )
+        future.add_done_callback(lambda f: subscription.dispose())
 
         return future
 
     def _remux_video(
-        self,
-        in_path: str,
-        out_path: str,
-        metadata_path: str,
-        scheduler: Scheduler,
-    ) -> Awaitable[RemuxResult]:
-        future: asyncio.Future[RemuxResult] = asyncio.Future()
+        self, in_path: str, out_path: str, metadata_path: str
+    ) -> Awaitable[RemuxingResult]:
+        future: asyncio.Future[RemuxingResult] = asyncio.Future()
         self._postprocessing_path = in_path
 
-        def on_next(value: Union[RemuxProgress, RemuxResult]) -> None:
-            if isinstance(value, RemuxProgress):
+        def on_next(value: Union[RemuxingProgress, RemuxingResult]) -> None:
+            if isinstance(value, RemuxingProgress):
                 self._postprocessing_progress = value
-            elif isinstance(value, RemuxResult):
+            elif isinstance(value, RemuxingResult):
                 future.set_result(value)
 
-        remux_video(
+        subscription = remux_video(
             in_path,
             out_path,
             metadata_path,
-            report_progress=True,
+            show_progress=True,
             remove_filler_data=True,
         ).subscribe(
-            on_next,
-            lambda e: future.set_exception(e),
-            scheduler=scheduler,
+            on_next=on_next,
+            on_error=lambda e: future.set_exception(e),
+            scheduler=self._scheduler,
         )
+        future.add_done_callback(lambda f: subscription.dispose())
 
         return future
 
@@ -258,9 +246,7 @@ class Postprocessor(
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, is_valid_flv_file, video_path)
 
-    def _should_delete_source_files(
-        self, remux_result: RemuxResult
-    ) -> bool:
+    def _should_delete_source_files(self, remux_result: RemuxingResult) -> bool:
         if self.delete_source == DeleteStrategy.AUTO:
             if not remux_result.is_failed():
                 return True

@@ -7,7 +7,7 @@ from .common import (
     is_audio_tag, is_metadata_tag, is_script_tag, is_video_tag, read_tags,
     parse_metadata, find_metadata_tag,
 )
-from .stream_processor import JoinPoint
+from .operators import JoinPoint
 from .utils import format_timestamp
 from ..path import extra_metadata_path
 
@@ -32,7 +32,7 @@ def make_comment_for_joinpoints(join_points: Iterable[JoinPoint]) -> str:
         '流中断拼接详情\n' +
         '\n'.join((
             '时间戳：{}, 无缝拼接：{}'.format(
-                format_timestamp(p.timestamp),
+                format_timestamp(int(p.timestamp)),
                 '是' if p.seamless else '否',
             )
             for p in join_points

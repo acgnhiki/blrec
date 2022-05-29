@@ -13,7 +13,7 @@ from tenacity import (
 from .. import __version__, __prog__, __github__
 from .danmaku_receiver import DanmakuReceiver, DanmuMsg
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
-from .statistics import StatisticsCalculator
+from .statistics import Statistics
 from ..bili.live import Live
 from ..exception import exception_callback, submit_exception
 from ..event.event_emitter import EventListener, EventEmitter
@@ -73,19 +73,19 @@ class DanmakuDumper(
         self._lock: asyncio.Lock = asyncio.Lock()
         self._path: Optional[str] = None
         self._files: List[str] = []
-        self._calculator = StatisticsCalculator(interval=60)
+        self._statistics = Statistics(interval=60)
 
     @property
     def danmu_total(self) -> int:
-        return self._calculator.count
+        return self._statistics.count
 
     @property
     def danmu_rate(self) -> float:
-        return self._calculator.rate
+        return self._statistics.rate
 
     @property
     def elapsed(self) -> float:
-        return self._calculator.elapsed
+        return self._statistics.elapsed
 
     @property
     def dumping_path(self) -> Optional[str]:
@@ -145,7 +145,7 @@ class DanmakuDumper(
     async def _do_dump(self) -> None:
         assert self._path is not None
         logger.debug('Started dumping danmaku')
-        self._calculator.reset()
+        self._statistics.reset()
 
         try:
             async with DanmakuWriter(self._path) as writer:
@@ -169,14 +169,14 @@ class DanmakuDumper(
             logger.info(f"Danmaku file completed: '{self._path}'")
             await self._emit('danmaku_file_completed', self._path)
             logger.debug('Stopped dumping danmaku')
-            self._calculator.freeze()
+            self._statistics.freeze()
 
     async def _dumping_loop(self, writer: DanmakuWriter) -> None:
         while True:
             msg = await self._receiver.get_message()
             if isinstance(msg, DanmuMsg):
                 await writer.write_danmu(self._make_danmu(msg))
-                self._calculator.submit(1)
+                self._statistics.submit(1)
             elif isinstance(msg, GiftSendMsg):
                 if not self.record_gift_send:
                     continue

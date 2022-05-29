@@ -74,8 +74,8 @@ export enum PostprocessorStatus {
 }
 
 export interface Progress {
-  time: number;
-  duration: number;
+  count: number;
+  total: number;
 }
 
 export interface TaskStatus {

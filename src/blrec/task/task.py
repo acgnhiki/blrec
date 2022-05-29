@@ -18,12 +18,11 @@ from ..bili.danmaku_client import DanmakuClient
 from ..bili.live_monitor import LiveMonitor
 from ..bili.typing import StreamFormat, QualityNumber
 from ..core import Recorder
-from ..core.stream_analyzer import StreamProfile
+from ..flv.operators import MetaData, StreamProfile
 from ..core.cover_downloader import CoverSaveStrategy
 from ..postprocess import Postprocessor, PostprocessorStatus, DeleteStrategy
-from ..postprocess.remuxer import RemuxProgress
-from ..flv.metadata_injector import InjectProgress
-from ..flv.data_analyser import MetaData
+from ..postprocess.remux import RemuxingProgress
+from ..flv.metadata_injection import InjectingProgress
 from ..event.event_submitters import (
     LiveEventSubmitter, RecorderEventSubmitter, PostprocessorEventSubmitter
 )
@@ -151,10 +150,15 @@ class RecordTask:
                 status = VideoFileStatus.RECORDING
             elif path == self._postprocessor.postprocessing_path:
                 progress = self._postprocessor.postprocessing_progress
-                if isinstance(progress, RemuxProgress):
+                if isinstance(progress, RemuxingProgress):
                     status = VideoFileStatus.REMUXING
-                elif isinstance(progress, InjectProgress):
+                elif isinstance(progress, InjectingProgress):
                     status = VideoFileStatus.INJECTING
+                else:
+                    if self._postprocessor.remux_to_mp4:
+                        status = VideoFileStatus.REMUXING
+                    else:
+                        status = VideoFileStatus.INJECTING
             else:
                 # disabling recorder by force or stoping task by force
                 status = VideoFileStatus.BROKEN

@@ -7,9 +7,9 @@ import { Progress } from 'src/app/tasks/shared/task.model';
 })
 export class ProgressPipe implements PipeTransform {
   transform(progress: Progress): number {
-    if (!progress || progress.duration === 0) {
+    if (!progress || progress.total === 0) {
       return 0;
     }
-    return Math.round((progress.time / progress.duration) * 100);
+    return Math.round((progress.count / progress.total) * 100);
   }
 }

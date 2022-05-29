@@ -98,23 +98,23 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
         self._exception = None
         try:
             self._run_subprocess()
-        except BrokenPipeError as e:
-            logger.debug(repr(e))
-        except FFmpegError as e:
+        except BrokenPipeError as exc:
+            logger.debug(repr(exc))
+        except FFmpegError as exc:
             if not self._stopped:
-                logger.warning(repr(e))
+                logger.warning(repr(exc))
             else:
-                logger.debug(repr(e))
-        except TimeoutError as e:
-            logger.debug(repr(e))
-        except Exception as e:
+                logger.debug(repr(exc))
+        except TimeoutError as exc:
+            logger.debug(repr(exc))
+        except Exception as exc:
             # OSError: [Errno 22] Invalid argument
             # https://stackoverflow.com/questions/23688492/oserror-errno-22-invalid-argument-in-subprocess
-            if isinstance(e, OSError) and e.errno == errno.EINVAL:
+            if isinstance(exc, OSError) and exc.errno == errno.EINVAL:
                 pass
             else:
-                self._exception = e
-                logger.exception(e)
+                self._exception = exc
+                logger.exception(exc)
         finally:
             self._stopped = True
             logger.debug('Stopped stream remuxer')

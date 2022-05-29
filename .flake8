@@ -1,6 +1,6 @@
 [flake8]
 max-line-length = 88
-ignore = D203, W504, W503
+ignore = D203, W504, W503, E203
 exclude =
     __*,
     .*,

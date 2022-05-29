@@ -37,8 +37,8 @@ class SpaceReclaimer(SpaceEventListener, SwitchableMixin):
         if value := os.environ.get('REC_TTL'):
             try:
                 rec_ttl = int(value)
-            except Exception as e:
-                logger.warning(repr(e))
+            except Exception as exc:
+                logger.warning(repr(exc))
         self.rec_ttl = rec_ttl
         self.recycle_records = recycle_records
 

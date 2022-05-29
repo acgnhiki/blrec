@@ -106,6 +106,9 @@ class FlvHeader:
         else:
             self.type_flag &= ~0b0000_0100
 
+    def __len__(self) -> int:
+        return self.size
+
     @property
     def size(self) -> int:
         return self.data_offset
@@ -150,6 +153,9 @@ _T = TypeVar('_T', bound='FlvTag')
 class FlvTag(ABC, FlvTagHeader):
     offset: int = attr.ib(validator=[non_negative_integer_validator])
     body: Optional[bytes] = attr.ib(default=None, repr=cksum)
+
+    def __len__(self) -> int:
+        return self.tag_size
 
     @property
     @abstractmethod

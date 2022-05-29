@@ -1,21 +1,18 @@
+from reactivex import Observable, Subject
 
-from rx.subject import Subject
-from rx.core import Observable
-
-from .typing import Event
 from ..utils.patterns import Singleton
+from .typing import Event
 
-
-__all__ = 'EventCenter',
+__all__ = ('EventCenter',)
 
 
 class EventCenter(Singleton):
     def __init__(self) -> None:
         super().__init__()
-        self._source = Subject()
+        self._source: Subject[Event] = Subject()
 
     @property
-    def events(self) -> Observable:
+    def events(self) -> Observable[Event]:
         return self._source
 
     def submit(self, event: Event) -> None:

@@ -1,10 +1,10 @@
 import time
 
 
-__all__ = 'StatisticsCalculator',
+__all__ = 'Statistics',
 
 
-class StatisticsCalculator:
+class Statistics:
     def __init__(self, interval: float = 1.0) -> None:
         self._interval = interval
         self._frozen = True

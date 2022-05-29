@@ -1,17 +1,16 @@
 from __future__ import annotations
+
 from typing import Any, Dict, Iterable, Iterator, Mapping, Optional, Union
-from typing_extensions import TypeGuard
 
 import attr
+from typing_extensions import TypeGuard
 
-from .io import FlvReader
-from .io_protocols import RandomIO
 from . import scriptdata
 from .avc import extract_resolution
+from .io import FlvReader
+from .io_protocols import RandomIO
+from .models import AudioTag, AVCPacketType, FlvTag, ScriptTag, TagType, VideoTag
 from .utils import OffsetRepositor
-from .models import (
-    AVCPacketType, FlvTag, AudioTag, ScriptTag, TagType, VideoTag
-)
 
 
 def read_tags(
@@ -54,14 +53,14 @@ def read_tags_in_duration(
 
 
 def peek_tags(
-    file: RandomIO, reader: FlvReader, count: int, *, no_body: bool = False,
+    file: RandomIO, reader: FlvReader, count: int, *, no_body: bool = False
 ) -> Iterator[FlvTag]:
     with OffsetRepositor(file):
         yield from read_tags(reader, count, no_body=no_body)
 
 
 def rpeek_tags(
-    file: RandomIO, reader: FlvReader, count: int, *, no_body: bool = False,
+    file: RandomIO, reader: FlvReader, count: int, *, no_body: bool = False
 ) -> Iterator[FlvTag]:
     with OffsetRepositor(file):
         yield from rread_tags(reader, count, no_body=no_body)
@@ -74,9 +73,7 @@ def find_metadata_tag(tags: Iterable[FlvTag]) -> Optional[ScriptTag]:
     return None
 
 
-def find_header_tag(
-    tags: Iterable[FlvTag]
-) -> Optional[Union[AudioTag, VideoTag]]:
+def find_header_tag(tags: Iterable[FlvTag]) -> Optional[Union[AudioTag, VideoTag]]:
     for tag in tags:
         if is_sequence_header(tag):
             return tag
@@ -221,9 +218,7 @@ def enrich_metadata(
 
 
 def update_metadata(
-    metadata_tag: ScriptTag,
-    metadata: Mapping[str, Any],
-    offset: Optional[int] = None,
+    metadata_tag: ScriptTag, metadata: Mapping[str, Any], offset: Optional[int] = None
 ) -> ScriptTag:
     original_tag_size = metadata_tag.tag_size
     new_tag = enrich_metadata(metadata_tag, metadata, offset)
@@ -236,7 +231,8 @@ def ensure_order(metadata: Dict[str, Any]) -> Dict[str, Any]:
     # some typical properties such as 'keyframes' must be before some custom
     # properties such as 'Comment' otherwise, it won't take effect in some
     # players!
-    from .data_analyser import MetaData
+    from .operators import MetaData
+
     typical_props = attr.fields_dict(MetaData).keys()
     return {
         **{k: v for k, v in metadata.items() if k in typical_props},

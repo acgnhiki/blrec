@@ -1,31 +1,25 @@
+from __future__ import annotations
+
 import json
-import logging
-from subprocess import Popen, PIPE
-from typing import Dict, Any, Optional
+from subprocess import PIPE, Popen
+from typing import Any, Dict, Optional
 
-from rx import create
-from rx.core import Observable
-from rx.core.typing import Observer, Scheduler, Disposable
-from rx.scheduler.newthreadscheduler import NewThreadScheduler
+from reactivex import Observable, abc
+from reactivex.scheduler import NewThreadScheduler
 
-
-logger = logging.getLogger(__name__)
-
-
-__all__ = 'ffprobe', 'StreamProfile'
-
+__all__ = ('ffprobe', 'StreamProfile')
 
 StreamProfile = Dict[str, Any]
 
 
-def ffprobe(data: bytes) -> Observable:
+def ffprobe(data: bytes) -> Observable[StreamProfile]:
     def subscribe(
-        observer: Observer[StreamProfile],
-        scheduler: Optional[Scheduler] = None,
-    ) -> Disposable:
+        observer: abc.ObserverBase[StreamProfile],
+        scheduler: Optional[abc.SchedulerBase] = None,
+    ) -> abc.DisposableBase:
         _scheduler = scheduler or NewThreadScheduler()
 
-        def action(scheduler, state):  # type: ignore
+        def action(scheduler: abc.SchedulerBase, state: Optional[Any] = None) -> None:
             args = [
                 'ffprobe',
                 '-show_streams',
@@ -35,9 +29,7 @@ def ffprobe(data: bytes) -> Observable:
                 'pipe:0',
             ]
 
-            with Popen(
-                args, stdin=PIPE, stdout=PIPE, stderr=PIPE
-            ) as process:
+            with Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE) as process:
                 try:
                     stdout, stderr = process.communicate(data, timeout=10)
                 except Exception as e:
@@ -51,4 +43,4 @@ def ffprobe(data: bytes) -> Observable:
 
         return _scheduler.schedule(action)
 
-    return create(subscribe)
+    return Observable(subscribe)

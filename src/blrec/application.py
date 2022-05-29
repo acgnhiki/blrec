@@ -7,8 +7,7 @@ import attr
 import psutil
 
 from . import __prog__, __version__
-from .flv.data_analyser import MetaData
-from .core.stream_analyzer import StreamProfile
+from .flv.operators import MetaData, StreamProfile
 from .disk_space import SpaceMonitor, SpaceReclaimer
 from .bili.helpers import ensure_room_id
 from .task import (

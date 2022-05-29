@@ -34,3 +34,7 @@ class NoStreamCodecAvailable(Exception):
 
 class NoStreamQualityAvailable(Exception):
     pass
+
+
+class NoAlternativeStreamAvailable(Exception):
+    pass

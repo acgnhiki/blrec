@@ -6,11 +6,10 @@ from typing import Iterator, Optional
 from ..bili.live import Live
 from ..bili.typing import QualityNumber, StreamFormat
 from ..event.event_emitter import EventEmitter
-from ..flv.data_analyser import MetaData
+from ..flv.operators import MetaData, StreamProfile
 from ..utils.mixins import AsyncStoppableMixin
 from .flv_stream_recorder_impl import FLVStreamRecorderImpl
 from .hls_stream_recorder_impl import HLSStreamRecorderImpl
-from .stream_analyzer import StreamProfile
 from .stream_recorder_impl import StreamRecorderEventListener
 
 __all__ = 'StreamRecorder', 'StreamRecorderEventListener'
@@ -230,15 +229,15 @@ class StreamRecorder(
     async def on_video_file_completed(self, path: str) -> None:
         await self._emit('video_file_completed', path)
 
-    async def on_stream_recording_stopped(self) -> None:
-        await self._emit('stream_recording_stopped')
+    async def on_stream_recording_completed(self) -> None:
+        await self._emit('stream_recording_completed')
 
     async def _wait_fmp4_stream(self) -> bool:
         end_time = time.monotonic() + self.fmp4_stream_timeout
         available = False  # debounce
         while True:
             try:
-                await self._impl._live.get_live_stream_urls(stream_format='fmp4')
+                await self._impl._live.get_live_stream_url(stream_format='fmp4')
             except Exception:
                 available = False
                 if time.monotonic() > end_time:

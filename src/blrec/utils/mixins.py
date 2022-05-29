@@ -120,7 +120,7 @@ class AsyncCooperationMixin(ABC):
         super().__init__()
         self._loop = asyncio.get_running_loop()
 
-    def _handle_exception(self, exc: BaseException) -> None:
+    def _submit_exception(self, exc: BaseException) -> None:
         from ..exception import submit_exception
 
         async def wrapper() -> None:

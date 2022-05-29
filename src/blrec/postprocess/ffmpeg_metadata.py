@@ -1,13 +1,12 @@
-import logging
 import json
+import logging
 from typing import Iterable, cast
 
 import aiofiles
 
-from .helpers import get_metadata, get_extra_metadata
-from ..flv.stream_processor import JoinPoint
 from ..flv.helpers import make_comment_for_joinpoints
-
+from ..flv.operators import JoinPoint
+from .helpers import get_extra_metadata, get_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ async def _make_metadata_content(flv_path: str) -> str:
     comment = cast(str, metadata.get('Comment', ''))
     chapters = ''
 
-    if (join_points := extra_metadata.get('joinpoints')):
+    if join_points := extra_metadata.get('joinpoints'):
         join_points = list(map(JoinPoint.from_metadata_value, join_points))
         comment += '\n\n' + make_comment_for_joinpoints(join_points)
         duration = int(cast(float, metadata['duration']) * 1000)
@@ -49,9 +48,7 @@ Comment={comment}
 """
 
 
-def _make_chapters(
-    join_points: Iterable[JoinPoint], duration: int
-) -> str:
+def _make_chapters(join_points: Iterable[JoinPoint], duration: int) -> str:
     join_points = filter(lambda p: not p.seamless, join_points)
     timestamps = list(map(lambda p: p.timestamp, join_points))
     if not timestamps:
