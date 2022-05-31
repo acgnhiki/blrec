@@ -157,11 +157,11 @@ class Live:
     )
     async def get_user_info(self, uid: int) -> UserInfo:
         try:
-            user_info_data = await self._appapi.get_user_info(uid)
-            return UserInfo.from_app_api_data(user_info_data)
-        except Exception:
             user_info_data = await self._webapi.get_user_info(uid)
             return UserInfo.from_web_api_data(user_info_data)
+        except Exception:
+            user_info_data = await self._appapi.get_user_info(uid)
+            return UserInfo.from_app_api_data(user_info_data)
 
     async def get_server_timestamp(self) -> int:
         # the timestamp on the server at the moment in seconds
@@ -171,15 +171,15 @@ class Live:
         self,
         qn: QualityNumber = 10000,
         *,
-        api_platform: ApiPlatform = 'android',
+        api_platform: ApiPlatform = 'web',
         stream_format: StreamFormat = 'flv',
         stream_codec: StreamCodec = 'avc',
         select_alternative: bool = False,
     ) -> str:
-        if api_platform == 'android':
-            info = await self._appapi.get_room_play_info(self._room_id, qn)
-        else:
+        if api_platform == 'web':
             info = await self._webapi.get_room_play_info(self._room_id, qn)
+        else:
+            info = await self._appapi.get_room_play_info(self._room_id, qn)
 
         self._check_room_play_info(info)
 
@@ -224,11 +224,11 @@ class Live:
 
     async def _get_room_info_via_api(self) -> ResponseData:
         try:
-            info_data = await self._appapi.get_info_by_room(self._room_id)
+            info_data = await self._webapi.get_info_by_room(self._room_id)
             room_info_data = info_data['room_info']
         except Exception:
             try:
-                info_data = await self._webapi.get_info_by_room(self._room_id)
+                info_data = await self._appapi.get_info_by_room(self._room_id)
                 room_info_data = info_data['room_info']
             except Exception:
                 room_info_data = await self._webapi.get_info(self._room_id)

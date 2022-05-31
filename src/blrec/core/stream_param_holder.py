@@ -30,7 +30,7 @@ class StreamParamHolder:
         *,
         stream_format: StreamFormat = 'flv',
         quality_number: QualityNumber = 10000,
-        api_platform: ApiPlatform = 'android',
+        api_platform: ApiPlatform = 'web',
         use_alternative_stream: bool = False,
     ) -> None:
         super().__init__()
@@ -43,7 +43,7 @@ class StreamParamHolder:
 
     def reset(self) -> None:
         self._real_quality_number = None
-        self._api_platform = 'android'
+        self._api_platform = 'web'
         self._use_alternative_stream = False
         self._cancelled = False
 
