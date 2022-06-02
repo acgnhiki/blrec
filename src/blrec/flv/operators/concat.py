@@ -32,8 +32,8 @@ logger = logging.getLogger(__name__)
 @attr.s(auto_attribs=True, slots=True, frozen=True)
 class JoinPoint:
     seamless: bool
-    timestamp: float  # timestamp of previous tag in milliseconds
-    crc32: str  # crc32 of the previous tag
+    timestamp: float  # timestamp of next tag in milliseconds
+    crc32: str  # crc32 of the next tag
 
     @classmethod
     def from_metadata_value(cls, value: JoinPointData) -> JoinPoint:
@@ -181,13 +181,14 @@ def concat(
                     return tag
                 return tag.evolve(timestamp=tag.timestamp + delta)
 
-            def make_join_point_tag(tag: FlvTag, seamless: bool) -> ScriptTag:
-                assert tag.body is not None
+            def make_join_point_tag(next_tag: FlvTag, seamless: bool) -> ScriptTag:
+                assert next_tag.body is not None
                 join_point = JoinPoint(
                     seamless=seamless,
-                    timestamp=float(tag.timestamp),
-                    crc32=cksum(tag.body),
+                    timestamp=float(next_tag.timestamp),
+                    crc32=cksum(next_tag.body),
                 )
+                logger.debug(f'join point: {join_point}; next tag: {next_tag}')
                 script_data = ScriptData(
                     name='onJoinPoint', value=attr.asdict(join_point)
                 )
@@ -227,13 +228,15 @@ def concat(
                     update_delta_no_duplicated(tags[0])
                     logger.debug(f'Updated delta: {delta}, seamless: {seamless}')
 
-                join_point_tag = make_join_point_tag(last_tags[-1], seamless)
-                observer.on_next(join_point_tag)
+                if tags:
+                    join_point_tag = make_join_point_tag(correct_ts(tags[0]), seamless)
+                    observer.on_next(join_point_tag)
 
                 for tag in tags:
                     tag = correct_ts(tag)
                     update_last_tags(tag)
                     observer.on_next(tag)
+
                 gathered_tags.clear()
 
             def do_cancel() -> None:
@@ -361,7 +364,6 @@ class JoinPointExtractor:
                 if join_point_tag:
                     join_point = self._make_join_point(join_point_tag, item)
                     join_points.append(join_point)
-                    logger.debug(f'{repr(join_point)}; {join_point}')
                     join_point_tag = None
 
                 if self._is_join_point_tag(item):
@@ -395,12 +397,20 @@ class JoinPointExtractor:
             return script_data['name'] == 'onJoinPoint'
         return False
 
-    def _make_join_point(self, join_point_tag: ScriptTag, tag: FlvTag) -> JoinPoint:
-        assert tag.body is not None
+    def _make_join_point(
+        self, join_point_tag: ScriptTag, next_tag: FlvTag
+    ) -> JoinPoint:
         script_data = parse_scriptdata(join_point_tag)
         join_point_data = cast(JoinPointData, script_data['value'])
-        return JoinPoint(
-            seamless=join_point_data['seamless'],
-            timestamp=tag.timestamp,
-            crc32=cksum(tag.body),
+        assert next_tag.body is not None, next_tag
+        assert cksum(next_tag.body) == join_point_data['crc32'], (
+            join_point_tag,
+            next_tag,
         )
+        join_point = JoinPoint(
+            seamless=join_point_data['seamless'],
+            timestamp=next_tag.timestamp,
+            crc32=join_point_data['crc32'],
+        )
+        logger.debug(f'Extracted join point: {join_point}; next tag: {next_tag}')
+        return join_point
