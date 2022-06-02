@@ -32,7 +32,7 @@ class MetadataDumper(SwitchableMixin):
 
     def _do_enable(self) -> None:
         self._metadata_subscription = self._analyser.metadatas.subscribe(
-            self._update_metadata
+            on_next=self._update_metadata, on_error=self._reset_metadata
         )
         self._join_points_subscription = (
             self._joinpoint_extractor.join_points.subscribe(self._update_join_points)
@@ -53,6 +53,9 @@ class MetadataDumper(SwitchableMixin):
 
     def _update_metadata(self, metadata: flv_ops.MetaData) -> None:
         self._last_metadata = metadata
+
+    def _reset_metadata(self, exc: Exception) -> None:
+        self._last_metadata = None
 
     def _update_join_points(self, join_points: List[flv_ops.JoinPoint]) -> None:
         self._last_join_points = join_points

@@ -133,8 +133,10 @@ class Postprocessor(
             self._postprocessing_progress = None
 
             video_path = await self._queue.get()
+            logger.debug(f'Postprocessing... {video_path}')
 
             if not await self._is_vaild_flv_file(video_path):
+                logger.warning(f'Invalid flv file: {video_path}')
                 self._queue.task_done()
                 continue
 

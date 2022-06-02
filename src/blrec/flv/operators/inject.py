@@ -52,9 +52,9 @@ class Injector:
                         logger.debug('Injected metadata into the metadata tag')
                     else:
                         logger.debug('No metadata tag in the stream')
-                        tag = self._make_metadata_tag()
+                        metadata_tag = self._make_metadata_tag()
                         logger.debug('Maked a metadata tag for metadata injection')
-                        observer.on_next(tag)
+                        observer.on_next(metadata_tag)
                         logger.debug('Inserted the artificial metadata tag')
 
                 observer.on_next(tag)

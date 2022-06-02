@@ -178,9 +178,13 @@ class Analyser:
         )
 
     def make_metadata(self) -> MetaData:
-        assert self._has_audio == self._audio_analysed
-        assert self._has_video and self._video_analysed
-        assert self._resolution is not None
+        assert self._has_audio == self._audio_analysed, (
+            f'has_audio: {self._has_audio}, audio_analysed: {self._audio_analysed}',
+        )
+        assert self._has_video and self._video_analysed, (
+            f'has_video: {self._has_video}, video_analysed: {self._video_analysed}',
+        )
+        assert self._resolution is not None, 'no resolution'
 
         if not self._has_audio:
             audiosize = None
@@ -241,7 +245,7 @@ class Analyser:
                     metadata = self.make_metadata()
                 except Exception as e:
                     logger.warning(f'Failed to make metadata: {repr(e)}')
-                    pass
+                    self._metadatas.on_error(e)
                 else:
                     self._metadatas.on_next(metadata)
 
@@ -302,6 +306,7 @@ class Analyser:
             self._audio_sample_rate = tag.sound_rate.value
             self._audio_sample_size = tag.sound_size.value
             self._stereo = tag.sound_type == SoundType.STEREO
+            logger.debug(f'Audio analysed: {tag}')
 
         self._num_of_audio_tags += 1
         self._size_of_audio_tags += tag.tag_size
@@ -314,6 +319,7 @@ class Analyser:
             self._keyframe_filepositions.append(self.calc_file_size())
             if tag.is_avc_header():
                 self._resolution = Resolution.from_aac_sequence_header(tag)
+                logger.debug(f'Resolution: {self._resolution}')
         else:
             pass
 
@@ -321,6 +327,7 @@ class Analyser:
             self._has_video = True
             self._video_analysed = True
             self._video_codec_id = tag.codec_id.value
+            logger.debug(f'Video analysed: {tag}')
 
         self._num_of_video_tags += 1
         self._size_of_video_tags += tag.tag_size
