@@ -92,13 +92,13 @@ class Cutter:
         self, observer: abc.ObserverBase[FLVStreamItem]
     ) -> None:
         assert self._last_flv_header is not None
-        assert self._last_audio_sequence_header is not None
-        assert self._last_video_sequence_header is not None
         observer.on_next(self._last_flv_header)
         if self._last_metadata_tag is not None:
             observer.on_next(self._last_metadata_tag)
-        observer.on_next(self._last_audio_sequence_header)
-        observer.on_next(self._last_video_sequence_header)
+        if self._last_video_sequence_header is not None:
+            observer.on_next(self._last_video_sequence_header)
+        if self._last_audio_sequence_header is not None:
+            observer.on_next(self._last_audio_sequence_header)
 
     def _check_cut_point(self, tag: FlvTag) -> None:
         self._last_timestamp = tag.timestamp

@@ -72,21 +72,21 @@ class Limiter:
         self, observer: abc.ObserverBase[FLVStreamItem]
     ) -> None:
         assert self._last_flv_header is not None
-        assert self._last_audio_sequence_header is not None
-        assert self._last_video_sequence_header is not None
         observer.on_next(self._last_flv_header)
         if self._last_metadata_tag is not None:
             observer.on_next(self._last_metadata_tag)
-        observer.on_next(self._last_audio_sequence_header)
-        observer.on_next(self._last_video_sequence_header)
+        if self._last_video_sequence_header is not None:
+            observer.on_next(self._last_video_sequence_header)
+        if self._last_audio_sequence_header is not None:
+            observer.on_next(self._last_audio_sequence_header)
 
-        self._filesize = (
-            self._last_flv_header.size
-            + self._last_audio_sequence_header.tag_size
-            + self._last_video_sequence_header.tag_size
-        )
+        self._filesize = self._last_flv_header.size
         if self._last_metadata_tag is not None:
             self._filesize += self._last_metadata_tag.tag_size
+        if self._last_video_sequence_header is not None:
+            self._filesize += self._last_video_sequence_header.tag_size
+        if self._last_audio_sequence_header is not None:
+            self._filesize += self._last_audio_sequence_header.tag_size
         self._duration = 0.0
         self._first_keyframe_tag = self._last_keyframe_tag
 

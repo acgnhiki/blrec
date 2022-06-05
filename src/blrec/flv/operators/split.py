@@ -39,13 +39,13 @@ def split() -> Callable[[FLVStream], FLVStream]:
 
             def insert_header_and_tags() -> None:
                 assert last_flv_header is not None
-                assert last_audio_sequence_header is not None
-                assert last_video_sequence_header is not None
                 observer.on_next(last_flv_header)
                 if last_metadata_tag is not None:
                     observer.on_next(last_metadata_tag)
-                observer.on_next(last_audio_sequence_header)
-                observer.on_next(last_video_sequence_header)
+                if last_video_sequence_header is not None:
+                    observer.on_next(last_video_sequence_header)
+                if last_audio_sequence_header is not None:
+                    observer.on_next(last_audio_sequence_header)
 
             def on_next(item: FLVStreamItem) -> None:
                 nonlocal changed
