@@ -191,6 +191,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             self._danmu_info = await api.get_danmu_info(self._room_id)
         except Exception as exc:
             logger.warning(f'Failed to update danmu info: {repr(exc)}')
+            raise
         else:
             logger.debug('Danmu info updated')
 
