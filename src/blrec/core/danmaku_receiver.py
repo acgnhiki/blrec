@@ -2,17 +2,13 @@ import logging
 from asyncio import Queue, QueueFull
 from typing import Final
 
-
-from .models import DanmuMsg, GiftSendMsg, GuardBuyMsg, SuperChatMsg
-from .typing import DanmakuMsg
-from ..bili.danmaku_client import (
-    DanmakuClient, DanmakuListener, DanmakuCommand
-)
+from ..bili.danmaku_client import DanmakuClient, DanmakuCommand, DanmakuListener
 from ..bili.typing import Danmaku
 from ..utils.mixins import StoppableMixin
+from .models import DanmuMsg, GiftSendMsg, GuardBuyMsg, SuperChatMsg
+from .typing import DanmakuMsg
 
-
-__all__ = 'DanmakuReceiver',
+__all__ = ('DanmakuReceiver',)
 
 
 logger = logging.getLogger(__name__)
@@ -39,10 +35,10 @@ class DanmakuReceiver(DanmakuListener, StoppableMixin):
         return await self._queue.get()
 
     async def on_danmaku_received(self, danmu: Danmaku) -> None:
-        cmd = danmu['cmd']
+        cmd: str = danmu['cmd']
         msg: DanmakuMsg
 
-        if cmd == DanmakuCommand.DANMU_MSG.value:
+        if cmd.startswith(DanmakuCommand.DANMU_MSG.value):
             msg = DanmuMsg.from_danmu(danmu)
         elif cmd == DanmakuCommand.SEND_GIFT.value:
             msg = GiftSendMsg.from_danmu(danmu)
