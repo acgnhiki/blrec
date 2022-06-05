@@ -7,6 +7,7 @@ from typing import List, Optional, cast
 from reactivex import Observable, Subject, abc
 
 from ...utils.ffprobe import StreamProfile, ffprobe
+from ..common import find_aac_header_tag, find_avc_header_tag
 from ..io import FlvWriter
 from ..models import FlvHeader, FlvTag
 from .typing import FLVStream, FLVStreamItem
@@ -67,8 +68,19 @@ class Prober:
         bytes_io = io.BytesIO()
         writer = FlvWriter(bytes_io)
         writer.write_header(cast(FlvHeader, self._gathered_items[0]))
-        for tag in self._gathered_items[1:]:
-            writer.write_tag(cast(FlvTag, tag))
+        gathered_tags = cast(List[FlvTag], self._gathered_items[1:])
+
+        avc_sequence_header = find_avc_header_tag(gathered_tags)
+        aac_sequence_header = find_aac_header_tag(gathered_tags)
+        if avc_sequence_header is not None and aac_sequence_header is not None:
+            index_of_avc_sequence_header = gathered_tags.index(avc_sequence_header)
+            index_of_aac_sequence_header = gathered_tags.index(aac_sequence_header)
+            if index_of_avc_sequence_header > index_of_aac_sequence_header:
+                gathered_tags[index_of_aac_sequence_header] = avc_sequence_header
+                gathered_tags[index_of_avc_sequence_header] = aac_sequence_header
+
+        for tag in gathered_tags:
+            writer.write_tag(tag)
 
         def on_next(profile: StreamProfile) -> None:
             self._profiles.on_next(profile)
