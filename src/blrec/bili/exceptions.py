@@ -1,11 +1,15 @@
-
 import attr
+import aiohttp
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class ApiRequestError(Exception):
     code: int
     message: str
+
+
+class DanmakuClientAuthError(aiohttp.ClientError):
+    pass
 
 
 class LiveRoomHidden(Exception):
