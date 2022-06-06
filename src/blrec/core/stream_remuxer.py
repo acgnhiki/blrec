@@ -1,6 +1,7 @@
 import errno
 import io
 import logging
+from contextlib import suppress
 import os
 import re
 import shlex
@@ -88,7 +89,8 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
     def _do_stop(self) -> None:
         logger.debug('Stopping stream remuxer...')
         if hasattr(self, '_subprocess'):
-            self._subprocess.kill()
+            with suppress(ProcessLookupError):
+                self._subprocess.kill()
             self._subprocess.wait(timeout=10)
         if hasattr(self, '_thread'):
             self._thread.join(timeout=10)
