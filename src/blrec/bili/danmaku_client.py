@@ -87,7 +87,9 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
 
     @retry(
         wait=wait_exponential(multiplier=0.1, max=10),
-        retry=retry_if_exception_type((asyncio.TimeoutError, aiohttp.ClientError)),
+        retry=retry_if_exception_type(
+            (asyncio.TimeoutError, aiohttp.ClientError, ConnectionError)
+        ),
     )
     async def _connect(self) -> None:
         logger.debug('Connecting to server...')
