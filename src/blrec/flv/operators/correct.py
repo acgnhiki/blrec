@@ -21,6 +21,7 @@ def correct() -> Callable[[FLVStream], FLVStream]:
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
             delta: Optional[int] = None
+            first_data_tag: Optional[FlvTag] = None
 
             def correct_ts(tag: FlvTag, delta: int) -> FlvTag:
                 if delta == 0:
@@ -29,9 +30,11 @@ def correct() -> Callable[[FLVStream], FLVStream]:
 
             def on_next(item: FLVStreamItem) -> None:
                 nonlocal delta
+                nonlocal first_data_tag
 
                 if isinstance(item, FlvHeader):
                     delta = None
+                    first_data_tag = None
                     observer.on_next(item)
                     return
 
@@ -45,14 +48,28 @@ def correct() -> Callable[[FLVStream], FLVStream]:
                 if delta is None:
                     if is_sequence_header(tag):
                         tag = correct_ts(tag, -tag.timestamp)
+                        observer.on_next(tag)
                     else:
-                        logger.debug(f'The first data tag: {tag}')
-                        delta = -tag.timestamp
-                        logger.debug(f'Timestamp delta: {delta}')
-                        tag = correct_ts(tag, delta)
-                else:
-                    tag = correct_ts(tag, delta)
+                        if first_data_tag is None:
+                            first_data_tag = tag
+                            logger.debug(f'The first data tag: {first_data_tag}')
+                        else:
+                            second_data_tag = tag
+                            logger.debug(f'The second data tag: {second_data_tag}')
+                            if second_data_tag.timestamp >= first_data_tag.timestamp:
+                                delta = -first_data_tag.timestamp
+                                logger.debug(f'Timestamp delta: {delta}')
+                                observer.on_next(correct_ts(first_data_tag, delta))
+                                observer.on_next(correct_ts(second_data_tag, delta))
+                            else:
+                                delta = -second_data_tag.timestamp
+                                logger.debug(f'Timestamp delta: {delta}')
+                                observer.on_next(correct_ts(second_data_tag, delta))
+                                observer.on_next(correct_ts(first_data_tag, delta))
+                            first_data_tag = None
+                    return
 
+                tag = correct_ts(tag, delta)
                 observer.on_next(tag)
 
             return source.subscribe(

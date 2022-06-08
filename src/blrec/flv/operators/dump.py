@@ -90,6 +90,9 @@ class Dumper:
                         self._timestamp_updates.on_next(0)
                     else:
                         if self._flv_writer is not None:
+                            # XXX: negative timestamp will cause
+                            # `struct.error: ubyte format requires 0 <= number <= 255`
+                            assert item.timestamp >= 0, item
                             size = self._flv_writer.write_tag(item)
                             self._size_updates.on_next(size)
                             self._timestamp_updates.on_next(item.timestamp)
