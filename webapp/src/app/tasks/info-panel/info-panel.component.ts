@@ -40,6 +40,16 @@ export class InfoPanelComponent implements OnInit, OnDestroy {
     private taskService: TaskService
   ) {}
 
+  get fps(): string {
+    const avgFrameRate: string | undefined =
+      this.profile?.streams![0]?.avg_frame_rate;
+    if (avgFrameRate) {
+      return eval(avgFrameRate).toString();
+    } else {
+      return 'N/A';
+    }
+  }
+
   ngOnInit(): void {
     this.syncData();
   }

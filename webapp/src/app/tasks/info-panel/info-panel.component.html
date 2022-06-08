@@ -24,7 +24,7 @@
         <span>
           {{ profile.streams[0]?.width }}x{{ profile.streams[0]?.height }}
         </span>
-        <span> {{ profile.streams[0]?.r_frame_rate!.split("/")[0] }} fps</span>
+        <span> {{ fps }} fps</span>
         <!-- <span
           *ngIf="
             profile.streams[0]?.bit_rate && profile.streams[0]?.bit_rate !== '1'

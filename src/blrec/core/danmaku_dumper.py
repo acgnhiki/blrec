@@ -1,31 +1,31 @@
-import html
 import asyncio
+import html
 import logging
 from contextlib import suppress
+from threading import Lock
 from typing import Iterator, List, Optional
 
-from tenacity import (
-    AsyncRetrying,
-    stop_after_attempt,
-    retry_if_not_exception_type,
-)
+from tenacity import AsyncRetrying, retry_if_not_exception_type, stop_after_attempt
 
-from .. import __version__, __prog__, __github__
-from .danmaku_receiver import DanmakuReceiver, DanmuMsg
-from .stream_recorder import StreamRecorder, StreamRecorderEventListener
-from .statistics import Statistics
+from .. import __github__, __prog__, __version__
 from ..bili.live import Live
-from ..exception import exception_callback, submit_exception
-from ..event.event_emitter import EventListener, EventEmitter
-from ..path import danmaku_path
 from ..core.models import GiftSendMsg, GuardBuyMsg, SuperChatMsg
-from ..danmaku.models import (
-    Metadata, Danmu, GiftSendRecord, GuardBuyRecord, SuperChatRecord
-)
 from ..danmaku.io import DanmakuWriter
-from ..utils.mixins import SwitchableMixin
+from ..danmaku.models import (
+    Danmu,
+    GiftSendRecord,
+    GuardBuyRecord,
+    Metadata,
+    SuperChatRecord,
+)
+from ..event.event_emitter import EventEmitter, EventListener
+from ..exception import exception_callback, submit_exception
 from ..logging.room_id import aio_task_with_room_id
-
+from ..path import danmaku_path
+from ..utils.mixins import SwitchableMixin
+from .danmaku_receiver import DanmakuReceiver, DanmuMsg
+from .statistics import Statistics
+from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 
 __all__ = 'DanmakuDumper', 'DanmakuDumperEventListener'
 
@@ -70,7 +70,7 @@ class DanmakuDumper(
         self.record_guard_buy = record_guard_buy
         self.record_super_chat = record_super_chat
 
-        self._lock: asyncio.Lock = asyncio.Lock()
+        self._lock: Lock = Lock()
         self._path: Optional[str] = None
         self._files: List[str] = []
         self._statistics = Statistics(interval=60)
@@ -115,14 +115,14 @@ class DanmakuDumper(
     async def on_video_file_created(
         self, video_path: str, record_start_time: int
     ) -> None:
-        async with self._lock:
+        with self._lock:
             self._path = danmaku_path(video_path)
             self._record_start_time = record_start_time
             self._files.append(self._path)
             self._start_dumping()
 
     async def on_video_file_completed(self, video_path: str) -> None:
-        async with self._lock:
+        with self._lock:
             await self._stop_dumping()
             self._path = None
 
@@ -154,9 +154,7 @@ class DanmakuDumper(
                 await writer.write_metadata(self._make_metadata())
 
                 async for attempt in AsyncRetrying(
-                    retry=retry_if_not_exception_type((
-                        asyncio.CancelledError
-                    )),
+                    retry=retry_if_not_exception_type((asyncio.CancelledError)),
                     stop=stop_after_attempt(3),
                 ):
                     with attempt:
@@ -181,24 +179,17 @@ class DanmakuDumper(
                 if not self.record_gift_send:
                     continue
                 record = self._make_gift_send_record(msg)
-                if (
-                    not self.record_free_gifts and
-                    record.is_free_gift()
-                ):
+                if not self.record_free_gifts and record.is_free_gift():
                     continue
                 await writer.write_gift_send_record(record)
             elif isinstance(msg, GuardBuyMsg):
                 if not self.record_guard_buy:
                     continue
-                await writer.write_guard_buy_record(
-                    self._make_guard_buy_record(msg)
-                )
+                await writer.write_guard_buy_record(self._make_guard_buy_record(msg))
             elif isinstance(msg, SuperChatMsg):
                 if not self.record_super_chat:
                     continue
-                await writer.write_super_chat_record(
-                    self._make_super_chat_record(msg)
-                )
+                await writer.write_super_chat_record(self._make_super_chat_record(msg))
             else:
                 logger.warning('Unsupported message type:', repr(msg))
 

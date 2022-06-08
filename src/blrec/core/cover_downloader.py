@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from enum import Enum
+from threading import Lock
 from typing import Set
 
 import aiofiles
@@ -45,7 +46,7 @@ class CoverDownloader(StreamRecorderEventListener, SwitchableMixin):
         super().__init__()
         self._live = live
         self._stream_recorder = stream_recorder
-        self._lock: asyncio.Lock = asyncio.Lock()
+        self._lock: Lock = Lock()
         self._sha1_set: Set[str] = set()
         self.save_cover = save_cover
         self.cover_save_strategy = cover_save_strategy
@@ -60,7 +61,7 @@ class CoverDownloader(StreamRecorderEventListener, SwitchableMixin):
         logger.debug('Disabled cover downloader')
 
     async def on_video_file_completed(self, video_path: str) -> None:
-        async with self._lock:
+        with self._lock:
             if not self.save_cover:
                 return
             task = asyncio.create_task(self._save_cover(video_path))
