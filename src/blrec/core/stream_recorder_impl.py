@@ -324,6 +324,11 @@ class StreamRecorderImpl(
 
         return factory
 
+    def _on_completed(self) -> None:
+        self._dl_statistics.freeze()
+        self._rec_statistics.freeze()
+        self._emit_event('stream_recording_completed')
+
     def _emit_event(self, name: str, *args: Any, **kwds: Any) -> None:
         self._run_coroutine(self._emit(name, *args, **kwds))
 

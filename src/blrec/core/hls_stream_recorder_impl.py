@@ -85,7 +85,5 @@ class HLSStreamRecorderImpl(StreamRecorderImpl):
                 self._progress_bar,
                 self._exception_handler,
             )
-            .subscribe(
-                on_completed=lambda: self._emit_event('stream_recording_completed')
-            )
+            .subscribe(on_completed=self._on_completed)
         )

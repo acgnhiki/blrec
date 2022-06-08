@@ -64,7 +64,7 @@ class FLVStreamRecorderImpl(StreamRecorderImpl):
                 self._exception_handler,
             )
             .subscribe(
-                on_completed=lambda: self._emit_event('stream_recording_completed'),
+                on_completed=self._on_completed,
                 scheduler=NewThreadScheduler(self._thread_factory('StreamRecorder')),
             )
         )

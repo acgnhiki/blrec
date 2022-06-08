@@ -44,7 +44,7 @@ export class InfoPanelComponent implements OnInit, OnDestroy {
     const avgFrameRate: string | undefined =
       this.profile?.streams![0]?.avg_frame_rate;
     if (avgFrameRate) {
-      return eval(avgFrameRate).toString();
+      return eval(avgFrameRate).toFixed();
     } else {
       return 'N/A';
     }
