@@ -110,6 +110,9 @@ class StreamRecorderImpl(
         self._threads: List[Thread] = []
         self._files: List[str] = []
         self._stream_profile: StreamProfile = {}
+        self._record_start_time: Optional[int] = None
+        self._stream_available_time: Optional[int] = None
+        self._hls_stream_available_time: Optional[int] = None
 
         def on_profile_updated(profile: StreamProfile) -> None:
             self._stream_profile = profile
@@ -119,6 +122,7 @@ class StreamRecorderImpl(
         def on_file_opened(args: Tuple[str, int]) -> None:
             logger.info(f"Video file created: '{args[0]}'")
             self._files.append(args[0])
+            self._record_start_time = args[1]
             self._emit_event('video_file_created', *args)
 
         def on_file_closed(path: str) -> None:
@@ -135,6 +139,26 @@ class StreamRecorderImpl(
     @property
     def stream_host(self) -> str:
         return self._stream_url_resolver.stream_host
+
+    @property
+    def record_start_time(self) -> Optional[int]:
+        return self._record_start_time
+
+    @property
+    def stream_available_time(self) -> Optional[int]:
+        return self._stream_available_time
+
+    @stream_available_time.setter
+    def stream_available_time(self, ts: Optional[int]) -> None:
+        self._stream_available_time = ts
+
+    @property
+    def hls_stream_available_time(self) -> Optional[int]:
+        return self._hls_stream_available_time
+
+    @hls_stream_available_time.setter
+    def hls_stream_available_time(self, ts: Optional[int]) -> None:
+        self._hls_stream_available_time = ts
 
     @property
     def dl_total(self) -> int:
@@ -266,6 +290,7 @@ class StreamRecorderImpl(
     def _reset(self) -> None:
         self._files.clear()
         self._stream_profile = {}
+        self._record_start_time = None
 
     async def _do_start(self) -> None:
         logger.debug('Starting stream recorder...')

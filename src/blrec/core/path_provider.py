@@ -1,13 +1,8 @@
-import asyncio
 import logging
 import os
 import re
-import time
 from datetime import datetime
 from typing import Tuple
-
-import aiohttp
-from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
 from ..bili.live import Live
 from ..path import escape_path
@@ -26,28 +21,9 @@ class PathProvider(AsyncCooperationMixin):
         self.path_template = path_template
 
     def __call__(self) -> Tuple[str, int]:
-        timestamp = self._get_timestamp()
-        path = self._make_path(timestamp)
-        return path, timestamp
-
-    def _get_timestamp(self) -> int:
-        try:
-            return self._get_server_timestamp()
-        except Exception as e:
-            logger.warning(f'Failed to get server timestamp: {repr(e)}')
-            return self._get_local_timestamp()
-
-    def _get_local_timestamp(self) -> int:
-        return int(time.time())
-
-    @retry(
-        reraise=True,
-        retry=retry_if_exception_type((asyncio.TimeoutError, aiohttp.ClientError)),
-        wait=wait_exponential(multiplier=0.1, max=1),
-        stop=stop_after_delay(3),
-    )
-    def _get_server_timestamp(self) -> int:
-        return self._run_coroutine(self._live.get_server_timestamp())
+        ts = self._run_coroutine(self._live.get_timestamp())
+        path = self._make_path(ts)
+        return path, ts
 
     def _make_path(self, timestamp: int) -> str:
         date_time = datetime.fromtimestamp(timestamp)

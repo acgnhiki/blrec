@@ -40,6 +40,7 @@ class StreamRecorder(
     ) -> None:
         super().__init__()
 
+        self._live = live
         self.stream_format = stream_format
         self.fmp4_stream_timeout = fmp4_stream_timeout
 
@@ -76,6 +77,26 @@ class StreamRecorder(
     @property
     def stream_host(self) -> str:
         return self._impl.stream_host
+
+    @property
+    def record_start_time(self) -> Optional[int]:
+        return self._impl.record_start_time
+
+    @property
+    def stream_available_time(self) -> Optional[int]:
+        return self._impl.stream_available_time
+
+    @stream_available_time.setter
+    def stream_available_time(self, ts: Optional[int]) -> None:
+        self._impl.stream_available_time = ts
+
+    @property
+    def hls_stream_available_time(self) -> Optional[int]:
+        return self._impl.hls_stream_available_time
+
+    @hls_stream_available_time.setter
+    def hls_stream_available_time(self, ts: Optional[int]) -> None:
+        self._impl.hls_stream_available_time = ts
 
     @property
     def dl_total(self) -> int:
@@ -206,11 +227,15 @@ class StreamRecorder(
         return self._impl.stopped
 
     async def _do_start(self) -> None:
+        self.hls_stream_available_time = None
         stream_format = self.stream_format
         if stream_format == 'fmp4':
             logger.info('Waiting for the fmp4 stream becomes available...')
             available = await self._wait_fmp4_stream()
-            if not available:
+            if available:
+                if self.stream_available_time is not None:
+                    self.hls_stream_available_time = await self._live.get_timestamp()
+            else:
                 logger.warning(
                     'The specified stream format (fmp4) is not available '
                     f'in {self.fmp4_stream_timeout} seconcds, '
@@ -265,6 +290,8 @@ class StreamRecorder(
             return
 
         self._impl.remove_listener(self)
+        stream_available_time = self._impl.stream_available_time
+        hls_stream_available_time = self._impl.hls_stream_available_time
 
         self._impl = cls(
             live=self._impl._live,
@@ -279,5 +306,7 @@ class StreamRecorder(
         )
 
         self._impl.add_listener(self)
+        self._impl.stream_available_time = stream_available_time
+        self._impl.hls_stream_available_time = hls_stream_available_time
 
         logger.debug(f'Changed stream recorder impl to {cls.__name__}')

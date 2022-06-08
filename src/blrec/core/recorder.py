@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 import logging
 from datetime import datetime
 from typing import Iterator, Optional
@@ -366,12 +367,14 @@ class Recorder(
     async def on_live_ended(self, live: Live) -> None:
         logger.info('The live has ended')
         self._stream_available = False
+        self._stream_recorder.stream_available_time = None
         await self._stop_recording()
         self._print_waiting_message()
 
     async def on_live_stream_available(self, live: Live) -> None:
         logger.debug('The live stream becomes available')
         self._stream_available = True
+        self._stream_recorder.stream_available_time = await live.get_timestamp()
         await self._stream_recorder.start()
 
     async def on_live_stream_reset(self, live: Live) -> None:

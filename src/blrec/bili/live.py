@@ -1,5 +1,7 @@
 import asyncio
+import time
 import json
+import logging
 import re
 from typing import Dict, List, cast
 
@@ -23,6 +25,7 @@ from .typing import ApiPlatform, QualityNumber, ResponseData, StreamCodec, Strea
 
 __all__ = ('Live',)
 
+logger = logging.getLogger(__name__)
 
 _INFO_PATTERN = re.compile(
     rb'<script>\s*window\.__NEPTUNE_IS_MY_WAIFU__\s*=\s*(\{.*?\})\s*</script>'
@@ -162,6 +165,14 @@ class Live:
         except Exception:
             user_info_data = await self._appapi.get_user_info(uid)
             return UserInfo.from_app_api_data(user_info_data)
+
+    async def get_timestamp(self) -> int:
+        try:
+            ts = await self.get_server_timestamp()
+        except Exception as e:
+            logger.warning(f'Failed to get timestamp from server: {repr(e)}')
+            ts = int(time.time())
+        return ts
 
     async def get_server_timestamp(self) -> int:
         # the timestamp on the server at the moment in seconds

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Union
 
 from .. import __github__, __prog__, __version__
 from ..bili.helpers import get_quality_name
@@ -24,9 +24,28 @@ class MetadataProvider:
         return self._make_metadata()
 
     def _make_metadata(self) -> Dict[str, Any]:
+        tz = timezone(timedelta(hours=8))
         live_start_time = datetime.fromtimestamp(
-            self._live.room_info.live_start_time, timezone(timedelta(hours=8))
+            self._live.room_info.live_start_time, tz
         )
+        if self._stream_recorder.stream_available_time is None:
+            stream_available_time: Union[datetime, str] = 'N/A'
+        else:
+            stream_available_time = datetime.fromtimestamp(
+                self._stream_recorder.stream_available_time, tz
+            )
+        if self._stream_recorder.hls_stream_available_time is None:
+            hls_stream_available_time: Union[datetime, str] = 'N/A'
+        else:
+            hls_stream_available_time = datetime.fromtimestamp(
+                self._stream_recorder.hls_stream_available_time, tz
+            )
+        if self._stream_recorder.record_start_time is None:
+            record_start_time: Union[datetime, str] = 'N/A'
+        else:
+            record_start_time = datetime.fromtimestamp(
+                self._stream_recorder.record_start_time, tz
+            )
 
         assert self._stream_recorder.real_quality_number is not None
         stream_quality = '{} ({}{})'.format(
@@ -46,6 +65,9 @@ B站直播录像
 分区：{self._live.room_info.parent_area_name} - {self._live.room_info.area_name}
 房间号：{self._live.room_info.room_id}
 开播时间：{live_start_time}
+开始推流时间: {stream_available_time}
+HLS流可用时间: {hls_stream_available_time}
+录像起始时间: {record_start_time}
 流主机: {self._stream_recorder.stream_host}
 流格式：{self._stream_recorder.stream_format}
 流画质：{stream_quality}
@@ -59,6 +81,9 @@ B站直播录像
                     'Area': self._live.room_info.area_name,
                     'ParentArea': self._live.room_info.parent_area_name,
                     'LiveStartTime': str(live_start_time),
+                    'StreamAvailableTime': str(stream_available_time),
+                    'HLSStreamAvailableTime': str(hls_stream_available_time),
+                    'RecordStartTime': str(record_start_time),
                     'StreamHost': self._stream_recorder.stream_host,
                     'StreamFormat': self._stream_recorder.stream_format,
                     'StreamQuality': stream_quality,
