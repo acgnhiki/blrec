@@ -46,8 +46,12 @@ class StreamStatistics:
                 calculable_stream.size_updates.subscribe(self._statistics.submit)
                 observer.on_next(calculable_stream)
 
+            def on_completed() -> None:
+                self._statistics.freeze()
+                observer.on_completed()
+
             return source.subscribe(
-                on_next, observer.on_error, observer.on_completed, scheduler=scheduler
+                on_next, observer.on_error, on_completed, scheduler=scheduler
             )
 
         return Observable(subscribe)

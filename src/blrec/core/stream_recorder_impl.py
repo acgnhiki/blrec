@@ -106,6 +106,7 @@ class StreamRecorderImpl(
         self._metadata_dumper.enable()
 
         self._subscription: abc.DisposableBase
+        self._completed: bool = False
 
         self._threads: List[Thread] = []
         self._files: List[str] = []
@@ -291,6 +292,7 @@ class StreamRecorderImpl(
         self._files.clear()
         self._stream_profile = {}
         self._record_start_time = None
+        self._completed = False
 
     async def _do_start(self) -> None:
         logger.debug('Starting stream recorder...')
@@ -301,9 +303,7 @@ class StreamRecorderImpl(
     async def _do_stop(self) -> None:
         logger.debug('Stopping stream recorder...')
         self._stream_param_holder.cancel()
-        thread = self._thread_factory('StreamRecorderDisposer')(
-            self._subscription.dispose
-        )
+        thread = self._thread_factory('StreamRecorderDisposer')(self._dispose)
         thread.start()
         for thread in self._threads:
             await self._loop.run_in_executor(None, thread.join, 30)
@@ -324,7 +324,15 @@ class StreamRecorderImpl(
 
         return factory
 
+    def _dispose(self) -> None:
+        self._subscription.dispose()
+        self._on_completed()
+
     def _on_completed(self) -> None:
+        if self._completed:
+            return
+        self._completed = True
+
         self._dl_statistics.freeze()
         self._rec_statistics.freeze()
         self._emit_event('stream_recording_completed')

@@ -44,8 +44,12 @@ class SizedStatistics:
                 self._statistics.submit(len(item))
                 observer.on_next(item)
 
+            def on_completed() -> None:
+                self._statistics.freeze()
+                observer.on_completed()
+
             return source.subscribe(
-                on_next, observer.on_error, observer.on_completed, scheduler=scheduler
+                on_next, observer.on_error, on_completed, scheduler=scheduler
             )
 
         return Observable(subscribe)
