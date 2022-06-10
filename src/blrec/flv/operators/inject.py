@@ -23,7 +23,9 @@ logger = logging.getLogger(__name__)
 
 
 class Injector:
-    def __init__(self, metadata_provider: Callable[..., Dict[str, Any]]) -> None:
+    def __init__(
+        self, metadata_provider: Callable[[Dict[str, Any]], Dict[str, Any]]
+    ) -> None:
         self._metadata_provider = metadata_provider
 
     def __call__(self, source: FLVStream) -> FLVStream:
@@ -67,7 +69,7 @@ class Injector:
 
     def _inject_metadata(self, tag: ScriptTag) -> ScriptTag:
         old_metadata = parse_metadata(tag)
-        new_metadata = self._metadata_provider()
+        new_metadata = self._metadata_provider(old_metadata.copy())
         final_metadata = {
             **{'duration': 0.0, 'filesize': 0.0},
             **old_metadata,
@@ -88,6 +90,6 @@ class Injector:
         return new_tag
 
     def _make_metadata_tag(self) -> ScriptTag:
-        metadata = self._metadata_provider()
+        metadata = self._metadata_provider({})
         metadata = {'duration': 0.0, 'filesize': 0.0, **metadata}
         return create_metadata_tag(metadata)

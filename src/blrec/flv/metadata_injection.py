@@ -29,14 +29,23 @@ def inject_metadata(
     path: str, metadata: Dict[str, Any], *, show_progress: bool = False
 ) -> Observable[InjectingProgress]:
     filesize = os.path.getsize(path)
-    append_comment_for_joinpoints(metadata)
 
     root, ext = os.path.splitext(path)
     temp_path = f'{root}_injecting{ext}'
     filename = os.path.basename(path)
 
+    def metadata_provider(original_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        if joinpoints := metadata.get('joinpoints'):
+            join_points = map(JoinPoint.from_metadata_value, joinpoints)
+            if comment := original_metadata.get('Comment'):
+                comment += '\n' + make_comment_for_joinpoints(join_points)
+            else:
+                comment = make_comment_for_joinpoints(join_points)
+            metadata['Comment'] = comment
+        return metadata
+
     return from_file(path).pipe(
-        flv_ops.Injector(lambda: metadata),
+        flv_ops.Injector(metadata_provider),
         flv_ops.Dumper(lambda: (temp_path, int(datetime.now().timestamp()))),
         flv_ops.ProgressBar(
             desc='Injecting',
@@ -44,17 +53,8 @@ def inject_metadata(
             total=filesize,
             disable=not show_progress,
         ),
-        ops.map(lambda i: len(i)),
-        ops.scan(lambda acc, x: acc + x, 0),
-        ops.map(lambda s: InjectingProgress(s, filesize)),
+        ops.map(lambda i: len(i)),  # type: ignore
+        ops.scan(lambda acc, x: acc + x, 0),  # type: ignore
+        ops.map(lambda s: InjectingProgress(s, filesize)),  # type: ignore
         utils_ops.replace(temp_path, path),
     )
-
-
-def append_comment_for_joinpoints(metadata: Dict[str, Any]) -> None:
-    if join_points := metadata.get('joinpoints'):
-        join_points = map(JoinPoint.from_metadata_value, join_points)
-        if 'Comment' in metadata:
-            metadata['Comment'] += '\n\n' + make_comment_for_joinpoints(join_points)
-        else:
-            metadata['Comment'] = make_comment_for_joinpoints(join_points)

@@ -20,10 +20,10 @@ class MetadataProvider:
         self._live = live
         self._stream_recorder = stream_recorder
 
-    def __call__(self) -> Dict[str, Any]:
-        return self._make_metadata()
+    def __call__(self, original_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        return self._make_metadata(original_metadata)
 
-    def _make_metadata(self) -> Dict[str, Any]:
+    def _make_metadata(self, original_metadata: Dict[str, Any]) -> Dict[str, Any]:
         tz = timezone(timedelta(hours=8))
         live_start_time = datetime.fromtimestamp(
             self._live.room_info.live_start_time, tz

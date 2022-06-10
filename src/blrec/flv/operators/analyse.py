@@ -102,7 +102,7 @@ class MetaDataDict:
 
 class Analyser:
     def __init__(self) -> None:
-        self._metadatas: Subject[MetaData] = Subject()
+        self._metadatas: Subject[Optional[MetaData]] = Subject()
         self._reset()
 
     def _reset(self) -> None:
@@ -245,7 +245,7 @@ class Analyser:
                     metadata = self.make_metadata()
                 except Exception as e:
                     logger.warning(f'Failed to make metadata: {repr(e)}')
-                    self._metadatas.on_error(e)
+                    self._metadatas.on_next(None)
                 else:
                     self._metadatas.on_next(metadata)
 
