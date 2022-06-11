@@ -74,8 +74,8 @@ class SegmentRemuxer:
                                 self._stream_remuxer.input.write(cached_data)
 
                     self._stream_remuxer.input.write(data.payload)
-                except Exception as exc:
-                    logger.warning(f'Failed to write data to stream remuxer: {exc}')
+                except Exception as e:
+                    logger.warning(f'Failed to write data to stream remuxer: {repr(e)}')
                     self._stream_remuxer.stop()
 
                 segment_data_cache.append(data.payload)
@@ -104,14 +104,22 @@ class RemuxedStream(io.RawIOBase):
         self._offset: int = 0
 
     def read(self, size: int = -1) -> bytes:
+        if self._stream_remuxer.stopped:
+            ready = self._stream_remuxer.wait(timeout=self._read_timmeout)
+            if not ready:
+                logger.debug(
+                    f'Stream remuxer not ready in {self._read_timmeout} seconds'
+                )
+                raise EOFError
+
         try:
             data = wait_for(
                 self._stream_remuxer.output.read,
                 args=(size,),
                 timeout=self._read_timmeout,
             )
-        except Exception as exc:
-            logger.warning(f'Failed to read data from stream remuxer: {exc}')
+        except Exception as e:
+            logger.warning(f'Failed to read data from stream remuxer: {repr(e)}')
             self._stream_remuxer.stop()
             raise EOFError
         else:
