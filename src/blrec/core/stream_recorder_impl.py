@@ -73,7 +73,9 @@ class StreamRecorderImpl(
             live, self._session, read_timeout=read_timeout
         )
         self._stream_parser = core_ops.StreamParser(
-            self._stream_param_holder, ignore_eof=stream_format != 'flv'
+            self._stream_param_holder,
+            ignore_eof=stream_format != 'flv',
+            ignore_value_error=stream_format != 'flv',
         )
         self._progress_bar = core_ops.ProgressBar(live)
         self._analyser = flv_ops.Analyser()

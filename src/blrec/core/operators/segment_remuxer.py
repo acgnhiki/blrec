@@ -138,3 +138,6 @@ class RemuxedStream(io.RawIOBase):
 
     def tell(self) -> int:
         return self._offset
+
+    def close(self) -> None:
+        self._stream_remuxer.stop()

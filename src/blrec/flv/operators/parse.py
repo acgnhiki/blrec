@@ -17,6 +17,7 @@ def parse(
     *,
     ignore_eof: bool = False,
     complete_on_eof: bool = False,
+    ignore_value_error: bool = False,
     backup_timestamp: bool = False,
     restore_timestamp: bool = False,
 ) -> Callable[[Observable[io.RawIOBase]], FLVStream]:
@@ -48,6 +49,11 @@ def parse(
                     else:
                         if not ignore_eof:
                             observer.on_error(e)
+                except ValueError as e:
+                    if ignore_value_error:
+                        logger.debug(f'Error occurred while parsing stream: {repr(e)}')
+                    else:
+                        observer.on_error(e)
                 except Exception as e:
                     observer.on_error(e)
                 else:

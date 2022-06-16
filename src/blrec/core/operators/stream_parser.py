@@ -20,14 +20,23 @@ logger = logging.getLogger(__name__)
 
 class StreamParser:
     def __init__(
-        self, stream_param_holder: StreamParamHolder, *, ignore_eof: bool = False
+        self,
+        stream_param_holder: StreamParamHolder,
+        *,
+        ignore_eof: bool = False,
+        ignore_value_error: bool = False,
     ) -> None:
         self._stream_param_holder = stream_param_holder
         self._ignore_eof = ignore_eof
+        self._ignore_value_error = ignore_value_error
 
     def __call__(self, source: Observable[io.RawIOBase]) -> FLVStream:
         return source.pipe(  # type: ignore
-            flv_ops.parse(ignore_eof=self._ignore_eof, backup_timestamp=True),
+            flv_ops.parse(
+                ignore_eof=self._ignore_eof,
+                ignore_value_error=self._ignore_value_error,
+                backup_timestamp=True,
+            ),
             ops.do_action(on_error=self._before_retry),
             utils_ops.retry(should_retry=self._should_retry),
         )

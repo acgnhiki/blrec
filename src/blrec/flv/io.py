@@ -1,13 +1,12 @@
-from io import SEEK_CUR
 import logging
+from io import SEEK_CUR
 from typing import Iterable, Iterator
 
-
-from .format import FlvParser, FlvDumper
-from .models import FlvHeader, FlvTag, BACK_POINTER_SIZE
-from .utils import OffsetRepositor, AutoRollbacker
+from .exceptions import FlvDataError
+from .format import FlvDumper, FlvParser
 from .io_protocols import RandomIO
-
+from .models import BACK_POINTER_SIZE, FlvHeader, FlvTag
+from .utils import AutoRollbacker, OffsetRepositor
 
 __all__ = 'FlvReader', 'FlvWriter'
 
@@ -35,13 +34,15 @@ class FlvReader:
     def read_header(self) -> FlvHeader:
         header = self._parser.parse_header()
         previous_tag_size = self._parser.parse_previous_tag_size()
-        assert previous_tag_size == 0
+        if previous_tag_size != 0:
+            raise FlvDataError(f'First back-pointer must be 0: {previous_tag_size}')
         return header
 
     def read_tag(self, *, no_body: bool = False) -> FlvTag:
         tag = self._parser.parse_tag(no_body=no_body)
         previous_tag_size = self._parser.parse_previous_tag_size()
-        assert previous_tag_size == tag.tag_size
+        if previous_tag_size != tag.tag_size:
+            raise FlvDataError(f'Wrong back-pointer: {previous_tag_size}')
         return tag
 
     def read_tags(self, *, no_body: bool = False) -> Iterator[FlvTag]:
@@ -56,9 +57,7 @@ class FlvReader:
         with OffsetRepositor(self._stream):
             return self.read_tag(no_body=no_body)
 
-    def rread_tags(
-        self, *, no_body: bool = False
-    ) -> Iterator[FlvTag]:
+    def rread_tags(self, *, no_body: bool = False) -> Iterator[FlvTag]:
         while True:
             try:
                 yield self.rread_tag(no_body=no_body)
