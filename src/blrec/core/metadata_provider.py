@@ -67,7 +67,7 @@ B站直播录像
 开播时间：{live_start_time}
 开始推流时间: {stream_available_time}
 HLS流可用时间: {hls_stream_available_time}
-录像起始时间: {record_start_time}
+开始录制时间: {record_start_time}
 流主机: {self._stream_recorder.stream_host}
 流格式：{self._stream_recorder.stream_format}
 流画质：{stream_quality}
