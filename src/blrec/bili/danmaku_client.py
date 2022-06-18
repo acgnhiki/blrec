@@ -9,7 +9,7 @@ from typing import Any, Dict, Final, List, Optional, Tuple, Union, cast
 import aiohttp
 import brotli
 from aiohttp import ClientSession
-from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
+from tenacity import retry, retry_if_exception_type, wait_exponential
 
 from ..event.event_emitter import EventEmitter, EventListener
 from ..exception import exception_callback
@@ -61,6 +61,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         self._room_id = room_id
 
         self._api_platform: ApiPlatform = 'web'
+        self._danmu_info: Dict[str, Any] = COMMON_DANMU_INFO
         self._host_index: int = 0
         self._retry_delay: int = 0
         self._MAX_RETRIES: Final[int] = max_retries
@@ -177,11 +178,6 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         else:
             self._api_platform = 'android'
 
-    @retry(
-        retry=retry_if_exception_type((asyncio.TimeoutError, aiohttp.ClientError)),
-        wait=wait_exponential(max=10),
-        stop=stop_after_delay(60),
-    )
     async def _update_danmu_info(self) -> None:
         logger.debug(f'Updating danmu info via {self._api_platform} api...')
         api: Union[WebApi, AppApi]
@@ -193,7 +189,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             self._danmu_info = await api.get_danmu_info(self._room_id)
         except Exception as exc:
             logger.warning(f'Failed to update danmu info: {repr(exc)}')
-            raise
+            self._danmu_info = COMMON_DANMU_INFO
         else:
             logger.debug('Danmu info updated')
 
@@ -460,3 +456,16 @@ class DanmakuCommand(Enum):
     WISH_BOTTLE = 'WISH_BOTTLE'
     GUARD_BUY = 'GUARD_BUY'
     # ...
+
+
+COMMON_DANMU_INFO: Final[Dict[str, Any]] = {
+    "token": "",
+    "host_list": [
+        {
+            "host": "broadcastlv.chat.bilibili.com",
+            "port": 2243,
+            "wss_port": 443,
+            "ws_port": 2244,
+        }
+    ],
+}

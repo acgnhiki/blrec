@@ -1,8 +1,8 @@
 import asyncio
-import time
 import json
 import logging
 import re
+import time
 from typing import Dict, List, cast
 
 import aiohttp
@@ -130,17 +130,40 @@ class Live:
         else:
             return True
 
-    async def update_info(self) -> None:
-        await asyncio.wait([self.update_user_info(), self.update_room_info()])
+    async def update_info(self, raise_exception: bool = False) -> bool:
+        return all(
+            await asyncio.gather(
+                self.update_user_info(raise_exception=raise_exception),
+                self.update_room_info(raise_exception=raise_exception),
+            )
+        )
 
-    async def update_user_info(self) -> None:
-        self._user_info = await self.get_user_info(self._room_info.uid)
+    async def update_user_info(self, raise_exception: bool = False) -> bool:
+        try:
+            self._user_info = await self.get_user_info(self._room_info.uid)
+        except Exception as e:
+            logger.error(f'Failed to update user info: {repr(e)}')
+            if raise_exception:
+                raise
+            return False
+        else:
+            return True
 
-    async def update_room_info(self) -> None:
-        self._room_info = await self.get_room_info()
+    async def update_room_info(self, raise_exception: bool = False) -> bool:
+        try:
+            self._room_info = await self.get_room_info()
+        except Exception as e:
+            logger.error(f'Failed to update room info: {repr(e)}')
+            if raise_exception:
+                raise
+            return False
+        else:
+            return True
 
     @retry(
-        retry=retry_if_exception_type((asyncio.TimeoutError, aiohttp.ClientError)),
+        retry=retry_if_exception_type(
+            (asyncio.TimeoutError, aiohttp.ClientError, ValueError)
+        ),
         wait=wait_exponential(max=10),
         stop=stop_after_delay(60),
     )
@@ -278,8 +301,9 @@ class Live:
         async with self._session.get(self._html_page_url) as response:
             data = await response.read()
 
-        m = _INFO_PATTERN.search(data)
-        assert m is not None, data
+        match = _INFO_PATTERN.search(data)
+        if not match:
+            raise ValueError('Can not extract info from html page')
 
-        string = m.group(1).decode(encoding='utf8')
+        string = match.group(1).decode(encoding='utf8')
         return json.loads(string)

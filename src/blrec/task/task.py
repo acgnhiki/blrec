@@ -1,35 +1,35 @@
-import os
 import logging
+import os
 from pathlib import Path
 from typing import Iterator, Optional
 
-
-from .models import (
-    TaskStatus,
-    RunningStatus,
-    VideoFileStatus,
-    VideoFileDetail,
-    DanmukuFileStatus,
-    DanmakuFileDetail,
-)
-from ..bili.live import Live
-from ..bili.models import RoomInfo, UserInfo
 from ..bili.danmaku_client import DanmakuClient
+from ..bili.live import Live
 from ..bili.live_monitor import LiveMonitor
-from ..bili.typing import StreamFormat, QualityNumber
+from ..bili.models import RoomInfo, UserInfo
+from ..bili.typing import QualityNumber, StreamFormat
 from ..core import Recorder
-from ..flv.operators import MetaData, StreamProfile
 from ..core.cover_downloader import CoverSaveStrategy
-from ..postprocess import Postprocessor, PostprocessorStatus, DeleteStrategy
-from ..postprocess.remux import RemuxingProgress
-from ..flv.metadata_injection import InjectingProgress
 from ..event.event_submitters import (
-    LiveEventSubmitter, RecorderEventSubmitter, PostprocessorEventSubmitter
+    LiveEventSubmitter,
+    PostprocessorEventSubmitter,
+    RecorderEventSubmitter,
 )
+from ..flv.metadata_injection import InjectingProgress
+from ..flv.operators import MetaData, StreamProfile
 from ..logging.room_id import aio_task_with_room_id
+from ..postprocess import DeleteStrategy, Postprocessor, PostprocessorStatus
+from ..postprocess.remux import RemuxingProgress
+from .models import (
+    DanmakuFileDetail,
+    DanmukuFileStatus,
+    RunningStatus,
+    TaskStatus,
+    VideoFileDetail,
+    VideoFileStatus,
+)
 
-
-__all__ = 'RecordTask',
+__all__ = ('RecordTask',)
 
 
 logger = logging.getLogger(__name__)
@@ -118,9 +118,7 @@ class RecordTask:
             recording_path=self.recording_path,
             postprocessor_status=self._postprocessor.status,
             postprocessing_path=self._postprocessor.postprocessing_path,
-            postprocessing_progress=(
-                self._postprocessor.postprocessing_progress
-            ),
+            postprocessing_progress=(self._postprocessor.postprocessing_progress),
         )
 
     @property
@@ -163,11 +161,7 @@ class RecordTask:
                 # disabling recorder by force or stoping task by force
                 status = VideoFileStatus.BROKEN
 
-            yield VideoFileDetail(
-                path=path,
-                size=size,
-                status=status,
-            )
+            yield VideoFileDetail(path=path, size=size, status=status)
 
     @property
     def danmaku_file_details(self) -> Iterator[DanmakuFileDetail]:
@@ -192,11 +186,7 @@ class RecordTask:
                 # disabling recorder by force or stoping task by force
                 status = DanmukuFileStatus.BROKEN
 
-            yield DanmakuFileDetail(
-                path=path,
-                size=size,
-                status=status,
-            )
+            yield DanmakuFileDetail(path=path, size=size, status=status)
 
     @property
     def user_agent(self) -> str:
@@ -460,8 +450,8 @@ class RecordTask:
             await self._recorder.stop()
             await self._postprocessor.stop()
 
-    async def update_info(self) -> None:
-        await self._live.update_info()
+    async def update_info(self, raise_exception: bool = False) -> bool:
+        return await self._live.update_info(raise_exception=raise_exception)
 
     @aio_task_with_room_id
     async def update_session(self) -> None:
@@ -488,10 +478,7 @@ class RecordTask:
 
     def _setup_danmaku_client(self) -> None:
         self._danmaku_client = DanmakuClient(
-            self._live.session,
-            self._live.appapi,
-            self._live.webapi,
-            self._live.room_id
+            self._live.session, self._live.appapi, self._live.webapi, self._live.room_id
         )
 
     def _setup_live_monitor(self) -> None:
@@ -522,8 +509,9 @@ class RecordTask:
         )
 
     def _setup_postprocessor_event_submitter(self) -> None:
-        self._postprocessor_event_submitter = \
-            PostprocessorEventSubmitter(self._postprocessor)
+        self._postprocessor_event_submitter = PostprocessorEventSubmitter(
+            self._postprocessor
+        )
 
     async def _destroy(self) -> None:
         self._destroy_postprocessor_event_submitter()

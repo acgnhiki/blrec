@@ -403,10 +403,6 @@ class JoinPointExtractor:
         script_data = parse_scriptdata(join_point_tag)
         join_point_data = cast(JoinPointData, script_data['value'])
         assert next_tag.body is not None, next_tag
-        assert cksum(next_tag.body) == join_point_data['crc32'], (
-            join_point_tag,
-            next_tag,
-        )
         join_point = JoinPoint(
             seamless=join_point_data['seamless'],
             timestamp=next_tag.timestamp,

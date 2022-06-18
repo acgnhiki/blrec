@@ -1,34 +1,31 @@
 from __future__ import annotations
+
 import asyncio
 import logging
-from typing import Dict, Iterator, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Iterator, Optional
 
 import aiohttp
-from tenacity import (
-    retry,
-    wait_exponential,
-    stop_after_delay,
-    retry_if_exception_type,
-)
+from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
-from .task import RecordTask
-from .models import TaskData, TaskParam, VideoFileDetail, DanmakuFileDetail
-from ..flv.operators import MetaData, StreamProfile
-from ..exception import submit_exception, NotFoundError
 from ..bili.exceptions import ApiRequestError
+from ..exception import NotFoundError, submit_exception
+from ..flv.operators import MetaData, StreamProfile
+from .models import DanmakuFileDetail, TaskData, TaskParam, VideoFileDetail
+from .task import RecordTask
+
 if TYPE_CHECKING:
     from ..setting import SettingsManager
+
 from ..setting import (
-    HeaderSettings,
     DanmakuSettings,
-    RecorderSettings,
-    PostprocessingSettings,
-    TaskSettings,
+    HeaderSettings,
     OutputSettings,
+    PostprocessingSettings,
+    RecorderSettings,
+    TaskSettings,
 )
 
-
-__all__ = 'RecordTaskManager',
+__all__ = ('RecordTaskManager',)
 
 
 logger = logging.getLogger(__name__)
@@ -57,9 +54,7 @@ class RecordTaskManager:
         logger.info('Destroying all tasks...')
         if not self._tasks:
             return
-        await asyncio.wait([
-            t.destroy() for t in self._tasks.values() if t.ready
-        ])
+        await asyncio.wait([t.destroy() for t in self._tasks.values() if t.ready])
         self._tasks.clear()
         logger.info('Successfully destroyed all task')
 
@@ -68,9 +63,9 @@ class RecordTaskManager:
 
     @retry(
         reraise=True,
-        retry=retry_if_exception_type((
-            asyncio.TimeoutError, aiohttp.ClientError, ApiRequestError,
-        )),
+        retry=retry_if_exception_type(
+            (asyncio.TimeoutError, aiohttp.ClientError, ApiRequestError)
+        ),
         wait=wait_exponential(max=10),
         stop=stop_after_delay(60),
     )
@@ -104,9 +99,7 @@ class RecordTaskManager:
             if settings.enable_recorder:
                 await task.enable_recorder()
         except Exception as e:
-            logger.error(
-                f'Failed to add task {settings.room_id} due to: {repr(e)}'
-            )
+            logger.error(f'Failed to add task {settings.room_id} due to: {repr(e)}')
             del self._tasks[settings.room_id]
             raise
 
@@ -120,9 +113,7 @@ class RecordTaskManager:
         del self._tasks[room_id]
 
     async def remove_all_tasks(self) -> None:
-        coros = [
-            self.remove_task(i) for i, t in self._tasks.items() if t.ready
-        ]
+        coros = [self.remove_task(i) for i, t in self._tasks.items() if t.ready]
         if coros:
             await asyncio.wait(coros)
 
@@ -168,9 +159,7 @@ class RecordTaskManager:
         task = self._get_task(room_id, check_ready=True)
         await task.enable_recorder()
 
-    async def disable_task_recorder(
-            self, room_id: int, force: bool = False
-    ) -> None:
+    async def disable_task_recorder(self, room_id: int, force: bool = False) -> None:
         task = self._get_task(room_id, check_ready=True)
         await task.disable_recorder(force)
 
@@ -180,9 +169,7 @@ class RecordTaskManager:
             await asyncio.wait(coros)
 
     async def disable_all_task_recorders(self, force: bool = False) -> None:
-        coros = [
-            t.disable_recorder(force) for t in self._tasks.values() if t.ready
-        ]
+        coros = [t.disable_recorder(force) for t in self._tasks.values() if t.ready]
         if coros:
             await asyncio.wait(coros)
 
@@ -206,9 +193,7 @@ class RecordTaskManager:
         task = self._get_task(room_id, check_ready=True)
         return task.stream_profile
 
-    def get_task_video_file_details(
-        self, room_id: int
-    ) -> Iterator[VideoFileDetail]:
+    def get_task_video_file_details(self, room_id: int) -> Iterator[VideoFileDetail]:
         task = self._get_task(room_id, check_ready=True)
         yield from task.video_file_details
 
@@ -228,27 +213,22 @@ class RecordTaskManager:
 
     async def update_task_info(self, room_id: int) -> None:
         task = self._get_task(room_id, check_ready=True)
-        await task.update_info()
+        await task.update_info(raise_exception=True)
 
     async def update_all_task_infos(self) -> None:
-        coros = [t.update_info() for t in self._tasks.values() if t.ready]
+        coros = [
+            t.update_info(raise_exception=True) for t in self._tasks.values() if t.ready
+        ]
         if coros:
             await asyncio.wait(coros)
 
     async def apply_task_header_settings(
-        self,
-        room_id: int,
-        settings: HeaderSettings,
-        *,
-        update_session: bool = True,
+        self, room_id: int, settings: HeaderSettings, *, update_session: bool = True
     ) -> None:
         task = self._get_task(room_id)
 
         # avoid unnecessary updates that will interrupt connections
-        if (
-            task.user_agent == settings.user_agent and
-            task.cookie == settings.cookie
-        ):
+        if task.user_agent == settings.user_agent and task.cookie == settings.cookie:
             return
 
         task.user_agent = settings.user_agent
@@ -338,7 +318,5 @@ class RecordTaskManager:
 
     def _make_task_data(self, task: RecordTask) -> TaskData:
         return TaskData(
-            user_info=task.user_info,
-            room_info=task.room_info,
-            task_status=task.status,
+            user_info=task.user_info, room_info=task.room_info, task_status=task.status
         )

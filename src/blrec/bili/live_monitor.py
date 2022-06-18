@@ -68,7 +68,7 @@ class LiveMonitor(
         # such as an operating system hibernation.
         logger.warning('The Danmaku Client Reconnected')
 
-        await self._live.update_info()
+        await self._live.update_room_info()
         current_status = self._live.room_info.live_status
 
         if current_status == self._previous_status:
@@ -104,7 +104,7 @@ class LiveMonitor(
             self._previous_status.name, current_status.name
         ))
 
-        await self._live.update_info()
+        await self._live.update_room_info()
         if (s := self._live.room_info.live_status) != current_status:
             logger.warning(
                 'Updated live status {} is inconsistent with '

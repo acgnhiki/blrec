@@ -70,7 +70,7 @@ class CoverDownloader(StreamRecorderEventListener, SwitchableMixin):
     @aio_task_with_room_id
     async def _save_cover(self, video_path: str) -> None:
         try:
-            await self._live.update_info()
+            await self._live.update_room_info()
             cover_url = self._live.room_info.cover
             data = await self._fetch_cover(cover_url)
             sha1 = sha1sum(data)
