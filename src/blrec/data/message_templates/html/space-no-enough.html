@@ -1,0 +1,31 @@
+<p>
+  <span><b>路径</b>：</span>
+  <span>{{ event.data.path }}</span>
+</p>
+<p>
+  <span><b>阈值</b>：</span>
+  <span>{{ event.data.threshold | naturalsize }}</span>
+</p>
+<p>
+  <span><b>硬盘容量</b>：</span>
+  <span>{{ event.data.usage.total | naturalsize }}</span>
+</p>
+<p>
+  <span><b>已用空间</b>：</span>
+  <span>{{ event.data.usage.used | naturalsize }}</span>
+</p>
+<p>
+  <span><b>可用空间</b>：</span>
+  <span>{{ event.data.usage.free | naturalsize }}</span>
+</p>
+
+<div>
+  <p>
+    <span><b>事件 ID</b>：</span>
+    <span>{{ event.id }}</span>
+  </p>
+  <p>
+    <span><b>事件时间</b>：</span>
+    <span>{{ event.date }}</span>
+  </p>
+</div>

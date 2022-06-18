@@ -7,9 +7,9 @@ from ..dependencies import settings_include_set, settings_exclude_set
 from ...setting import (
     SettingsIn,
     SettingsOut,
-    KeySetOfSettings,
     TaskOptions,
 )
+from ...setting.typing import KeySetOfSettings
 from ...application import Application
 
 

@@ -1,5 +1,5 @@
-@use '../../../shared/styles/layout';
-@use '../../../shared/styles/list';
+@use "../../../shared/styles/layout";
+@use "../../../shared/styles/list";
 
 .settings-page {
   @extend %inner-page;
@@ -43,6 +43,11 @@ a.setting-item {
   text-decoration: none;
   color: inherit;
   @include actionable;
+
+  height: 60px;
+  &:not(:first-child) {
+    height: 61px;
+  }
 }
 
 .setting-label {
@@ -90,6 +95,11 @@ a.setting-item {
     max-width: 100% !important;
     width: 100% !important;
     margin-left: 0;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
   }
 
   @media screen and (max-width: 332px) {

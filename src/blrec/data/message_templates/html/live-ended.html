@@ -1,0 +1,63 @@
+<p>
+  <span><b>主播</b>：</span>
+  <span>
+    <a
+      href="https://space.bilibili.com/{{ event.data.user_info.uid }}"
+      _blank
+      title="打开主播个人空间页面"
+      >{{ event.data.user_info.name }}</a
+    >
+  </span>
+</p>
+<p>
+  <span><b>标题</b>：</span>
+  <span>
+    <a
+      href="https://live.bilibili.com/{{ event.data.room_info.room_id }}"
+      _blank
+      title="打开直播间页面"
+      >{{ event.data.room_info.title }}</a
+    >
+  </span>
+</p>
+<p>
+  <span><b>分区</b>：</span>
+  <span>
+    <a
+      href="https://live.bilibili.com/p/eden/area-tags?parentAreaId={{
+          event.data.room_info.parent_area_id
+        }}&areaId={{ event.data.room_info.area_id }}"
+      _blank
+      title="打开直播分区页面"
+      >{{ event.data.room_info.parent_area_name }}·{{
+      event.data.room_info.area_name }}
+    </a>
+  </span>
+</p>
+<p>
+  <span><b>房间</b>：</span>
+  {%- if event.data.room_info.short_room_id > 0 -%}
+  <span>
+    <a
+      href="https://live.bilibili.com/{{ event.data.room_info.short_room_id }}"
+      target="_blank"
+    >
+      {{ event.data.room_info.short_room_id }}</a
+    >
+  </span>
+  <span>, </span>
+  {%- endif -%}
+  <span>
+    <a
+      href="https://live.bilibili.com/{{ event.data.room_info.room_id }}"
+      _blank
+      title="打开直播间页面"
+      >{{ event.data.room_info.room_id }}</a
+    >
+  </span>
+</p>
+<div>
+  <a href="{{ event.data.room_info.cover }}" _blank title="打开封面图片">
+    <img src="{{ event.data.room_info.cover }}" />
+  </a>
+</div>

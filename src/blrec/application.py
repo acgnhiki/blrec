@@ -24,9 +24,9 @@ from .setting import (
     Settings,
     SettingsIn,
     SettingsOut,
-    KeySetOfSettings,
     TaskOptions,
 )
+from .setting.typing import KeySetOfSettings
 from .notification import (
     EmailNotifier,
     ServerchanNotifier,

@@ -1,0 +1,3 @@
+异常信息：
+
+{{ event.data.detail }}

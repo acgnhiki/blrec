@@ -5,11 +5,19 @@ import ssl
 from abc import ABC, abstractmethod
 from email.message import EmailMessage
 from http.client import HTTPException
-from typing import Final, Literal, TypedDict, Dict, Any, cast
+from typing import Any, Dict, Final, TypedDict, cast
 from urllib.parse import urljoin
 
 import aiohttp
 
+from ..setting.typing import (
+    EmailMessageType,
+    MessageType,
+    PushdeerMessageType,
+    PushplusMessageType,
+    ServerchanMessageType,
+    TelegramMessageType,
+)
 from ..utils.patterns import Singleton
 
 __all__ = (
@@ -30,11 +38,10 @@ class MessagingProvider(Singleton, ABC):
         super().__init__()
 
     @abstractmethod
-    async def send_message(self, title: str, content: str) -> None:
+    async def send_message(
+        self, title: str, content: str, msg_type: MessageType
+    ) -> None:
         ...
-
-
-MSG_TYPE = Literal['plain', 'html']
 
 
 class EmailService(MessagingProvider):
@@ -54,7 +61,7 @@ class EmailService(MessagingProvider):
         self.smtp_port = smtp_port
 
     async def send_message(
-        self, subject: str, content: str, msg_type: MSG_TYPE = 'plain'
+        self, subject: str, content: str, msg_type: MessageType
     ) -> None:
         self._check_parameters()
         await asyncio.get_running_loop().run_in_executor(
@@ -62,13 +69,14 @@ class EmailService(MessagingProvider):
         )
 
     def _send_email(
-        self, subject: str, content: str, msg_type: MSG_TYPE = 'plain'
+        self, subject: str, content: str, msg_type: EmailMessageType
     ) -> None:
         msg = EmailMessage()
         msg['Subject'] = subject
         msg['From'] = self.src_addr
         msg['To'] = self.dst_addr
-        msg.set_content(content, subtype=msg_type, charset='utf-8')
+        subtype = 'html' if msg_type == 'html' else 'plain'
+        msg.set_content(content, subtype=subtype, charset='utf-8')
 
         try:
             with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port) as smtp:
@@ -97,15 +105,19 @@ class Serverchan(MessagingProvider):
         super().__init__()
         self.sendkey = sendkey
 
-    async def send_message(self, title: str, content: str) -> None:
+    async def send_message(
+        self, title: str, content: str, msg_type: MessageType
+    ) -> None:
         self._check_parameters()
-        await self._post_message(title, content)
+        await self._post_message(title, content, cast(ServerchanMessageType, msg_type))
 
     def _check_parameters(self) -> None:
         if not self.sendkey:
             raise ValueError('No sendkey supplied')
 
-    async def _post_message(self, title: str, content: str) -> None:
+    async def _post_message(
+        self, title: str, content: str, msg_type: ServerchanMessageType
+    ) -> None:
         url = f'https://sctapi.ftqq.com/{self.sendkey}.send'
         payload = {'text': title, 'desp': content}
 
@@ -129,21 +141,25 @@ class Pushdeer(MessagingProvider):
         self.server = server
         self.pushkey = pushkey
 
-    async def send_message(self, title: str, content: str) -> None:
+    async def send_message(
+        self, title: str, content: str, msg_type: MessageType
+    ) -> None:
         self._check_parameters()
-        await self._post_message(title, content)
+        await self._post_message(title, content, cast(PushdeerMessageType, msg_type))
 
     def _check_parameters(self) -> None:
         if not self.pushkey:
             raise ValueError('No pushkey supplied')
 
-    async def _post_message(self, title: str, content: str) -> None:
+    async def _post_message(
+        self, title: str, content: str, msg_type: PushdeerMessageType
+    ) -> None:
         url = urljoin(self.server or self._server, self._endpoint)
         payload = {
             'pushkey': self.pushkey,
             'text': title,
             'desp': content,
-            'type': 'text',
+            'type': msg_type,
         }
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.post(url, json=payload) as res:
@@ -166,21 +182,25 @@ class Pushplus(MessagingProvider):
         self.token = token
         self.topic = topic
 
-    async def send_message(self, title: str, content: str) -> None:
+    async def send_message(
+        self, title: str, content: str, msg_type: MessageType
+    ) -> None:
         self._check_parameters()
-        await self._post_message(title, content)
+        await self._post_message(title, content, msg_type)
 
     def _check_parameters(self) -> None:
         if not self.token:
             raise ValueError('No token supplied')
 
-    async def _post_message(self, title: str, content: str) -> None:
+    async def _post_message(
+        self, title: str, content: str, msg_type: PushplusMessageType
+    ) -> None:
         payload = {
             'title': title,
             'content': content,
             'token': self.token,
             'topic': self.topic,
-            'template': 'html',
+            'template': msg_type,
         }
 
         async with aiohttp.ClientSession(raise_for_status=True) as session:
@@ -201,9 +221,11 @@ class Telegram(MessagingProvider):
         self.token = token
         self.chatid = chatid
 
-    async def send_message(self, title: str, content: str) -> None:
+    async def send_message(
+        self, title: str, content: str, msg_type: MessageType
+    ) -> None:
         self._check_parameters()
-        await self._post_message(title, content)
+        await self._post_message(title, content, cast(TelegramMessageType, msg_type))
 
     def _check_parameters(self) -> None:
         if not self.token:
@@ -211,12 +233,14 @@ class Telegram(MessagingProvider):
         if not self.chatid:
             raise ValueError('No chatid supplied')
 
-    async def _post_message(self, title: str, content: str) -> None:
+    async def _post_message(
+        self, title: str, content: str, msg_type: TelegramMessageType
+    ) -> None:
         url = f'https://api.telegram.org/bot{self.token}/sendMessage'
         payload = {
             'chat_id': self.chatid,
-            'text': title + '\n' + content,
-            'parse_mode': 'HTML',
+            'text': title + '\n\n' + content,
+            'parse_mode': 'MarkdownV2' if msg_type == 'markdown' else 'HTML',
         }
 
         async with aiohttp.ClientSession(raise_for_status=True) as session:

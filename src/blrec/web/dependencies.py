@@ -3,7 +3,7 @@ from typing import Callable, Iterable, Iterator, List, Optional, cast
 
 from fastapi import Query
 
-from blrec.setting import KeyOfSettings, KeySetOfSettings
+from blrec.setting.typing import KeyOfSettings, KeySetOfSettings
 
 from .schemas import DataSelection, AliasKeyOfSettings
 from ..bili.models import LiveStatus

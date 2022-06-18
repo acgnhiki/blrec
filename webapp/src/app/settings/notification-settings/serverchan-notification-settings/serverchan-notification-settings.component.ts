@@ -9,9 +9,11 @@ import { ActivatedRoute } from '@angular/router';
 import pick from 'lodash-es/pick';
 
 import {
+  KEYS_OF_MESSAGE_TEMPLATE_SETTINGS,
   KEYS_OF_NOTIFICATION_SETTINGS,
   KEYS_OF_NOTIFIER_SETTINGS,
   KEYS_OF_SERVERCHAN_SETTINGS,
+  MessageTemplateSettings,
   NotificationSettings,
   NotifierSettings,
   ServerchanNotificationSettings,
@@ -28,6 +30,7 @@ export class ServerchanNotificationSettingsComponent implements OnInit {
   serverchanSettings!: ServerchanSettings;
   notifierSettings!: NotifierSettings;
   notificationSettings!: NotificationSettings;
+  messageTemplateSettings!: MessageTemplateSettings;
 
   constructor(
     private changeDetector: ChangeDetectorRef,
@@ -40,6 +43,10 @@ export class ServerchanNotificationSettingsComponent implements OnInit {
       this.serverchanSettings = pick(settings, KEYS_OF_SERVERCHAN_SETTINGS);
       this.notifierSettings = pick(settings, KEYS_OF_NOTIFIER_SETTINGS);
       this.notificationSettings = pick(settings, KEYS_OF_NOTIFICATION_SETTINGS);
+      this.messageTemplateSettings = pick(
+        settings,
+        KEYS_OF_MESSAGE_TEMPLATE_SETTINGS
+      );
       this.changeDetector.markForCheck();
     });
   }

@@ -1,0 +1,11 @@
+主播：{{ event.data.user_info.name }}
+
+标题：{{ event.data.room_info.title }}
+
+分区：{{ event.data.room_info.parent_area_name }}·{{ event.data.room_info.area_name }}
+
+房间：
+  {%- if event.data.room_info.short_room_id > 0 -%}
+    {{ event.data.room_info.short_room_id }}{% raw %}, {% endraw %}
+  {%- endif -%}
+    {{ event.data.room_info.room_id }}

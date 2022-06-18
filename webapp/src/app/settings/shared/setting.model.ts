@@ -175,25 +175,152 @@ export const KEYS_OF_NOTIFICATION_SETTINGS = [
   'notifySpace',
 ] as const;
 
+export type TextMessageType = 'text';
+export type HtmlMessageType = 'html';
+export type MarkdownMessageType = 'markdown';
+export type MessageType =
+  | TextMessageType
+  | MarkdownMessageType
+  | HtmlMessageType;
+
+export type EmailMessageType = TextMessageType | HtmlMessageType;
+export type ServerchanMessageType = MarkdownMessageType;
+export type PushdeerMessageType = TextMessageType | MarkdownMessageType;
+export type PushplusMessageType =
+  | TextMessageType
+  | MarkdownMessageType
+  | HtmlMessageType;
+export type TelegramMessageType = MarkdownMessageType | HtmlMessageType;
+
+export interface MessageTemplateSettings {
+  beganMessageType: string;
+  beganMessageTitle: string;
+  beganMessageContent: string;
+  endedMessageType: string;
+  endedMessageTitle: string;
+  endedMessageContent: string;
+  spaceMessageType: string;
+  spaceMessageTitle: string;
+  spaceMessageContent: string;
+  errorMessageType: string;
+  errorMessageTitle: string;
+  errorMessageContent: string;
+}
+
+export const KEYS_OF_MESSAGE_TEMPLATE_SETTINGS = [
+  'beganMessageType',
+  'beganMessageTitle',
+  'beganMessageContent',
+  'endedMessageType',
+  'endedMessageTitle',
+  'endedMessageContent',
+  'spaceMessageType',
+  'spaceMessageTitle',
+  'spaceMessageContent',
+  'errorMessageType',
+  'errorMessageTitle',
+  'errorMessageContent',
+] as const;
+
+export interface EmailMessageTemplateSettings {
+  beganMessageType: EmailMessageType;
+  beganMessageTitle: string;
+  beganMessageContent: string;
+  endedMessageType: EmailMessageType;
+  endedMessageTitle: string;
+  endedMessageContent: string;
+  spaceMessageType: EmailMessageType;
+  spaceMessageTitle: string;
+  spaceMessageContent: string;
+  errorMessageType: EmailMessageType;
+  errorMessageTitle: string;
+  errorMessageContent: string;
+}
+
+export interface ServerchanMessageTemplateSettings {
+  beganMessageType: ServerchanMessageType;
+  beganMessageTitle: string;
+  beganMessageContent: string;
+  endedMessageType: ServerchanMessageType;
+  endedMessageTitle: string;
+  endedMessageContent: string;
+  spaceMessageType: ServerchanMessageType;
+  spaceMessageTitle: string;
+  spaceMessageContent: string;
+  errorMessageType: ServerchanMessageType;
+  errorMessageTitle: string;
+  errorMessageContent: string;
+}
+
+export interface PushdeerMessageTemplateSettings {
+  beganMessageType: PushdeerMessageType;
+  beganMessageTitle: string;
+  beganMessageContent: string;
+  endedMessageType: PushdeerMessageType;
+  endedMessageTitle: string;
+  endedMessageContent: string;
+  spaceMessageType: PushdeerMessageType;
+  spaceMessageTitle: string;
+  spaceMessageContent: string;
+  errorMessageType: PushdeerMessageType;
+  errorMessageTitle: string;
+  errorMessageContent: string;
+}
+
+export interface PushplusMessageTemplateSettings {
+  beganMessageType: PushplusMessageType;
+  beganMessageTitle: string;
+  beganMessageContent: string;
+  endedMessageType: PushplusMessageType;
+  endedMessageTitle: string;
+  endedMessageContent: string;
+  spaceMessageType: PushplusMessageType;
+  spaceMessageTitle: string;
+  spaceMessageContent: string;
+  errorMessageType: PushplusMessageType;
+  errorMessageTitle: string;
+  errorMessageContent: string;
+}
+
+export interface TelegramMessageTemplateSettings {
+  beganMessageType: PushplusMessageType;
+  beganMessageTitle: string;
+  beganMessageContent: string;
+  endedMessageType: PushplusMessageType;
+  endedMessageTitle: string;
+  endedMessageContent: string;
+  spaceMessageType: PushplusMessageType;
+  spaceMessageTitle: string;
+  spaceMessageContent: string;
+  errorMessageType: PushplusMessageType;
+  errorMessageTitle: string;
+  errorMessageContent: string;
+}
+
 export type EmailNotificationSettings = EmailSettings &
   NotifierSettings &
-  NotificationSettings;
+  NotificationSettings &
+  EmailMessageTemplateSettings;
 
 export type ServerchanNotificationSettings = ServerchanSettings &
   NotifierSettings &
-  NotificationSettings;
+  NotificationSettings &
+  ServerchanMessageTemplateSettings;
 
 export type PushdeerNotificationSettings = PushdeerSettings &
   NotifierSettings &
-  NotificationSettings;
+  NotificationSettings &
+  PushdeerMessageTemplateSettings;
 
 export type PushplusNotificationSettings = PushplusSettings &
   NotifierSettings &
-  NotificationSettings;
+  NotificationSettings &
+  PushdeerMessageTemplateSettings;
 
 export type TelegramNotificationSettings = TelegramSettings &
   NotifierSettings &
-  NotificationSettings;
+  NotificationSettings &
+  TelegramMessageTemplateSettings;
 
 export interface WebhookEventSettings {
   liveBegan: boolean;

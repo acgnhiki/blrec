@@ -63,6 +63,8 @@ import { WebhookListComponent } from './webhook-settings/webhook-list/webhook-li
 import { OutdirEditDialogComponent } from './output-settings/outdir-edit-dialog/outdir-edit-dialog.component';
 import { LogdirEditDialogComponent } from './logging-settings/logdir-edit-dialog/logdir-edit-dialog.component';
 import { PathTemplateEditDialogComponent } from './output-settings/path-template-edit-dialog/path-template-edit-dialog.component';
+import { MessageTemplateSettingsComponent } from './notification-settings/shared/components/message-template-settings/message-template-settings.component';
+import { MessageTemplateEditDialogComponent } from './notification-settings/shared/components/message-template-settings/message-template-edit-dialog/message-template-edit-dialog.component';
 
 @NgModule({
   declarations: [
@@ -97,6 +99,8 @@ import { PathTemplateEditDialogComponent } from './output-settings/path-template
     OutdirEditDialogComponent,
     LogdirEditDialogComponent,
     PathTemplateEditDialogComponent,
+    MessageTemplateSettingsComponent,
+    MessageTemplateEditDialogComponent,
   ],
   imports: [
     CommonModule,

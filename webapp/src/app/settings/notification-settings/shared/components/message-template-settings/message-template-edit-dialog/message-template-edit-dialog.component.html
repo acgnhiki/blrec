@@ -1,0 +1,76 @@
+<nz-modal
+  [nzTitle]="title"
+  nzCentered
+  [(nzVisible)]="visible"
+  [nzOkDisabled]="settingsForm.invalid"
+  (nzOnOk)="handleConfirm()"
+  (nzOnCancel)="handleCancel()"
+>
+  <ng-container *nzModalContent>
+    <ng-template #messageTemplateTip>
+      <p>
+        语法、变量参考
+        <a href="https://github.com/acgnhiki/blrec/wiki/MessageTemplate" _blank
+          >wiki</a
+        >
+      </p>
+      <p>空值将使用默认消息模板</p>
+    </ng-template>
+    <form nz-form [nzLayout]="'vertical'" [formGroup]="settingsForm">
+      <nz-form-item class="setting-item input">
+        <nz-form-label
+          class="setting-label"
+          nzFor="messageTitle"
+          nzNoColon
+          [nzTooltipTitle]="messageTemplateTip"
+        >
+          消息标题
+        </nz-form-label>
+        <nz-form-control class="setting-control input">
+          <input type="text" nz-input formControlName="messageTitle" />
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item class="setting-item switch">
+        <nz-form-label class="setting-label" nzFor="messageType" nzNoColon>
+          消息类型
+        </nz-form-label>
+        <nz-form-control class="setting-control select">
+          <nz-select
+            formControlName="messageType"
+            [nzOptions]="MESSAGE_TYPE_OPTIONS"
+          >
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item class="setting-item textarea">
+        <nz-form-label
+          class="setting-label"
+          nzFor="messageTitle"
+          nzNoColon
+          [nzTooltipTitle]="messageTemplateTip"
+        >
+          消息内容
+        </nz-form-label>
+        <nz-form-control class="setting-control textarea">
+          <textarea
+            nz-input
+            [rows]="10"
+            wrap="off"
+            formControlName="messageContent"
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+  <ng-template #modalFooter>
+    <button nz-button nzType="default" (click)="handleCancel()">取消</button>
+    <button
+      nz-button
+      nzType="default"
+      (click)="handleConfirm()"
+      [disabled]="settingsForm.invalid"
+    >
+      确定
+    </button>
+  </ng-template>
+</nz-modal>

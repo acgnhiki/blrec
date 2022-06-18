@@ -1,41 +1,38 @@
 from __future__ import annotations
+
+import logging
 import os
 import re
-import logging
-from typing_extensions import Annotated
-from typing import (
-    ClassVar,
-    Collection,
-    Final,
-    List,
-    Optional,
-    TypeVar,
-)
-
+from typing import ClassVar, Collection, Final, List, Optional, TypeVar
 
 import toml
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import Field, BaseSettings, validator, PrivateAttr
-from pydantic.networks import HttpUrl, EmailStr
+from pydantic import BaseSettings, Field, PrivateAttr, validator
+from pydantic.networks import EmailStr, HttpUrl
+from typing_extensions import Annotated
 
-from ..bili.typing import StreamFormat, QualityNumber
-from ..postprocess import DeleteStrategy
+from ..bili.typing import QualityNumber, StreamFormat
 from ..core.cover_downloader import CoverSaveStrategy
 from ..logging.typing import LOG_LEVEL
+from ..postprocess import DeleteStrategy
 from ..utils.string import camel_case
-
+from .typing import (
+    EmailMessageType,
+    PushdeerMessageType,
+    PushplusMessageType,
+    ServerchanMessageType,
+    TelegramMessageType,
+)
 
 logger = logging.getLogger(__name__)
 
 
 __all__ = (
     'DEFAULT_SETTINGS_FILE',
-
     'EnvSettings',
     'Settings',
     'SettingsIn',
     'SettingsOut',
-
     'HeaderOptions',
     'HeaderSettings',
     'DanmakuOptions',
@@ -44,7 +41,6 @@ __all__ = (
     'RecorderSettings',
     'PostprocessingSettings',
     'PostprocessingOptions',
-
     'TaskOptions',
     'TaskSettings',
     'OutputSettings',
@@ -57,6 +53,11 @@ __all__ = (
     'TelegramSettings',
     'NotifierSettings',
     'NotificationSettings',
+    'EmailMessageTemplateSettings',
+    'ServerchanMessageTemplateSettings',
+    'PushdeerMessageTemplateSettings',
+    'PushplusMessageTemplateSettings',
+    'TelegramMessageTemplateSettings',
     'EmailNotificationSettings',
     'ServerchanNotificationSettings',
     'PushdeerNotificationSettings',
@@ -67,9 +68,7 @@ __all__ = (
 
 
 DEFAULT_OUT_DIR: Final[str] = os.environ.get('DEFAULT_OUT_DIR', '.')
-DEFAULT_LOG_DIR: Final[str] = os.environ.get(
-    'DEFAULT_LOG_DIR', '~/.blrec/logs/'
-)
+DEFAULT_LOG_DIR: Final[str] = os.environ.get('DEFAULT_LOG_DIR', '~/.blrec/logs/')
 DEFAULT_SETTINGS_FILE: Final[str] = os.environ.get(
     'DEFAULT_SETTINGS_FILE', '~/.blrec/settings.toml'
 )
@@ -80,8 +79,7 @@ class EnvSettings(BaseSettings):
     out_dir: Optional[str] = None
     log_dir: Optional[str] = None
     api_key: Annotated[
-        Optional[str],
-        Field(min_length=8, max_length=80, regex=r'[a-zA-Z\d\-]{8,80}'),
+        Optional[str], Field(min_length=8, max_length=80, regex=r'[a-zA-Z\d\-]{8,80}'),
     ] = None
 
     class Config:
@@ -102,9 +100,7 @@ class BaseModel(PydanticBaseModel):
             return camel_case(string)
 
     @staticmethod
-    def _validate_with_collection(
-        value: _V, allowed_values: Collection[_V]
-    ) -> None:
+    def _validate_with_collection(value: _V, allowed_values: Collection[_V]) -> None:
         if value not in allowed_values:
             raise ValueError(
                 f'the value {value} does not be allowed, '
@@ -118,9 +114,11 @@ class HeaderOptions(BaseModel):
 
 
 class HeaderSettings(HeaderOptions):
-    user_agent: str = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' \
-        'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+    user_agent: str = (
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) '
         'Chrome/89.0.4389.114 Safari/537.36'
+    )
     cookie: str = ''
 
 
@@ -149,7 +147,7 @@ class RecorderOptions(BaseModel):
     read_timeout: Optional[int]  # seconds
     disconnection_timeout: Optional[int]  # seconds
     buffer_size: Annotated[  # bytes
-        Optional[int], Field(ge=4096, le=1024 ** 2 * 512, multiple_of=2)
+        Optional[int], Field(ge=4096, le=1024**2 * 512, multiple_of=2)
     ]
     save_cover: Optional[bool]
     cover_save_strategy: Optional[CoverSaveStrategy]
@@ -169,9 +167,7 @@ class RecorderOptions(BaseModel):
         return value
 
     @validator('disconnection_timeout')
-    def _validate_disconnection_timeout(
-        cls, value: Optional[int]
-    ) -> Optional[int]:
+    def _validate_disconnection_timeout(cls, value: Optional[int]) -> Optional[int]:
         if value is not None:
             allowed_values = frozenset(60 * i for i in (3, 5, 10, 15, 20, 30))
             cls._validate_with_collection(value, allowed_values)
@@ -185,7 +181,7 @@ class RecorderSettings(RecorderOptions):
     read_timeout: int = 3
     disconnection_timeout: int = 600
     buffer_size: Annotated[
-        int, Field(ge=4096, le=1024 ** 2 * 512, multiple_of=2)
+        int, Field(ge=4096, le=1024**2 * 512, multiple_of=2)
     ] = 8192
     save_cover: bool = False
     cover_save_strategy: CoverSaveStrategy = CoverSaveStrategy.DEFAULT
@@ -244,7 +240,7 @@ class OutputOptions(BaseModel):
     def _validate_filesize_limit(cls, value: Optional[int]) -> Optional[int]:
         # allowed 1 ~ 20 GB, 0 indicates not limit.
         if value is not None:
-            allowed_values = frozenset(1024 ** 3 * i for i in range(0, 21))
+            allowed_values = frozenset(1024**3 * i for i in range(0, 21))
             cls._validate_with_collection(value, allowed_values)
         return value
 
@@ -288,11 +284,11 @@ class TaskOptions(BaseModel):
 
     @classmethod
     def from_settings(cls, settings: TaskSettings) -> TaskOptions:
-        return cls(**settings.dict(
-            include={
-                'output', 'header', 'danmaku', 'recorder', 'postprocessing'
-            }
-        ))
+        return cls(
+            **settings.dict(
+                include={'output', 'header', 'danmaku', 'recorder', 'postprocessing'}
+            )
+        )
 
 
 class TaskSettings(TaskOptions):
@@ -312,8 +308,10 @@ class LoggingSettings(BaseModel):
     log_dir: Annotated[str, Field(default_factory=log_dir_factory)]
     console_log_level: LOG_LEVEL = 'INFO'
     max_bytes: Annotated[
-        int, Field(ge=1024 ** 2, le=1024 ** 2 * 10, multiple_of=1024 ** 2)
-    ] = 1024 ** 2 * 10  # allowed 1 ~ 10 MB
+        int, Field(ge=1024**2, le=1024**2 * 10, multiple_of=1024**2)
+    ] = (
+        1024**2 * 10
+    )  # allowed 1 ~ 10 MB
     backup_count: Annotated[int, Field(ge=1, le=30)] = 30
 
     @validator('log_dir')
@@ -325,7 +323,7 @@ class LoggingSettings(BaseModel):
 
 class SpaceSettings(BaseModel):
     check_interval: int = 60  # 1 minutes
-    space_threshold: int = 1024 ** 3  # 1 GB
+    space_threshold: int = 1024**3  # 1 GB
     recycle_records: bool = False
 
     @validator('check_interval')
@@ -336,7 +334,7 @@ class SpaceSettings(BaseModel):
 
     @validator('space_threshold')
     def _validate_threshold(cls, value: int) -> int:
-        allowed_values = frozenset(1024 ** 3 * i for i in (1, 3, 5, 10, 20))
+        allowed_values = frozenset(1024**3 * i for i in (1, 3, 5, 10, 20))
         cls._validate_with_collection(value, allowed_values)
         return value
 
@@ -395,9 +393,7 @@ class TelegramSettings(BaseModel):
 
     @validator('token')
     def _validate_token(cls, value: str) -> str:
-        if value != '' and not re.fullmatch(
-            r'[0-9]{8,10}:[a-zA-Z0-9_-]{35}', value
-        ):
+        if value != '' and not re.fullmatch(r'[0-9]{8,10}:[a-zA-Z0-9_-]{35}', value):
             raise ValueError('token is invalid')
         return value
 
@@ -419,32 +415,134 @@ class NotificationSettings(BaseModel):
     notify_space: bool = True
 
 
+class MessageTemplateSettings(BaseModel):
+    began_message_type: str
+    began_message_title: str
+    began_message_content: str
+    ended_message_type: str
+    ended_message_title: str
+    ended_message_content: str
+    space_message_type: str
+    space_message_title: str
+    space_message_content: str
+    error_message_type: str
+    error_message_title: str
+    error_message_content: str
+
+
+class EmailMessageTemplateSettings(MessageTemplateSettings):
+    began_message_type: EmailMessageType = 'html'
+    began_message_title: str = ''
+    began_message_content: str = ''
+    ended_message_type: EmailMessageType = 'html'
+    ended_message_title: str = ''
+    ended_message_content: str = ''
+    space_message_type: EmailMessageType = 'html'
+    space_message_title: str = ''
+    space_message_content: str = ''
+    error_message_type: EmailMessageType = 'html'
+    error_message_title: str = ''
+    error_message_content: str = ''
+
+
+class ServerchanMessageTemplateSettings(MessageTemplateSettings):
+    began_message_type: ServerchanMessageType = 'markdown'
+    began_message_title: str = ''
+    began_message_content: str = ''
+    ended_message_type: ServerchanMessageType = 'markdown'
+    ended_message_title: str = ''
+    ended_message_content: str = ''
+    space_message_type: ServerchanMessageType = 'markdown'
+    space_message_title: str = ''
+    space_message_content: str = ''
+    error_message_type: ServerchanMessageType = 'markdown'
+    error_message_title: str = ''
+    error_message_content: str = ''
+
+
+class PushdeerMessageTemplateSettings(MessageTemplateSettings):
+    began_message_type: PushdeerMessageType = 'markdown'
+    began_message_title: str = ''
+    began_message_content: str = ''
+    ended_message_type: PushdeerMessageType = 'markdown'
+    ended_message_title: str = ''
+    ended_message_content: str = ''
+    space_message_type: PushdeerMessageType = 'markdown'
+    space_message_title: str = ''
+    space_message_content: str = ''
+    error_message_type: PushdeerMessageType = 'markdown'
+    error_message_title: str = ''
+    error_message_content: str = ''
+
+
+class PushplusMessageTemplateSettings(MessageTemplateSettings):
+    began_message_type: PushplusMessageType = 'markdown'
+    began_message_title: str = ''
+    began_message_content: str = ''
+    ended_message_type: PushplusMessageType = 'markdown'
+    ended_message_title: str = ''
+    ended_message_content: str = ''
+    space_message_type: PushplusMessageType = 'markdown'
+    space_message_title: str = ''
+    space_message_content: str = ''
+    error_message_type: PushplusMessageType = 'markdown'
+    error_message_title: str = ''
+    error_message_content: str = ''
+
+
+class TelegramMessageTemplateSettings(MessageTemplateSettings):
+    began_message_type: TelegramMessageType = 'html'
+    began_message_title: str = ''
+    began_message_content: str = ''
+    ended_message_type: TelegramMessageType = 'html'
+    ended_message_title: str = ''
+    ended_message_content: str = ''
+    space_message_type: TelegramMessageType = 'html'
+    space_message_title: str = ''
+    space_message_content: str = ''
+    error_message_type: TelegramMessageType = 'html'
+    error_message_title: str = ''
+    error_message_content: str = ''
+
+
 class EmailNotificationSettings(
-    EmailSettings, NotifierSettings, NotificationSettings
+    EmailSettings, NotifierSettings, NotificationSettings, EmailMessageTemplateSettings
 ):
     pass
 
 
 class ServerchanNotificationSettings(
-    ServerchanSettings, NotifierSettings, NotificationSettings
+    ServerchanSettings,
+    NotifierSettings,
+    NotificationSettings,
+    ServerchanMessageTemplateSettings,
 ):
     pass
 
 
 class PushdeerNotificationSettings(
-    PushdeerSettings, NotifierSettings, NotificationSettings
+    PushdeerSettings,
+    NotifierSettings,
+    NotificationSettings,
+    PushplusMessageTemplateSettings,
 ):
     pass
 
 
 class PushplusNotificationSettings(
-    PushplusSettings, NotifierSettings, NotificationSettings
+    PushplusSettings,
+    NotifierSettings,
+    NotificationSettings,
+    PushplusMessageTemplateSettings,
 ):
     pass
 
 
 class TelegramNotificationSettings(
-    TelegramSettings, NotifierSettings, NotificationSettings
+    TelegramSettings,
+    NotifierSettings,
+    NotificationSettings,
+    TelegramMessageTemplateSettings,
 ):
     pass
 
@@ -487,14 +585,12 @@ class Settings(BaseModel):
     postprocessing: PostprocessingSettings = PostprocessingSettings()
     space: SpaceSettings = SpaceSettings()
     email_notification: EmailNotificationSettings = EmailNotificationSettings()
-    serverchan_notification: ServerchanNotificationSettings = \
+    serverchan_notification: ServerchanNotificationSettings = (
         ServerchanNotificationSettings()
-    pushdeer_notification: PushdeerNotificationSettings = \
-        PushdeerNotificationSettings()
-    pushplus_notification: PushplusNotificationSettings = \
-        PushplusNotificationSettings()
-    telegram_notification: TelegramNotificationSettings = \
-        TelegramNotificationSettings()
+    )
+    pushdeer_notification: PushdeerNotificationSettings = PushdeerNotificationSettings()
+    pushplus_notification: PushplusNotificationSettings = PushplusNotificationSettings()
+    telegram_notification: TelegramNotificationSettings = TelegramNotificationSettings()
     webhooks: Annotated[List[WebHookSettings], Field(max_items=50)] = []
 
     @classmethod
@@ -525,9 +621,7 @@ class Settings(BaseModel):
         cls, webhooks: List[WebHookSettings]
     ) -> List[WebHookSettings]:
         if len(webhooks) >= cls._MAX_WEBHOOKS:
-            raise ValueError(
-                f'Out of max webhooks limits: {cls._MAX_WEBHOOKS}'
-            )
+            raise ValueError(f'Out of max webhooks limits: {cls._MAX_WEBHOOKS}')
         return webhooks
 
 

@@ -13,9 +13,11 @@ import {
   EmailSettings,
   NotifierSettings,
   NotificationSettings,
+  MessageTemplateSettings,
   KEYS_OF_EMAIL_SETTINGS,
   KEYS_OF_NOTIFIER_SETTINGS,
   KEYS_OF_NOTIFICATION_SETTINGS,
+  KEYS_OF_MESSAGE_TEMPLATE_SETTINGS,
 } from '../../shared/setting.model';
 
 @Component({
@@ -28,6 +30,7 @@ export class EmailNotificationSettingsComponent implements OnInit {
   emailSettings!: EmailSettings;
   notifierSettings!: NotifierSettings;
   notificationSettings!: NotificationSettings;
+  messageTemplateSettings!: MessageTemplateSettings;
 
   constructor(
     private changeDetector: ChangeDetectorRef,
@@ -40,6 +43,10 @@ export class EmailNotificationSettingsComponent implements OnInit {
       this.emailSettings = pick(settings, KEYS_OF_EMAIL_SETTINGS);
       this.notifierSettings = pick(settings, KEYS_OF_NOTIFIER_SETTINGS);
       this.notificationSettings = pick(settings, KEYS_OF_NOTIFICATION_SETTINGS);
+      this.messageTemplateSettings = pick(
+        settings,
+        KEYS_OF_MESSAGE_TEMPLATE_SETTINGS
+      );
       this.changeDetector.markForCheck();
     });
   }

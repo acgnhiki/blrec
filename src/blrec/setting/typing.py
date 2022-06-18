@@ -1,4 +1,15 @@
-from typing import AbstractSet, Literal
+from typing import AbstractSet, Literal, Union
+
+TextMessageType = Literal['text']
+HtmlMessageType = Literal['html']
+MarkdownMessageType = Literal['markdown']
+MessageType = Union[TextMessageType, MarkdownMessageType, HtmlMessageType]
+
+EmailMessageType = Union[TextMessageType, HtmlMessageType]
+ServerchanMessageType = MarkdownMessageType
+PushdeerMessageType = Union[TextMessageType, MarkdownMessageType]
+PushplusMessageType = Union[TextMessageType, MarkdownMessageType, HtmlMessageType]
+TelegramMessageType = Union[MarkdownMessageType, HtmlMessageType]
 
 
 KeyOfSettings = Literal[

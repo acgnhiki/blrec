@@ -1,31 +1,37 @@
 from __future__ import annotations
-import asyncio
-from typing import Optional, TYPE_CHECKING, cast
 
-from .helpers import update_settings, shadow_settings
+import asyncio
+from typing import TYPE_CHECKING, Optional, cast
+
+from ..exception import NotFoundError
+from ..logging import configure_logger
+from ..notification import (
+    EmailService,
+    Notifier,
+    Pushdeer,
+    Pushplus,
+    Serverchan,
+    Telegram,
+)
+from ..webhook import WebHook
+from .helpers import shadow_settings, update_settings
 from .models import (
+    DanmakuOptions,
+    HeaderOptions,
+    MessageTemplateSettings,
+    NotificationSettings,
+    NotifierSettings,
     OutputOptions,
+    PostprocessingOptions,
+    RecorderOptions,
     Settings,
     SettingsIn,
     SettingsOut,
-
-    HeaderOptions,
-    DanmakuOptions,
-    RecorderOptions,
-    PostprocessingOptions,
-
     TaskOptions,
     TaskSettings,
-    NotifierSettings,
-    NotificationSettings,
 )
 from .typing import KeySetOfSettings
-from ..webhook import WebHook
-from ..notification import (
-    Notifier, EmailService, Serverchan, Pushdeer, Pushplus, Telegram
-)
-from ..logging import configure_logger
-from ..exception import NotFoundError
+
 if TYPE_CHECKING:
     from ..application import Application
 
@@ -40,9 +46,7 @@ class SettingsManager:
         include: Optional[KeySetOfSettings] = None,
         exclude: Optional[KeySetOfSettings] = None,
     ) -> SettingsOut:
-        return SettingsOut(
-            **self._settings.dict(include=include, exclude=exclude)
-        )
+        return SettingsOut(**self._settings.dict(include=include, exclude=exclude))
 
     async def change_settings(self, settings: SettingsIn) -> SettingsOut:
         changed = False
@@ -70,19 +74,15 @@ class SettingsManager:
         if changed:
             await self.dump_settings()
 
-        return self.get_settings(
-            cast(KeySetOfSettings, settings.__fields_set__)
-        )
+        return self.get_settings(cast(KeySetOfSettings, settings.__fields_set__))
 
     def get_task_options(self, room_id: int) -> TaskOptions:
-        if (settings := self.find_task_settings(room_id)):
+        if settings := self.find_task_settings(room_id):
             return TaskOptions.from_settings(settings)
         raise NotFoundError(f'task settings of room {room_id} not found')
 
     async def change_task_options(
-        self,
-        room_id: int,
-        options: TaskOptions,
+        self, room_id: int, options: TaskOptions
     ) -> TaskOptions:
         settings = self.find_task_settings(room_id)
         assert settings is not None
@@ -211,11 +211,7 @@ class SettingsManager:
         await self.dump_settings()
 
     async def apply_task_header_settings(
-        self,
-        room_id: int,
-        options: HeaderOptions,
-        *,
-        update_session: bool = True,
+        self, room_id: int, options: HeaderOptions, *, update_session: bool = True
     ) -> None:
         final_settings = self._settings.header.copy()
         shadow_settings(options, final_settings)
@@ -224,42 +220,26 @@ class SettingsManager:
         )
 
     def apply_task_danmaku_settings(
-        self,
-        room_id: int,
-        options: DanmakuOptions,
+        self, room_id: int, options: DanmakuOptions
     ) -> None:
         final_settings = self._settings.danmaku.copy()
         shadow_settings(options, final_settings)
-        self._app._task_manager.apply_task_danmaku_settings(
-            room_id, final_settings
-        )
+        self._app._task_manager.apply_task_danmaku_settings(room_id, final_settings)
 
     def apply_task_recorder_settings(
-        self,
-        room_id: int,
-        options: RecorderOptions,
+        self, room_id: int, options: RecorderOptions
     ) -> None:
         final_settings = self._settings.recorder.copy()
         shadow_settings(options, final_settings)
-        self._app._task_manager.apply_task_recorder_settings(
-            room_id, final_settings
-        )
+        self._app._task_manager.apply_task_recorder_settings(room_id, final_settings)
 
-    def apply_task_output_settings(
-        self,
-        room_id: int,
-        options: OutputOptions,
-    ) -> None:
+    def apply_task_output_settings(self, room_id: int, options: OutputOptions) -> None:
         final_settings = self._settings.output.copy()
         shadow_settings(options, final_settings)
-        self._app._task_manager.apply_task_output_settings(
-            room_id, final_settings
-        )
+        self._app._task_manager.apply_task_output_settings(room_id, final_settings)
 
     def apply_task_postprocessing_settings(
-        self,
-        room_id: int,
-        options: PostprocessingOptions,
+        self, room_id: int, options: PostprocessingOptions
     ) -> None:
         final_settings = self._settings.postprocessing.copy()
         shadow_settings(options, final_settings)
@@ -286,21 +266,15 @@ class SettingsManager:
 
     async def apply_header_settings(self) -> None:
         for settings in self._settings.tasks:
-            await self.apply_task_header_settings(
-                settings.room_id, settings.header
-            )
+            await self.apply_task_header_settings(settings.room_id, settings.header)
 
     def apply_danmaku_settings(self) -> None:
         for settings in self._settings.tasks:
-            self.apply_task_danmaku_settings(
-                settings.room_id, settings.danmaku
-            )
+            self.apply_task_danmaku_settings(settings.room_id, settings.danmaku)
 
     def apply_recorder_settings(self) -> None:
         for settings in self._settings.tasks:
-            self.apply_task_recorder_settings(
-                settings.room_id, settings.recorder
-            )
+            self.apply_task_recorder_settings(settings.room_id, settings.recorder)
 
     def apply_postprocessing_settings(self) -> None:
         for settings in self._settings.tasks:
@@ -327,6 +301,7 @@ class SettingsManager:
         self._apply_email_settings(notifier.provider)
         self._apply_notifier_settings(notifier, settings)
         self._apply_notification_settings(notifier, settings)
+        self._apply_message_template_settings(notifier, settings)
 
     def apply_serverchan_notification_settings(self) -> None:
         notifier = self._app._serverchan_notifier
@@ -334,6 +309,7 @@ class SettingsManager:
         self._apply_serverchan_settings(notifier.provider)
         self._apply_notifier_settings(notifier, settings)
         self._apply_notification_settings(notifier, settings)
+        self._apply_message_template_settings(notifier, settings)
 
     def apply_pushdeer_notification_settings(self) -> None:
         notifier = self._app._pushdeer_notifier
@@ -341,6 +317,7 @@ class SettingsManager:
         self._apply_pushdeer_settings(notifier.provider)
         self._apply_notifier_settings(notifier, settings)
         self._apply_notification_settings(notifier, settings)
+        self._apply_message_template_settings(notifier, settings)
 
     def apply_pushplus_notification_settings(self) -> None:
         notifier = self._app._pushplus_notifier
@@ -348,6 +325,7 @@ class SettingsManager:
         self._apply_pushplus_settings(notifier.provider)
         self._apply_notifier_settings(notifier, settings)
         self._apply_notification_settings(notifier, settings)
+        self._apply_message_template_settings(notifier, settings)
 
     def apply_telegram_notification_settings(self) -> None:
         notifier = self._app._telegram_notifier
@@ -355,6 +333,7 @@ class SettingsManager:
         self._apply_telegram_settings(notifier.provider)
         self._apply_notifier_settings(notifier, settings)
         self._apply_notification_settings(notifier, settings)
+        self._apply_message_template_settings(notifier, settings)
 
     def apply_webhooks_settings(self) -> None:
         webhooks = [WebHook.from_settings(s) for s in self._settings.webhooks]
@@ -397,3 +376,19 @@ class SettingsManager:
         notifier.notify_ended = settings.notify_ended
         notifier.notify_error = settings.notify_error
         notifier.notify_space = settings.notify_space
+
+    def _apply_message_template_settings(
+        self, notifier: Notifier, settings: MessageTemplateSettings
+    ) -> None:
+        notifier.began_message_type = settings.began_message_type
+        notifier.began_message_title = settings.began_message_title
+        notifier.began_message_content = settings.began_message_content
+        notifier.ended_message_type = settings.ended_message_type
+        notifier.ended_message_title = settings.ended_message_title
+        notifier.ended_message_content = settings.ended_message_content
+        notifier.space_message_type = settings.space_message_type
+        notifier.space_message_title = settings.space_message_title
+        notifier.space_message_content = settings.space_message_content
+        notifier.error_message_type = settings.error_message_type
+        notifier.error_message_title = settings.error_message_title
+        notifier.error_message_content = settings.error_message_content

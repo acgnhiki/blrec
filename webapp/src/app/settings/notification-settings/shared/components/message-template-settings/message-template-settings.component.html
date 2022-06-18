@@ -1,0 +1,51 @@
+<a
+  class="setting-item actionable"
+  (click)="beganMessageTemplateEditDialog.open()"
+  ><span class="setting-label">开播消息模板</span></a
+>
+<app-message-template-edit-dialog
+  #beganMessageTemplateEditDialog
+  [title]="'修改开播消息模板'"
+  [value]="beganMessageTemplateSettings"
+  [messageTypes]="messageTypes"
+  (confirm)="changeBeganMessageTemplateSettings($event)"
+></app-message-template-edit-dialog>
+
+<a
+  class="setting-item actionable"
+  (click)="endedMessageTemplateEditDialog.open()"
+  ><span class="setting-label">下播消息模板</span></a
+>
+<app-message-template-edit-dialog
+  #endedMessageTemplateEditDialog
+  [title]="'修改下播消息模板'"
+  [value]="endedMessageTemplateSettings"
+  [messageTypes]="messageTypes"
+  (confirm)="changeEndedMessageTemplateSettings($event)"
+></app-message-template-edit-dialog>
+
+<a
+  class="setting-item actionable"
+  (click)="errorMessageTemplateEditDialog.open()"
+  ><span class="setting-label">异常消息模板</span></a
+>
+<app-message-template-edit-dialog
+  #errorMessageTemplateEditDialog
+  [title]="'修改异常消息模板'"
+  [value]="errorMessageTemplateSettings"
+  [messageTypes]="messageTypes"
+  (confirm)="changeErrorMessageTemplateSettings($event)"
+></app-message-template-edit-dialog>
+
+<a
+  class="setting-item actionable"
+  (click)="spaceMessageTemplateEditDialog.open()"
+  ><span class="setting-label">空间不足消息模板</span></a
+>
+<app-message-template-edit-dialog
+  #spaceMessageTemplateEditDialog
+  [title]="'修改空间不足消息模板'"
+  [value]="spaceMessageTemplateSettings"
+  [messageTypes]="messageTypes"
+  (confirm)="changeSpaceMessageTemplateSettings($event)"
+></app-message-template-edit-dialog>

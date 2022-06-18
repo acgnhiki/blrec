@@ -16,6 +16,8 @@ import {
   KEYS_OF_PUSHPLUS_SETTINGS,
   KEYS_OF_NOTIFIER_SETTINGS,
   KEYS_OF_NOTIFICATION_SETTINGS,
+  MessageTemplateSettings,
+  KEYS_OF_MESSAGE_TEMPLATE_SETTINGS,
 } from '../../shared/setting.model';
 
 @Component({
@@ -28,6 +30,7 @@ export class PushplusNotificationSettingsComponent implements OnInit {
   pushplusSettings!: PushplusSettings;
   notifierSettings!: NotifierSettings;
   notificationSettings!: NotificationSettings;
+  messageTemplateSettings!: MessageTemplateSettings;
 
   constructor(
     private changeDetector: ChangeDetectorRef,
@@ -37,10 +40,14 @@ export class PushplusNotificationSettingsComponent implements OnInit {
   ngOnInit(): void {
     this.route.data.subscribe((data) => {
       const settings = data.settings as PushplusNotificationSettings;
-      this.changeDetector.markForCheck();
       this.pushplusSettings = pick(settings, KEYS_OF_PUSHPLUS_SETTINGS);
       this.notifierSettings = pick(settings, KEYS_OF_NOTIFIER_SETTINGS);
       this.notificationSettings = pick(settings, KEYS_OF_NOTIFICATION_SETTINGS);
+      this.messageTemplateSettings = pick(
+        settings,
+        KEYS_OF_MESSAGE_TEMPLATE_SETTINGS
+      );
+      this.changeDetector.markForCheck();
     });
   }
 }
