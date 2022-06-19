@@ -19,7 +19,7 @@ def wait_for(
 ) -> _T:
     global _executor
     if _executor is None:
-        _executor = ThreadPoolExecutor(thread_name_prefix='wait_for')
+        _executor = ThreadPoolExecutor(max_workers=200, thread_name_prefix='wait_for')
         atexit.register(_executor.shutdown)
 
     future = _executor.submit(func, *args, **kwargs)
