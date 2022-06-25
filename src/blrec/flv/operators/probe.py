@@ -5,6 +5,7 @@ import logging
 from typing import List, Optional, cast
 
 from reactivex import Observable, Subject, abc
+from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
 from ...utils.ffprobe import StreamProfile, ffprobe
 from ..common import find_aac_header_tag, find_avc_header_tag
@@ -38,6 +39,9 @@ class Prober:
             observer: abc.ObserverBase[FLVStreamItem],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
+            disposed = False
+            subscription = SerialDisposable()
+
             self._reset()
 
             def on_next(item: FLVStreamItem) -> None:
@@ -58,9 +62,16 @@ class Prober:
 
                 observer.on_next(item)
 
-            return source.subscribe(
+            def dispose() -> None:
+                nonlocal disposed
+                disposed = True
+                self._reset()
+
+            subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler
             )
+
+            return CompositeDisposable(subscription, Disposable(dispose))
 
         return Observable(subscribe)
 

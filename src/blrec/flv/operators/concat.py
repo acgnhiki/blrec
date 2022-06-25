@@ -85,6 +85,9 @@ def concat(
             observer: abc.ObserverBase[FLVStreamItem],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
+            disposed = False
+            subscription = SerialDisposable()
+
             delta: int = 0
             action: ACTION = ACTION.NOOP
             last_tags: List[FlvTag] = []
@@ -92,6 +95,22 @@ def concat(
             last_flv_header: Optional[FlvHeader] = None
             last_audio_sequence_header: Optional[AudioTag] = None
             last_video_sequence_header: Optional[VideoTag] = None
+
+            def reset() -> None:
+                nonlocal delta
+                nonlocal action
+                nonlocal last_tags
+                nonlocal gathered_tags
+                nonlocal last_flv_header
+                nonlocal last_audio_sequence_header
+                nonlocal last_video_sequence_header
+                delta = 0
+                action = ACTION.NOOP
+                last_tags = []
+                gathered_tags = []
+                last_flv_header = None
+                last_audio_sequence_header = None
+                last_video_sequence_header = None
 
             def update_last_tags(tag: FlvTag) -> None:
                 nonlocal last_audio_sequence_header, last_video_sequence_header
@@ -315,9 +334,16 @@ def concat(
                     do_concat()
                 observer.on_error(e)
 
-            return source.subscribe(
+            def dispose() -> None:
+                nonlocal disposed
+                disposed = True
+                reset()
+
+            subscription.disposable = source.subscribe(
                 on_next, on_error, on_completed, scheduler=scheduler
             )
+
+            return CompositeDisposable(subscription, Disposable(dispose))
 
         return Observable(subscribe)
 
@@ -340,10 +366,18 @@ class JoinPointExtractor:
             observer: abc.ObserverBase[FLVStreamItem],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
-            stream_index: int = -1
+            disposed = False
             subscription = SerialDisposable()
+
+            stream_index: int = -1
             join_points: List[JoinPoint] = []
             join_point_tag: Optional[ScriptTag] = None
+
+            def reset() -> None:
+                nonlocal stream_index, join_points, join_point_tag
+                stream_index = -1
+                join_points = []
+                join_point_tag = None
 
             def push_join_points() -> None:
                 self._join_points.on_next(join_points.copy())
@@ -381,7 +415,10 @@ class JoinPointExtractor:
                 observer.on_error(e)
 
             def dispose() -> None:
+                nonlocal disposed
+                disposed = True
                 push_join_points()
+                reset()
 
             subscription.disposable = source.subscribe(
                 on_next, on_error, on_completed, scheduler=scheduler
@@ -409,4 +446,11 @@ class JoinPointExtractor:
             crc32=join_point_data['crc32'],
         )
         logger.debug(f'Extracted join point: {join_point}; next tag: {next_tag}')
+        if cksum(next_tag.body) != join_point_data['crc32']:
+            logger.warning(
+                f'Timestamp of extracted join point may be incorrect\n'
+                f'join point data: {join_point_data}\n'
+                f'join point tag: {join_point_tag}\n'
+                f'next tag: {next_tag}\n'
+            )
         return join_point

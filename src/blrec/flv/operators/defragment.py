@@ -2,6 +2,7 @@ import logging
 from typing import Callable, List, Optional
 
 from reactivex import Observable, abc
+from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
 from ..models import FlvHeader
 from .typing import FLVStream, FLVStreamItem
@@ -19,8 +20,16 @@ def defragment(min_tags: int = 10) -> Callable[[FLVStream], FLVStream]:
             observer: abc.ObserverBase[FLVStreamItem],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
+            disposed = False
+            subscription = SerialDisposable()
+
             gathering: bool = False
             gathered_items: List[FLVStreamItem] = []
+
+            def reset() -> None:
+                nonlocal gathering, gathered_items
+                gathering = False
+                gathered_items = []
 
             def on_next(item: FLVStreamItem) -> None:
                 nonlocal gathering
@@ -47,9 +56,16 @@ def defragment(min_tags: int = 10) -> Callable[[FLVStream], FLVStream]:
                 else:
                     observer.on_next(item)
 
-            return source.subscribe(
+            def dispose() -> None:
+                nonlocal disposed
+                disposed = True
+                reset()
+
+            subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler
             )
+
+            return CompositeDisposable(subscription, Disposable(dispose))
 
         return Observable(subscribe)
 

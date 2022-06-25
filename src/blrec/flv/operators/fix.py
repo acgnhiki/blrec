@@ -3,6 +3,7 @@ import math
 from typing import Callable, Optional
 
 from reactivex import Observable, abc
+from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
 from ..common import (
     is_audio_tag,
@@ -27,6 +28,9 @@ def fix() -> Callable[[FLVStream], FLVStream]:
             observer: abc.ObserverBase[FLVStreamItem],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
+            disposed = False
+            subscription = SerialDisposable()
+
             delta: int = 0
             last_tag: Optional[FlvTag] = None
             last_audio_tag: Optional[AudioTag] = None
@@ -143,9 +147,16 @@ def fix() -> Callable[[FLVStream], FLVStream]:
                 tag = correct_ts(tag)
                 observer.on_next(tag)
 
-            return source.subscribe(
+            def dispose() -> None:
+                nonlocal disposed
+                disposed = True
+                reset()
+
+            subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler
             )
+
+            return CompositeDisposable(subscription, Disposable(dispose))
 
         return Observable(subscribe)
 

@@ -22,11 +22,12 @@ class MetadataDumper(SwitchableMixin):
         joinpoint_extractor: flv_ops.JoinPointExtractor,
     ) -> None:
         super().__init__()
-
         self._dumper = dumper
         self._analyser = analyser
         self._joinpoint_extractor = joinpoint_extractor
+        self._reset()
 
+    def _reset(self) -> None:
         self._last_metadata: Optional[flv_ops.MetaData] = None
         self._last_join_points: Optional[List[flv_ops.JoinPoint]] = None
 
@@ -40,6 +41,7 @@ class MetadataDumper(SwitchableMixin):
         self._file_closed_subscription = self._dumper.file_closed.subscribe(
             self._dump_metadata
         )
+        self._reset()
         logger.debug('Enabled metadata dumper')
 
     def _do_disable(self) -> None:
@@ -49,6 +51,7 @@ class MetadataDumper(SwitchableMixin):
             self._join_points_subscription.dispose()
         with suppress(Exception):
             self._file_closed_subscription.dispose()
+        self._reset()
         logger.debug('Disabled metadata dumper')
 
     def _update_metadata(self, metadata: Optional[flv_ops.MetaData]) -> None:

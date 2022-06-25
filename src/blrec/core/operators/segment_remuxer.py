@@ -21,7 +21,8 @@ logging.getLogger(urllib3.__name__).setLevel(logging.WARNING)
 
 
 class SegmentRemuxer:
-    _MAX_SEGMENT_DATA_CACHE: Final = 3
+    _SEGMENT_DATA_CACHE: Final = 10
+    _MAX_SEGMENT_DATA_CACHE: Final = 15
 
     def __init__(self, live: Live) -> None:
         self._live = live
@@ -47,6 +48,12 @@ class SegmentRemuxer:
             segment_data_cache: List[bytes] = []
             self._stream_remuxer.stop()
 
+            def reset() -> None:
+                nonlocal init_section_data, segment_data_cache
+                init_section_data = None
+                segment_data_cache = []
+                self._stream_remuxer.stop()
+
             def write(data: bytes) -> int:
                 return wait_for(
                     self._stream_remuxer.input.write,
@@ -56,6 +63,7 @@ class SegmentRemuxer:
 
             def on_next(data: Union[InitSectionData, SegmentData]) -> None:
                 nonlocal init_section_data
+                nonlocal segment_data_cache
 
                 if isinstance(data, InitSectionData):
                     init_section_data = data.payload
@@ -86,14 +94,22 @@ class SegmentRemuxer:
                 except Exception as e:
                     logger.warning(f'Failed to write data to stream remuxer: {repr(e)}')
                     self._stream_remuxer.stop()
+                    if len(segment_data_cache) >= self._MAX_SEGMENT_DATA_CACHE:
+                        segment_data_cache = segment_data_cache[
+                            -self._MAX_SEGMENT_DATA_CACHE + 1 :
+                        ]
+                else:
+                    if len(segment_data_cache) >= self._SEGMENT_DATA_CACHE:
+                        segment_data_cache = segment_data_cache[
+                            -self._SEGMENT_DATA_CACHE + 1 :
+                        ]
 
                 segment_data_cache.append(data.payload)
-                if len(segment_data_cache) > self._MAX_SEGMENT_DATA_CACHE:
-                    segment_data_cache.pop(0)
 
             def dispose() -> None:
                 nonlocal disposed
                 disposed = True
+                reset()
 
             subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler

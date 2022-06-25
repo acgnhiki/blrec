@@ -237,8 +237,11 @@ class Analyser:
             observer: abc.ObserverBase[FLVStreamItem],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
-            stream_index: int = -1
+            disposed = False
             subscription = SerialDisposable()
+
+            self._reset()
+            stream_index: int = -1
 
             def push_metadata() -> None:
                 try:
@@ -270,7 +273,10 @@ class Analyser:
                 observer.on_error(e)
 
             def dispose() -> None:
+                nonlocal disposed
+                disposed = True
                 push_metadata()
+                self._reset()
 
             subscription.disposable = source.subscribe(
                 on_next, on_error, on_completed, scheduler=scheduler

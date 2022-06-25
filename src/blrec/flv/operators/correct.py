@@ -2,6 +2,7 @@ import logging
 from typing import Callable, Optional
 
 from reactivex import Observable, abc
+from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
 from ..common import is_script_tag, is_sequence_header
 from ..models import FlvHeader, FlvTag
@@ -20,8 +21,16 @@ def correct() -> Callable[[FLVStream], FLVStream]:
             observer: abc.ObserverBase[FLVStreamItem],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
+            disposed = False
+            subscription = SerialDisposable()
+
             delta: Optional[int] = None
             first_data_tag: Optional[FlvTag] = None
+
+            def reset() -> None:
+                nonlocal delta, first_data_tag
+                delta = None
+                first_data_tag = None
 
             def correct_ts(tag: FlvTag, delta: int) -> FlvTag:
                 if delta == 0:
@@ -72,9 +81,16 @@ def correct() -> Callable[[FLVStream], FLVStream]:
                 tag = correct_ts(tag, delta)
                 observer.on_next(tag)
 
-            return source.subscribe(
+            def dispose() -> None:
+                nonlocal disposed
+                disposed = True
+                reset()
+
+            subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler
             )
+
+            return CompositeDisposable(subscription, Disposable(dispose))
 
         return Observable(subscribe)
 

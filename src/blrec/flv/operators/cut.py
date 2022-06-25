@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 
 from reactivex import Observable, abc
+from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
 from ..common import (
     is_audio_sequence_header,
@@ -58,6 +59,9 @@ class Cutter:
             observer: abc.ObserverBase[FLVStreamItem],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
+            disposed = False
+            subscription = SerialDisposable()
+
             def on_next(item: FLVStreamItem) -> None:
                 if isinstance(item, FlvHeader):
                     self._reset()
@@ -71,9 +75,16 @@ class Cutter:
                         self._triggered = False
                 observer.on_next(item)
 
-            return source.subscribe(
+            def dispose() -> None:
+                nonlocal disposed
+                disposed = True
+                self._reset()
+
+            subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler
             )
+
+            return CompositeDisposable(subscription, Disposable(dispose))
 
         return Observable(subscribe)
 

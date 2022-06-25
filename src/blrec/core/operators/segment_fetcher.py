@@ -55,6 +55,7 @@ class SegmentFetcher:
         ) -> abc.DisposableBase:
             disposed = False
             subscription = SerialDisposable()
+
             init_section: Optional[InitializationSection] = None
 
             def on_next(seg: m3u8.Segment) -> None:
@@ -76,7 +77,9 @@ class SegmentFetcher:
 
             def dispose() -> None:
                 nonlocal disposed
+                nonlocal init_section
                 disposed = True
+                init_section = None
 
             subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler

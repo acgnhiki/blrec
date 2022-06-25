@@ -5,6 +5,7 @@ import logging
 from typing import List, Optional, Union
 
 from reactivex import Observable, Subject, abc
+from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
 from ...utils.ffprobe import StreamProfile, ffprobe
 from .segment_fetcher import InitSectionData, SegmentData
@@ -39,6 +40,9 @@ class HLSProber:
             observer: abc.ObserverBase[Union[InitSectionData, SegmentData]],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
+            disposed = False
+            subscription = SerialDisposable()
+
             self._reset()
 
             def on_next(item: Union[InitSectionData, SegmentData]) -> None:
@@ -59,9 +63,16 @@ class HLSProber:
 
                 observer.on_next(item)
 
-            return source.subscribe(
+            def dispose() -> None:
+                nonlocal disposed
+                disposed = True
+                self._reset()
+
+            subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler
             )
+
+            return CompositeDisposable(subscription, Disposable(dispose))
 
         return Observable(subscribe)
 

@@ -328,6 +328,7 @@ class StreamRecorderImpl(
 
     def _dispose(self) -> None:
         self._subscription.dispose()
+        del self._subscription
         self._on_completed()
 
     def _on_completed(self) -> None:

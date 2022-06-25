@@ -2,6 +2,7 @@ import logging
 from typing import Callable, Optional
 
 from reactivex import Observable, abc
+from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
 from ..common import is_audio_sequence_header, is_metadata_tag, is_video_sequence_header
 from ..models import AudioTag, FlvHeader, ScriptTag, VideoTag
@@ -21,6 +22,9 @@ def split() -> Callable[[FLVStream], FLVStream]:
             observer: abc.ObserverBase[FLVStreamItem],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
+            disposed = False
+            subscription = SerialDisposable()
+
             changed: bool = False
             last_flv_header: Optional[FlvHeader] = None
             last_metadata_tag: Optional[ScriptTag] = None
@@ -91,9 +95,16 @@ def split() -> Callable[[FLVStream], FLVStream]:
 
                 observer.on_next(tag)
 
-            return source.subscribe(
+            def dispose() -> None:
+                nonlocal disposed
+                disposed = True
+                reset()
+
+            subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler
             )
+
+            return CompositeDisposable(subscription, Disposable(dispose))
 
         return Observable(subscribe).pipe(correct())
 

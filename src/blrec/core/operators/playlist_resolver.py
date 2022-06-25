@@ -29,6 +29,7 @@ class PlaylistResolver:
         ) -> abc.DisposableBase:
             disposed = False
             subscription = SerialDisposable()
+
             last_seg_uris: OrderedSet[str] = OrderedSet()
 
             def on_next(playlist: m3u8.M3U8) -> None:
