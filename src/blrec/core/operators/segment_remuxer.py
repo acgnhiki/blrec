@@ -72,8 +72,8 @@ class SegmentRemuxer:
 
                 try:
                     if self._stream_remuxer.stopped:
-                        self._stream_remuxer.start()
                         while True:
+                            self._stream_remuxer.start()
                             ready = self._stream_remuxer.wait(timeout=1)
                             if disposed:
                                 return
