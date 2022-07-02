@@ -197,6 +197,9 @@ class FlvDumper:
         self._writer.write_ui32(size)
 
     def dump_tag(self, tag: FlvTag) -> None:
+        if tag.timestamp < 0:
+            raise FlvDataError(f'Incorrect timestamp: {tag.timestamp}', tag)
+
         self.dump_flv_tag_header(tag)
 
         if tag.is_audio_tag():

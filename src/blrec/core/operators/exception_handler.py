@@ -28,6 +28,7 @@ class ExceptionHandler(AsyncCooperationMixin):
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
             def on_error(exc: Exception) -> None:
+                logger.exception(repr(exc))
                 self._submit_exception(exc)
                 try:
                     raise exc
