@@ -116,8 +116,11 @@ class DanmakuDumper(
         self, video_path: str, record_start_time: int
     ) -> None:
         with self._lock:
+            self._delta: float = 0
+            self._record_start_time: int = record_start_time
+            self._timebase: int = self._record_start_time * 1000
+            self._stream_recording_interrupted: bool = False
             self._path = danmaku_path(video_path)
-            self._record_start_time = record_start_time
             self._files.append(self._path)
             self._start_dumping()
 
@@ -125,6 +128,20 @@ class DanmakuDumper(
         with self._lock:
             await self._stop_dumping()
             self._path = None
+
+    async def on_stream_recording_interrupted(self, duration: float) -> None:
+        logger.debug(f'Stream recording interrupted, {duration}')
+        self._duration = duration
+        self._stream_recording_recovered = asyncio.Condition()
+        self._stream_recording_interrupted = True
+
+    async def on_stream_recording_recovered(self, timestamp: int) -> None:
+        logger.debug(f'Stream recording recovered, {timestamp}')
+        self._timebase = timestamp * 1000
+        self._delta = self._duration * 1000
+        self._stream_recording_interrupted = False
+        async with self._stream_recording_recovered:
+            self._stream_recording_recovered.notify_all()
 
     def _start_dumping(self) -> None:
         self._create_dump_task()
@@ -172,6 +189,7 @@ class DanmakuDumper(
     async def _dumping_loop(self, writer: DanmakuWriter) -> None:
         while True:
             msg = await self._receiver.get_message()
+
             if isinstance(msg, DanmuMsg):
                 await writer.write_danmu(self._make_danmu(msg))
                 self._statistics.submit(1)
@@ -192,6 +210,13 @@ class DanmakuDumper(
                 await writer.write_super_chat_record(self._make_super_chat_record(msg))
             else:
                 logger.warning('Unsupported message type:', repr(msg))
+
+            if self._stream_recording_interrupted:
+                logger.debug(
+                    f'Last message before stream recording interrupted: {repr(msg)}'
+                )
+                async with self._stream_recording_recovered:
+                    await self._stream_recording_recovered.wait()
 
     def _make_metadata(self) -> Metadata:
         return Metadata(
@@ -259,4 +284,4 @@ class DanmakuDumper(
         )
 
     def _calc_stime(self, timestamp: int) -> float:
-        return max((timestamp - self._record_start_time * 1000), 0) / 1000
+        return (max(timestamp - self._timebase, 0) + self._delta) / 1000

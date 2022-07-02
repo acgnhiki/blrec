@@ -57,6 +57,7 @@ class HLSStreamRecorderImpl(StreamRecorderImpl):
                     NewThreadScheduler(self._thread_factory('PlaylistFetcher'))
                 ),
                 self._playlist_fetcher,
+                self._recording_monitor,
                 self._connection_error_handler,
                 self._request_exception_handler,
                 self._playlist_resolver,

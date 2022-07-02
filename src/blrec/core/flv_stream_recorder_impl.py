@@ -47,6 +47,7 @@ class FLVStreamRecorderImpl(StreamRecorderImpl):
             .pipe(
                 self._stream_url_resolver,
                 self._stream_fetcher,
+                self._recording_monitor,
                 self._dl_statistics,
                 self._stream_parser,
                 self._connection_error_handler,

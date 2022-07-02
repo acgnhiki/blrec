@@ -4,6 +4,7 @@ from .hls_prober import HLSProber, StreamProfile
 from .playlist_fetcher import PlaylistFetcher
 from .playlist_resolver import PlaylistResolver
 from .progress_bar import ProgressBar
+from .recording_monitor import RecordingMonitor
 from .request_exception_handler import RequestExceptionHandler
 from .segment_fetcher import InitSectionData, SegmentData, SegmentFetcher
 from .segment_remuxer import SegmentRemuxer
@@ -21,6 +22,7 @@ __all__ = (
     'PlaylistFetcher',
     'PlaylistResolver',
     'ProgressBar',
+    'RecordingMonitor',
     'RequestExceptionHandler',
     'SegmentData',
     'SegmentFetcher',

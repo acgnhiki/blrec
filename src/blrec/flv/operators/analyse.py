@@ -128,7 +128,11 @@ class Analyser:
         self._video_analysed = False
 
     @property
-    def metadatas(self) -> Observable[MetaData]:
+    def duration(self) -> float:
+        return self._last_timestamp / 1000
+
+    @property
+    def metadatas(self) -> Observable[Optional[MetaData]]:
         return self._metadatas
 
     def __call__(self, source: FLVStream) -> FLVStream:

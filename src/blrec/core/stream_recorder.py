@@ -254,6 +254,12 @@ class StreamRecorder(
     async def on_video_file_completed(self, path: str) -> None:
         await self._emit('video_file_completed', path)
 
+    async def on_stream_recording_interrupted(self, timestamp: int) -> None:
+        await self._emit('stream_recording_interrupted', timestamp)
+
+    async def on_stream_recording_recovered(self, timestamp: int) -> None:
+        await self._emit('stream_recording_recovered', timestamp)
+
     async def on_stream_recording_completed(self) -> None:
         await self._emit('stream_recording_completed')
 

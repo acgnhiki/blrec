@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from datetime import datetime
 from threading import Thread
 from typing import Any, Iterator, List, Optional, Tuple, Union
 
@@ -14,6 +15,7 @@ from ..event.event_emitter import EventEmitter, EventListener
 from ..flv import operators as flv_ops
 from ..flv.metadata_dumper import MetadataDumper
 from ..flv.operators import StreamProfile
+from ..flv.utils import format_timestamp
 from ..logging.room_id import aio_task_with_room_id
 from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin
 from . import operators as core_ops
@@ -33,6 +35,12 @@ class StreamRecorderEventListener(EventListener):
         ...
 
     async def on_video_file_completed(self, path: str) -> None:
+        ...
+
+    async def on_stream_recording_interrupted(self, duratin: float) -> None:
+        ...
+
+    async def on_stream_recording_recovered(self, timestamp: int) -> None:
         ...
 
     async def on_stream_recording_completed(self) -> None:
@@ -87,6 +95,7 @@ class StreamRecorderImpl(
         self._path_provider = PathProvider(live, out_dir, path_template)
         self._dumper = flv_ops.Dumper(self._path_provider, buffer_size)
         self._rec_statistics = core_ops.SizedStatistics()
+        self._recording_monitor = core_ops.RecordingMonitor(live, self._analyser)
 
         self._prober: Union[flv_ops.Prober, core_ops.HLSProber]
         self._dl_statistics: Union[core_ops.StreamStatistics, core_ops.SizedStatistics]
@@ -134,6 +143,19 @@ class StreamRecorderImpl(
 
         self._dumper.file_opened.subscribe(on_file_opened)
         self._dumper.file_closed.subscribe(on_file_closed)
+
+        def on_recording_interrupted(duration: float) -> None:
+            duration_string = format_timestamp(int(duration * 1000))
+            logger.info(f'Recording interrupted, current duration: {duration_string}')
+            self._emit_event('stream_recording_interrupted', duration)
+
+        def on_recording_recovered(timestamp: int) -> None:
+            datetime_string = datetime.fromtimestamp(timestamp).isoformat()
+            logger.info(f'Recording recovered, current date time {(datetime_string)}')
+            self._emit_event('stream_recording_recovered', timestamp)
+
+        self._recording_monitor.interrupted.subscribe(on_recording_interrupted)
+        self._recording_monitor.recovered.subscribe(on_recording_recovered)
 
     @property
     def stream_url(self) -> str:
