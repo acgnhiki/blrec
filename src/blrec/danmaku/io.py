@@ -1,20 +1,18 @@
 from __future__ import annotations
-import html
+
 import asyncio
+import html
 import logging
 import unicodedata
-from datetime import datetime, timezone, timedelta
-from typing import AsyncIterator, Final, List, Any
+from datetime import datetime, timedelta, timezone
+from typing import Any, AsyncIterator, Final, List
 
-from lxml import etree
 import aiofiles
 import attr
+from lxml import etree
 
+from .models import Danmu, GiftSendRecord, GuardBuyRecord, Metadata, SuperChatRecord
 from .typing import Element
-from .models import (
-    Metadata, Danmu, GiftSendRecord, GuardBuyRecord, SuperChatRecord
-)
-
 
 __all__ = 'DanmakuReader', 'DanmakuWriter'
 
@@ -52,12 +50,16 @@ class DanmakuReader:  # TODO rewrite
             room_title=self._tree.xpath('/i/metadata/room_title')[0].text,
             area=self._tree.xpath('/i/metadata/area')[0].text,
             parent_area=self._tree.xpath('/i/metadata/parent_area')[0].text,
-            live_start_time=int(datetime.fromisoformat(
-                self._tree.xpath('/i/metadata/live_start_time')[0].text
-            ).timestamp()),
-            record_start_time=int(datetime.fromisoformat(
-                self._tree.xpath('/i/metadata/record_start_time')[0].text
-            ).timestamp()),
+            live_start_time=int(
+                datetime.fromisoformat(
+                    self._tree.xpath('/i/metadata/live_start_time')[0].text
+                ).timestamp()
+            ),
+            record_start_time=int(
+                datetime.fromisoformat(
+                    self._tree.xpath('/i/metadata/record_start_time')[0].text
+                ).timestamp()
+            ),
             recorder=self._tree.xpath('/i/metadata/recorder')[0].text,
         )
 
@@ -83,7 +85,9 @@ class DanmakuReader:  # TODO rewrite
 
 
 class DanmakuWriter:
-    _XML_HEAD: Final[str] = """\
+    _XML_HEAD: Final[
+        str
+    ] = """\
 <?xml version="1.0" encoding="UTF-8"?>
 <i>
     <chatserver>chat.bilibili.com</chatserver>
@@ -191,10 +195,7 @@ class DanmakuWriter:
             value_serializer=record_value_serializer,
         )
         elem = etree.Element('sc', attrib=attrib)
-        try:
-            elem.text = record.message
-        except ValueError:
-            elem.text = remove_control_characters(record.message)
+        elem.text = record.message
         return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
 
 
@@ -206,8 +207,8 @@ def record_value_serializer(
     if attribute.name == 'cointype':
         return '金瓜子' if value == 'gold' else '银瓜子'
     if not isinstance(value, str):
-        return str(value)
-    return value
+        value = str(value)
+    return remove_control_characters(value)
 
 
 def remove_control_characters(s: str) -> str:
