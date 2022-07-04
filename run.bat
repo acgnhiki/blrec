@@ -1,6 +1,6 @@
 @echo off
 chcp 65001
-
+cd %~dp0
 set PATH=.\ffmpeg\bin;.\python;%PATH%
 
 @REM 不使用代理
