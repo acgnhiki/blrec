@@ -1,5 +1,5 @@
 ﻿chcp 65001
-
+Set-Location $PSScriptRoot
 $env:PATH = ".\ffmpeg\bin;.\python;" + $env:PATH
 
 # 不使用代理
