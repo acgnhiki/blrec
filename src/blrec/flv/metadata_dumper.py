@@ -64,13 +64,19 @@ class MetadataDumper(SwitchableMixin):
         path = extra_metadata_path(video_path)
         logger.debug(f"Dumping metadata to file: '{path}'")
 
-        assert self._last_metadata is not None
-        assert self._last_join_points is not None
+        if self._last_metadata is not None:
+            data = attr.asdict(self._last_metadata, filter=lambda a, v: v is not None)
+        else:
+            data = {}
+            logger.warning('The metadata may be lost duo to something went wrong')
 
-        data = attr.asdict(self._last_metadata, filter=lambda a, v: v is not None)
-        data['joinpoints'] = list(
-            map(lambda p: p.to_metadata_value(), self._last_join_points)
-        )
+        if self._last_join_points is not None:
+            data['joinpoints'] = list(
+                map(lambda p: p.to_metadata_value(), self._last_join_points)
+            )
+        else:
+            data['joinpoints'] = []
+            logger.warning('The joinpoints may be lost duo to something went wrong')
 
         try:
             with open(path, 'wt', encoding='utf8') as file:

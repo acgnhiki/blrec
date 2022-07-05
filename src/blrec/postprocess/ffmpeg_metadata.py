@@ -21,7 +21,11 @@ async def make_metadata_file(flv_path: str) -> str:
 
 async def _make_metadata_content(flv_path: str) -> str:
     metadata = await get_metadata(flv_path)
-    extra_metadata = await get_extra_metadata(flv_path)
+    try:
+        extra_metadata = await get_extra_metadata(flv_path)
+    except Exception as e:
+        logger.warning(f'Failed to get extra metadata: {repr(e)}')
+        extra_metadata = {}
 
     comment = cast(str, metadata.get('Comment', ''))
     chapters = ''
@@ -29,8 +33,11 @@ async def _make_metadata_content(flv_path: str) -> str:
     if join_points := extra_metadata.get('joinpoints'):
         join_points = list(map(JoinPoint.from_metadata_value, join_points))
         comment += '\n\n' + make_comment_for_joinpoints(join_points)
-        duration = int(cast(float, metadata['duration']) * 1000)
-        chapters = _make_chapters(join_points, duration)
+        last_timestamp = int(
+            cast(float, extra_metadata.get('duration') or metadata.get('duration'))
+            * 1000
+        )
+        chapters = _make_chapters(join_points, last_timestamp)
 
     comment = '\\\n'.join(comment.splitlines())
 
@@ -48,13 +55,13 @@ Comment={comment}
 """
 
 
-def _make_chapters(join_points: Iterable[JoinPoint], duration: int) -> str:
+def _make_chapters(join_points: Iterable[JoinPoint], last_timestamp: int) -> str:
     join_points = filter(lambda p: not p.seamless, join_points)
     timestamps = list(map(lambda p: p.timestamp, join_points))
     if not timestamps:
         return ''
     timestamps.insert(0, 0)
-    timestamps.append(duration)
+    timestamps.append(last_timestamp)
 
     result = ''
     for i in range(1, len(timestamps)):

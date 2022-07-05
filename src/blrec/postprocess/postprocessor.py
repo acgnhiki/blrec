@@ -13,6 +13,7 @@ from ..core import Recorder, RecorderEventListener
 from ..event.event_emitter import EventEmitter, EventListener
 from ..exception import exception_callback, submit_exception
 from ..flv.helpers import is_valid_flv_file
+from ..flv.metadata_analysis import analyse_metadata
 from ..flv.metadata_injection import InjectingProgress, inject_metadata
 from ..logging.room_id import aio_task_with_room_id
 from ..path import extra_metadata_path
@@ -141,9 +142,7 @@ class Postprocessor(
                 logger.debug(f'Postprocessing... {video_path}')
 
                 if not await self._is_vaild_flv_file(video_path):
-                    logger.warning(f'Invalid flv file: {video_path}')
-                    self._queue.task_done()
-                    continue
+                    logger.warning(f'The flv file may be invalid: {video_path}')
 
                 try:
                     if self.remux_to_mp4:
@@ -168,9 +167,22 @@ class Postprocessor(
                     self._queue.task_done()
 
     async def _inject_extra_metadata(self, path: str) -> str:
+        logger.info(f"Injecting metadata for '{path}' ...")
         try:
-            metadata = await get_extra_metadata(path)
-            logger.info(f"Injecting metadata for '{path}' ...")
+            try:
+                metadata = await get_extra_metadata(path)
+            except Exception as e:
+                logger.warning(f'Failed to get extra metadata: {repr(e)}')
+                logger.info(f"Analysing metadata for '{path}' ...")
+                await self._analyse_metadata(path)
+                metadata = await get_extra_metadata(path)
+            else:
+                if 'keyframes' not in metadata:
+                    logger.warning('The keyframes metadata lost')
+                    logger.info(f"Analysing metadata for '{path}' ...")
+                    await self._analyse_metadata(path)
+                    new_metadata = await get_extra_metadata(path)
+                    metadata.update(new_metadata)
             await self._inject_metadata(path, metadata)
         except Exception as e:
             logger.error(f"Failed to inject metadata for '{path}': {repr(e)}")
@@ -206,6 +218,19 @@ class Postprocessor(
             await discard_file(in_path)
 
         return result_path
+
+    def _analyse_metadata(self, path: str) -> Awaitable[None]:
+        future: asyncio.Future[None] = asyncio.Future()
+        self._postprocessing_path = path
+
+        subscription = analyse_metadata(path, show_progress=True).subscribe(
+            on_error=lambda e: future.set_exception(e),
+            on_completed=lambda: future.set_result(None),
+            scheduler=self._scheduler,
+        )
+        future.add_done_callback(lambda f: subscription.dispose())
+
+        return future
 
     def _inject_metadata(self, path: str, metadata: Dict[str, Any]) -> Awaitable[None]:
         future: asyncio.Future[None] = asyncio.Future()
