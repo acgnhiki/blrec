@@ -26,7 +26,7 @@
 - 事件通知（支持邮箱、`ServerChan`、`pushplus`）
 - `Webhook`（可配合 `REST API` 实现录制控制，录制完成后压制、上传等自定义需求）
 
-## 先决条件
+## 前提条件
 
     Python 3.8+
     ffmpeg、 ffprobe
@@ -42,7 +42,9 @@
 
 - 免安装绿色版
 
-    Windows 64 位系统用户也可以用打包好的免安装绿色版，下载后解压运行 `run.bat` 即可。
+    支持 Windows 10+ 或 Windows Server 2016+，下载后解压运行 `run.bat` 或 `run.ps1` 。
+
+    不是官方或最新系统可能需要安装系统更新或缺少的 `C` 或 `C++` 运行时库
 
     下载
 
@@ -192,6 +194,42 @@ api key 可以使用数字和字母，长度限制为最短 8 最长 80。
 
 ---
 
+## 开发
+
+1. 克隆代码
+
+    `git clone https://github.com/acgnhiki/blrec.git`
+
+2. 进入项目目录
+
+    `cd blrec`
+
+3. 创建虚拟环境
+
+    `python3 -m venv .venv`
+
+4. 激活虚拟环境
+
+    `source .venv/bin/activate`
+
+5. 以可编辑方式安装
+
+    `pip install -e .[dev]`
+
+6. 修改代码
+
+    ……
+
+7. 运行 blrec
+
+    `blrec`
+
+8. 退出虚拟环境
+
+    `deactivate`
+
+---
+
 ## 常见问题
 
 [FAQ](FAQ.md)
@@ -205,3 +243,13 @@ api key 可以使用数字和字母，长度限制为最短 8 最长 80。
 ## Thanks
 
 [![JetBrains Logo (Main) logo](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://jb.gg/OpenSource)
+
+
+## 其它相关工具或项目
+
+| 名称 | 链接 | 简介 |
+| --- | --- | --- |
+| 录播姬 | [官网](https://rec.danmuji.org/) | 简单易用成熟稳定的 B 站直播录制工具 |
+| rclone | [官网](https://rclone.org/) | 可以挂载网盘用于存放录播文件 |
+| alist | [官网](https://alist-doc.nn.ci/) | 网盘文件浏览、播放 |
+| filebrowser | [官网](https://filebrowser.org/) | 服务器文件管理 |
