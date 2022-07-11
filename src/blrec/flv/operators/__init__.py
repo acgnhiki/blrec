@@ -11,6 +11,7 @@ from .parse import parse
 from .probe import Prober, StreamProfile
 from .process import process
 from .progress import ProgressBar
+from .sort import sort
 from .split import split
 
 __all__ = (
@@ -33,6 +34,7 @@ __all__ = (
     'Prober',
     'process',
     'ProgressBar',
+    'sort',
     'split',
     'StreamProfile',
 )

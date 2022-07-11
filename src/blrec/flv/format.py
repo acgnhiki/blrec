@@ -213,10 +213,10 @@ class FlvDumper:
         else:
             raise FlvDataError(f'Unsupported tag type: {tag.tag_type}')
 
-        if tag.body is None:
-            self._stream.seek(tag.tag_end_offset)
-        else:
+        if tag.body:
             self._writer.write(tag.body)
+        else:
+            self._stream.seek(tag.tag_end_offset)
 
     def dump_flv_tag_header(self, tag: FlvTag) -> None:
         self._writer.write_ui8((int(tag.filtered) << 5) | tag.tag_type.value)

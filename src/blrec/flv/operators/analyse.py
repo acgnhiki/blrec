@@ -328,7 +328,7 @@ class Analyser:
             self._keyframe_timestamps.append(tag.timestamp)
             self._keyframe_filepositions.append(self.calc_file_size())
             if tag.is_avc_header():
-                self._resolution = Resolution.from_aac_sequence_header(tag)
+                self._resolution = Resolution.from_avc_sequence_header(tag)
                 logger.debug(f'Resolution: {self._resolution}')
         else:
             pass

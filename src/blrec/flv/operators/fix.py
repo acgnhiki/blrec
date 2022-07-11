@@ -107,10 +107,12 @@ def fix() -> Callable[[FLVStream], FLVStream]:
                     return False
 
             def is_ts_incontinuous(tag: FlvTag) -> bool:
+                tolerance = 1
                 if last_tag is None:
                     return False
-                return tag.timestamp - last_tag.timestamp > max(
-                    sound_sample_interval, video_frame_interval
+                return (
+                    tag.timestamp - last_tag.timestamp
+                    > max(sound_sample_interval, video_frame_interval) + tolerance
                 )
 
             def on_next(item: FLVStreamItem) -> None:

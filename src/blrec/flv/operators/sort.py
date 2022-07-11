@@ -1,0 +1,93 @@
+import logging
+from typing import Callable, List, Optional
+
+from reactivex import Observable, abc
+from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
+
+from ..common import is_avc_end_sequence, is_video_nalu_keyframe
+from ..models import FlvHeader, FlvTag
+from .typing import FLVStream, FLVStreamItem
+
+__all__ = ('sort',)
+
+logger = logging.getLogger(__name__)
+
+
+def sort(trace: bool = False) -> Callable[[FLVStream], FLVStream]:
+    "Sort tags in GOP by timestamp to ensure subsequent operators work as expected."
+
+    def _sort(source: FLVStream) -> FLVStream:
+        def subscribe(
+            observer: abc.ObserverBase[FLVStreamItem],
+            scheduler: Optional[abc.SchedulerBase] = None,
+        ) -> abc.DisposableBase:
+            disposed = False
+            subscription = SerialDisposable()
+
+            gop_tags: List[FlvTag] = []
+
+            def reset() -> None:
+                nonlocal gop_tags
+                gop_tags = []
+
+            def push_gop_tags() -> None:
+                if not gop_tags:
+                    return
+
+                gop_tags.sort(key=lambda tag: tag.timestamp)
+                if trace:
+                    logger.debug(
+                        'Tags in GOP:\n'
+                        f'Number of tags: {len(gop_tags)}\n'
+                        f'Total size of tags: {sum(map(len, gop_tags))}\n'
+                        f'The first tag is {gop_tags[0]}\n'
+                        f'The last tag is {gop_tags[-1]}'
+                    )
+
+                for tag in gop_tags:
+                    observer.on_next(tag)
+
+                gop_tags.clear()
+
+            def on_next(item: FLVStreamItem) -> None:
+                if isinstance(item, FlvHeader) or is_avc_end_sequence(item):
+                    push_gop_tags()
+                    observer.on_next(item)
+                    return
+
+                if is_video_nalu_keyframe(item):
+                    push_gop_tags()
+                    gop_tags.append(item)
+                else:
+                    gop_tags.append(item)
+
+            def on_completed() -> None:
+                push_gop_tags()
+                observer.on_completed()
+
+            def on_error(exc: Exception) -> None:
+                push_gop_tags()
+                observer.on_error(exc)
+
+            def dispose() -> None:
+                nonlocal disposed
+                disposed = True
+                if gop_tags:
+                    logger.debug(
+                        'Remaining tags:\n'
+                        f'Number of tags: {len(gop_tags)}\n'
+                        f'Total size of tags: {sum(map(len, gop_tags))}\n'
+                        f'The first tag is {gop_tags[0]}\n'
+                        f'The last tag is {gop_tags[-1]}'
+                    )
+                reset()
+
+            subscription.disposable = source.subscribe(
+                on_next, on_error, on_completed, scheduler=scheduler
+            )
+
+            return CompositeDisposable(subscription, Disposable(dispose))
+
+        return Observable(subscribe)
+
+    return _sort

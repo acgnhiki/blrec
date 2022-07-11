@@ -6,6 +6,7 @@ from reactivex.scheduler import NewThreadScheduler
 from ..bili.live import Live
 from ..bili.typing import QualityNumber
 from ..flv import operators as flv_ops
+from ..utils.mixins import SupportDebugMixin
 from .stream_recorder_impl import StreamRecorderImpl
 
 __all__ = ('FLVStreamRecorderImpl',)
@@ -14,7 +15,7 @@ __all__ = ('FLVStreamRecorderImpl',)
 logger = logging.getLogger(__name__)
 
 
-class FLVStreamRecorderImpl(StreamRecorderImpl):
+class FLVStreamRecorderImpl(StreamRecorderImpl, SupportDebugMixin):
     def __init__(
         self,
         live: Live,
@@ -40,6 +41,7 @@ class FLVStreamRecorderImpl(StreamRecorderImpl):
             filesize_limit=filesize_limit,
             duration_limit=duration_limit,
         )
+        self._init_for_debug(live.room_id)
 
     def _run(self) -> None:
         self._subscription = (
@@ -52,7 +54,7 @@ class FLVStreamRecorderImpl(StreamRecorderImpl):
                 self._stream_parser,
                 self._connection_error_handler,
                 self._request_exception_handler,
-                flv_ops.process(),
+                flv_ops.process(sort_tags=True, trace=self._debug),
                 self._cutter,
                 self._limiter,
                 self._join_point_extractor,

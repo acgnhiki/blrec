@@ -9,7 +9,16 @@ from . import scriptdata
 from .avc import extract_resolution
 from .io import FlvReader
 from .io_protocols import RandomIO
-from .models import AudioTag, AVCPacketType, FlvTag, ScriptTag, TagType, VideoTag
+from .models import (
+    AudioTag,
+    AVCPacketType,
+    CodecID,
+    FlvTag,
+    FrameType,
+    ScriptTag,
+    TagType,
+    VideoTag,
+)
 from .utils import OffsetRepositor
 
 
@@ -155,8 +164,31 @@ def is_video_nalu_keyframe(tag: FlvTag) -> TypeGuard[VideoTag]:
     return is_video_tag(tag) and tag.is_keyframe() and tag.is_avc_nalu()
 
 
+def is_avc_end_sequence(tag: FlvTag) -> TypeGuard[VideoTag]:
+    return is_video_tag(tag) and tag.is_avc_end()
+
+
+def is_avc_end_sequence_tag(value: Any) -> TypeGuard[VideoTag]:
+    return isinstance(value, FlvTag) and is_avc_end_sequence(value)
+
+
+def create_avc_end_sequence_tag(offset: int = 0, timestamp: int = 0) -> VideoTag:
+    return VideoTag(
+        offset=offset,
+        filtered=False,
+        tag_type=TagType.VIDEO,
+        data_size=5,
+        timestamp=timestamp,
+        stream_id=timestamp,
+        frame_type=FrameType.KEY_FRAME,
+        codec_id=CodecID.AVC,
+        avc_packet_type=AVCPacketType.AVC_END_OF_SEQENCE,
+        composition_time=0,
+    )
+
+
 def parse_scriptdata(script_tag: ScriptTag) -> scriptdata.ScriptData:
-    assert script_tag.body is not None
+    assert script_tag.body
     return scriptdata.load(script_tag.body)
 
 
@@ -253,8 +285,8 @@ class Resolution:
         )
 
     @classmethod
-    def from_aac_sequence_header(cls, tag: VideoTag) -> Resolution:
+    def from_avc_sequence_header(cls, tag: VideoTag) -> Resolution:
         assert tag.avc_packet_type == AVCPacketType.AVC_SEQUENCE_HEADER
-        assert tag.body is not None
+        assert tag.body
         width, height = extract_resolution(tag.body)
         return cls(width, height)

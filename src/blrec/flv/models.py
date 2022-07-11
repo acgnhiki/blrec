@@ -152,7 +152,7 @@ _T = TypeVar('_T', bound='FlvTag')
 @attr.s(auto_attribs=True, slots=True, frozen=True, kw_only=True)
 class FlvTag(ABC, FlvTagHeader):
     offset: int = attr.ib(validator=[non_negative_integer_validator])
-    body: Optional[bytes] = attr.ib(default=None, repr=cksum)
+    body: bytes = attr.ib(default=b'', repr=cksum)
 
     def __len__(self) -> int:
         return self.tag_size
