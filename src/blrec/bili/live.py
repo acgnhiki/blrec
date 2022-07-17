@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import time
-from typing import Dict, List, cast
+from typing import Any, Dict, List, cast
 
 import aiohttp
 from jsonpath import jsonpath
@@ -234,7 +234,26 @@ class Live:
         if qn not in accept_qn or codec['current_qn'] != qn:
             raise NoStreamQualityAvailable(stream_format, stream_codec, qn)
 
-        urls = [i['host'] + codec['base_url'] + i['extra'] for i in codec['url_info']]
+        def sort_by_host(info: Any) -> int:
+            host = info['host']
+            if match := re.search(r'gotcha(\d+)', host):
+                num = match.group(1)
+                if num == '04':
+                    return 0
+                if num == '09':
+                    return 1
+                if num == '08':
+                    return 2
+                return int(num)
+            elif re.search(r'cn-[a-z]+-[a-z]+', host):
+                return 1000
+            elif 'mcdn' in host:
+                return 2000
+            else:
+                return 10000
+
+        url_info = sorted(codec['url_info'], key=sort_by_host)
+        urls = [i['host'] + codec['base_url'] + i['extra'] for i in url_info]
 
         if not select_alternative:
             return urls[0]
