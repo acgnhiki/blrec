@@ -78,31 +78,48 @@ def fix() -> Callable[[FLVStream], FLVStream]:
             def update_delta(tag: FlvTag) -> None:
                 nonlocal delta
                 assert last_tag is not None
-                delta = last_tag.timestamp + delta - tag.timestamp + calc_interval(tag)
+                assert last_video_tag is not None
+                assert last_audio_tag is not None
+
+                if is_video_tag(tag):
+                    delta = (
+                        last_video_tag.timestamp - tag.timestamp + video_frame_interval
+                    )
+                elif is_audio_tag(tag):
+                    delta = (
+                        last_audio_tag.timestamp - tag.timestamp + sound_sample_interval
+                    )
+
+                if tag.timestamp + delta <= last_tag.timestamp:
+                    if is_video_tag(tag):
+                        delta = (
+                            last_tag.timestamp - tag.timestamp + video_frame_interval
+                        )
+                    elif is_audio_tag(tag):
+                        delta = (
+                            last_tag.timestamp - tag.timestamp + sound_sample_interval
+                        )
 
             def correct_ts(tag: FlvTag) -> FlvTag:
                 if delta == 0:
                     return tag
                 return tag.evolve(timestamp=tag.timestamp + delta)
 
-            def calc_interval(tag: FlvTag) -> int:
-                if is_audio_tag(tag):
-                    return sound_sample_interval
-                elif is_video_tag(tag):
-                    return video_frame_interval
-                else:
-                    logger.warning(f'Unexpected tag type: {tag}')
-                    return min(sound_sample_interval, video_frame_interval)
-
             def is_ts_rebounded(tag: FlvTag) -> bool:
                 if is_audio_tag(tag):
                     if last_audio_tag is None:
                         return False
-                    return tag.timestamp < last_audio_tag.timestamp
+                    if last_audio_tag.is_aac_header():
+                        return tag.timestamp + delta < last_audio_tag.timestamp
+                    else:
+                        return tag.timestamp + delta <= last_audio_tag.timestamp
                 elif is_video_tag(tag):
                     if last_video_tag is None:
                         return False
-                    return tag.timestamp < last_video_tag.timestamp
+                    if last_video_tag.is_avc_header():
+                        return tag.timestamp + delta < last_video_tag.timestamp
+                    else:
+                        return tag.timestamp + delta <= last_video_tag.timestamp
                 else:
                     return False
 
@@ -111,7 +128,7 @@ def fix() -> Callable[[FLVStream], FLVStream]:
                 if last_tag is None:
                     return False
                 return (
-                    tag.timestamp - last_tag.timestamp
+                    tag.timestamp + delta - last_tag.timestamp
                     > max(sound_sample_interval, video_frame_interval) + tolerance
                 )
 
@@ -133,8 +150,9 @@ def fix() -> Callable[[FLVStream], FLVStream]:
                     update_delta(tag)
                     logger.warning(
                         f'Timestamp rebounded, updated delta: {delta}\n'
-                        f'last audio tag: {last_audio_tag}\n'
+                        f'last tag: {last_tag}\n'
                         f'last video tag: {last_video_tag}\n'
+                        f'last audio tag: {last_audio_tag}\n'
                         f'current tag: {tag}'
                     )
                 elif is_ts_incontinuous(tag):
@@ -142,11 +160,13 @@ def fix() -> Callable[[FLVStream], FLVStream]:
                     logger.warning(
                         f'Timestamp incontinuous, updated delta: {delta}\n'
                         f'last tag: {last_tag}\n'
+                        f'last video tag: {last_video_tag}\n'
+                        f'last audio tag: {last_audio_tag}\n'
                         f'current tag: {tag}'
                     )
 
-                update_last_tags(tag)
                 tag = correct_ts(tag)
+                update_last_tags(tag)
                 observer.on_next(tag)
 
             def dispose() -> None:

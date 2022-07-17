@@ -4,8 +4,17 @@ from typing import Callable, List, Optional
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
-from ..common import is_avc_end_sequence, is_video_nalu_keyframe
-from ..models import FlvHeader, FlvTag
+from ..common import (
+    find_aac_header_tag,
+    find_avc_header_tag,
+    find_metadata_tag,
+    is_audio_tag,
+    is_avc_end_sequence,
+    is_script_tag,
+    is_video_nalu_keyframe,
+    is_video_tag,
+)
+from ..models import AudioTag, FlvHeader, FlvTag, ScriptTag, VideoTag
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('sort',)
@@ -34,7 +43,6 @@ def sort(trace: bool = False) -> Callable[[FLVStream], FLVStream]:
                 if not gop_tags:
                     return
 
-                gop_tags.sort(key=lambda tag: tag.timestamp)
                 if trace:
                     logger.debug(
                         'Tags in GOP:\n'
@@ -44,7 +52,40 @@ def sort(trace: bool = False) -> Callable[[FLVStream], FLVStream]:
                         f'The last tag is {gop_tags[-1]}'
                     )
 
+                if len(gop_tags) < 10:
+                    avc_header_tag = find_avc_header_tag(gop_tags)
+                    aac_header_tag = find_aac_header_tag(gop_tags)
+                    if avc_header_tag is not None and aac_header_tag is not None:
+                        if (metadata_tag := find_metadata_tag(gop_tags)) is not None:
+                            observer.on_next(metadata_tag)
+                        observer.on_next(avc_header_tag)
+                        observer.on_next(aac_header_tag)
+                        gop_tags.clear()
+                        return
+
+                script_tags: List[ScriptTag] = []
+                video_tags: List[VideoTag] = []
+                audio_tags: List[AudioTag] = []
                 for tag in gop_tags:
+                    if is_video_tag(tag):
+                        video_tags.append(tag)
+                    elif is_audio_tag(tag):
+                        audio_tags.append(tag)
+                    elif is_script_tag(tag):
+                        script_tags.append(tag)
+
+                sorted_tags: List[FlvTag] = []
+                i = len(audio_tags) - 1
+                for video_tag in reversed(video_tags):
+                    sorted_tags.insert(0, video_tag)
+                    while i >= 0 and audio_tags[i].timestamp >= video_tag.timestamp:
+                        sorted_tags.insert(1, audio_tags[i])
+                        i -= 1
+
+                for tag in script_tags:
+                    observer.on_next(tag)
+
+                for tag in sorted_tags:
                     observer.on_next(tag)
 
                 gop_tags.clear()

@@ -5,6 +5,7 @@ from reactivex import operators as ops
 
 from ..common import is_avc_end_sequence_tag
 from .concat import concat
+from .correct import correct
 from .defragment import defragment
 from .fix import fix
 from .sort import sort
@@ -23,17 +24,19 @@ def process(
         if sort_tags:
             return source.pipe(
                 defragment(),
+                split(),
                 sort(trace=trace),
                 ops.filter(lambda v: not is_avc_end_sequence_tag(v)),  # type: ignore
-                split(),
+                correct(),
                 fix(),
                 concat(),
             )
         else:
             return source.pipe(
                 defragment(),
-                ops.filter(lambda v: not is_avc_end_sequence_tag(v)),  # type: ignore
                 split(),
+                ops.filter(lambda v: not is_avc_end_sequence_tag(v)),  # type: ignore
+                correct(),
                 fix(),
                 concat(),
             )

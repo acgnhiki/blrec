@@ -4,9 +4,13 @@ from typing import Callable, Optional
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
-from ..common import is_audio_sequence_header, is_metadata_tag, is_video_sequence_header
+from ..common import (
+    is_audio_sequence_header,
+    is_metadata_tag,
+    is_video_sequence_header,
+    parse_metadata,
+)
 from ..models import AudioTag, FlvHeader, ScriptTag, VideoTag
-from .correct import correct
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('split',)
@@ -66,7 +70,11 @@ def split() -> Callable[[FLVStream], FLVStream]:
                 tag = item
 
                 if is_metadata_tag(tag):
-                    logger.debug(f'Metadata tag: {tag}')
+                    metadata = parse_metadata(tag)
+                    logger.debug(f'Metadata tag: {tag}, metadata: {metadata}')
+                    if last_metadata_tag is not None:
+                        last_metadata_tag = tag
+                        return
                     last_metadata_tag = tag
                 elif is_audio_sequence_header(tag):
                     logger.debug(f'Audio sequence header: {tag}')
@@ -106,6 +114,6 @@ def split() -> Callable[[FLVStream], FLVStream]:
 
             return CompositeDisposable(subscription, Disposable(dispose))
 
-        return Observable(subscribe).pipe(correct())
+        return Observable(subscribe)
 
     return _split
