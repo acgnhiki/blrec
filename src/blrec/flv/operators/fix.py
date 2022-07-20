@@ -77,19 +77,19 @@ def fix() -> Callable[[FLVStream], FLVStream]:
 
             def update_delta(tag: FlvTag) -> None:
                 nonlocal delta
-                assert last_tag is not None
-                assert last_video_tag is not None
-                assert last_audio_tag is not None
 
                 if is_video_tag(tag):
+                    assert last_video_tag is not None
                     delta = (
                         last_video_tag.timestamp - tag.timestamp + video_frame_interval
                     )
                 elif is_audio_tag(tag):
+                    assert last_audio_tag is not None
                     delta = (
                         last_audio_tag.timestamp - tag.timestamp + sound_sample_interval
                     )
 
+                assert last_tag is not None
                 if tag.timestamp + delta <= last_tag.timestamp:
                     if is_video_tag(tag):
                         delta = (
