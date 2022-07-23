@@ -244,11 +244,11 @@ class Live:
                     return 1
                 if num == '08':
                     return 2
-                return int(num)
+                return 1000 + int(num)
             elif re.search(r'cn-[a-z]+-[a-z]+', host):
-                return 1000
-            elif 'mcdn' in host:
                 return 2000
+            elif 'mcdn' in host:
+                return 5000
             else:
                 return 10000
 
