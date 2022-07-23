@@ -93,10 +93,13 @@ class DanmakuDumper(
 
     def _do_enable(self) -> None:
         self._stream_recorder.add_listener(self)
+        self._statistics.reset()
         logger.debug('Enabled danmaku dumper')
 
     def _do_disable(self) -> None:
         self._stream_recorder.remove_listener(self)
+        asyncio.create_task(self._stop_dumping())
+        self._statistics.freeze()
         logger.debug('Disabled danmaku dumper')
 
     def set_live_start_time(self, time: int) -> None:
@@ -122,6 +125,7 @@ class DanmakuDumper(
             self._stream_recording_interrupted: bool = False
             self._path = danmaku_path(video_path)
             self._files.append(self._path)
+            await self._stop_dumping()
             self._start_dumping()
 
     async def on_video_file_completed(self, video_path: str) -> None:
@@ -147,7 +151,9 @@ class DanmakuDumper(
         self._create_dump_task()
 
     async def _stop_dumping(self) -> None:
-        await self._cancel_dump_task()
+        if hasattr(self, '_dump_task'):
+            await self._cancel_dump_task()
+            del self._dump_task  # type: ignore
 
     def _create_dump_task(self) -> None:
         self._dump_task = asyncio.create_task(self._do_dump())
@@ -162,7 +168,6 @@ class DanmakuDumper(
     async def _do_dump(self) -> None:
         assert self._path is not None
         logger.debug('Started dumping danmaku')
-        self._statistics.reset()
 
         try:
             async with DanmakuWriter(self._path) as writer:
@@ -184,7 +189,6 @@ class DanmakuDumper(
             logger.info(f"Danmaku file completed: '{self._path}'")
             await self._emit('danmaku_file_completed', self._path)
             logger.debug('Stopped dumping danmaku')
-            self._statistics.freeze()
 
     async def _dumping_loop(self, writer: DanmakuWriter) -> None:
         while True:

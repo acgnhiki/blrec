@@ -54,6 +54,7 @@ class RawDanmakuDumper(
 
     def _do_disable(self) -> None:
         self._stream_recorder.remove_listener(self)
+        asyncio.create_task(self._stop_dumping())
         logger.debug('Disabled raw danmaku dumper')
 
     async def on_video_file_created(
@@ -61,6 +62,7 @@ class RawDanmakuDumper(
     ) -> None:
         with self._lock:
             self._path = raw_danmaku_path(video_path)
+            await self._stop_dumping()
             self._start_dumping()
 
     async def on_video_file_completed(self, video_path: str) -> None:
@@ -71,7 +73,9 @@ class RawDanmakuDumper(
         self._create_dump_task()
 
     async def _stop_dumping(self) -> None:
-        await self._cancel_dump_task()
+        if hasattr(self, '_dump_task'):
+            await self._cancel_dump_task()
+            del self._dump_task  # type: ignore
 
     def _create_dump_task(self) -> None:
         self._dump_task = asyncio.create_task(self._do_dump())
