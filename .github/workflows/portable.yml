@@ -6,8 +6,8 @@ on:
       - v*.*.*
 
 env:
-  FFMPEG_ARCHIVE_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n5.0-latest-win64-lgpl-shared-5.0.zip
-  FFMPEG_ARCHIVE_NAME: ffmpeg-n5.0-latest-win64-lgpl-shared-5.0.zip
+  FFMPEG_ARCHIVE_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl-shared.zip
+  FFMPEG_ARCHIVE_NAME: ffmpeg-master-latest-win64-lgpl-shared.zip
   PYTHON_ARCHIVE_URL: https://www.python.org/ftp/python/3.10.4/python-3.10.4-embed-amd64.zip
 
 jobs:
