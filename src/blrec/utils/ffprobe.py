@@ -5,7 +5,7 @@ from subprocess import PIPE, Popen
 from typing import Any, Dict, Optional
 
 from reactivex import Observable, abc
-from reactivex.scheduler import NewThreadScheduler
+from reactivex.scheduler import CurrentThreadScheduler
 
 __all__ = ('ffprobe', 'StreamProfile')
 
@@ -17,7 +17,7 @@ def ffprobe(data: bytes) -> Observable[StreamProfile]:
         observer: abc.ObserverBase[StreamProfile],
         scheduler: Optional[abc.SchedulerBase] = None,
     ) -> abc.DisposableBase:
-        _scheduler = scheduler or NewThreadScheduler()
+        _scheduler = scheduler or CurrentThreadScheduler()
 
         def action(scheduler: abc.SchedulerBase, state: Optional[Any] = None) -> None:
             args = [

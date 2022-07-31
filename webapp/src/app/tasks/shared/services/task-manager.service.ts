@@ -285,6 +285,16 @@ export class TaskManagerService {
     );
   }
 
+  canCutStream(roomId: number) {
+    return this.taskService.canCutStream(roomId).pipe(
+      tap((ableToCutStream) => {
+        if (!ableToCutStream) {
+          this.message.warning(`[${roomId}] 不支持文件切割~`);
+        }
+      })
+    );
+  }
+
   cutStream(roomId: number) {
     return this.taskService.cutStream(roomId).pipe(
       tap(

@@ -12,8 +12,8 @@ from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
-from ...bili.live import Live
-from ...utils.mixins import SupportDebugMixin
+from blrec.bili.live import Live
+from blrec.utils.mixins import SupportDebugMixin
 
 __all__ = ('PlaylistFetcher',)
 

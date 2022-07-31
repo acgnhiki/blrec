@@ -1,5 +1,7 @@
 from typing import AbstractSet, Literal, Union
 
+RecordingMode = Literal['standard', 'raw']
+
 TextMessageType = Literal['text']
 HtmlMessageType = Literal['html']
 MarkdownMessageType = Literal['markdown']

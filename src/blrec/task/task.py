@@ -3,23 +3,25 @@ import os
 from pathlib import Path
 from typing import Iterator, Optional
 
-from ..bili.danmaku_client import DanmakuClient
-from ..bili.live import Live
-from ..bili.live_monitor import LiveMonitor
-from ..bili.models import RoomInfo, UserInfo
-from ..bili.typing import QualityNumber, StreamFormat
-from ..core import Recorder
-from ..core.cover_downloader import CoverSaveStrategy
-from ..event.event_submitters import (
+from blrec.bili.danmaku_client import DanmakuClient
+from blrec.bili.live import Live
+from blrec.bili.live_monitor import LiveMonitor
+from blrec.bili.models import RoomInfo, UserInfo
+from blrec.bili.typing import QualityNumber, StreamFormat
+from blrec.core import Recorder
+from blrec.core.cover_downloader import CoverSaveStrategy
+from blrec.event.event_submitters import (
     LiveEventSubmitter,
     PostprocessorEventSubmitter,
     RecorderEventSubmitter,
 )
-from ..flv.metadata_injection import InjectingProgress
-from ..flv.operators import MetaData, StreamProfile
-from ..logging.room_id import aio_task_with_room_id
-from ..postprocess import DeleteStrategy, Postprocessor, PostprocessorStatus
-from ..postprocess.remux import RemuxingProgress
+from blrec.flv.metadata_injection import InjectingProgress
+from blrec.flv.operators import MetaData, StreamProfile
+from blrec.logging.room_id import aio_task_with_room_id
+from blrec.postprocess import DeleteStrategy, Postprocessor, PostprocessorStatus
+from blrec.postprocess.remux import RemuxingProgress
+from blrec.setting.typing import RecordingMode
+
 from .models import (
     DanmakuFileDetail,
     DanmukuFileStatus,
@@ -275,6 +277,14 @@ class RecordTask:
     @stream_format.setter
     def stream_format(self, value: StreamFormat) -> None:
         self._recorder.stream_format = value
+
+    @property
+    def recording_mode(self) -> RecordingMode:
+        return self._recorder.recording_mode
+
+    @recording_mode.setter
+    def recording_mode(self, value: RecordingMode) -> None:
+        self._recorder.recording_mode = value
 
     @property
     def quality_number(self) -> QualityNumber:

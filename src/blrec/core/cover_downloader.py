@@ -8,12 +8,13 @@ import aiofiles
 import aiohttp
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from ..bili.live import Live
-from ..exception import exception_callback
-from ..logging.room_id import aio_task_with_room_id
-from ..path import cover_path
-from ..utils.hash import sha1sum
-from ..utils.mixins import SwitchableMixin
+from blrec.bili.live import Live
+from blrec.exception import exception_callback
+from blrec.logging.room_id import aio_task_with_room_id
+from blrec.path import cover_path
+from blrec.utils.hash import sha1sum
+from blrec.utils.mixins import SwitchableMixin
+
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 
 __all__ = ('CoverDownloader',)

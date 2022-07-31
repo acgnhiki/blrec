@@ -8,7 +8,7 @@ from reactivex import Observable, abc, create
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 from reactivex.scheduler.currentthreadscheduler import CurrentThreadScheduler
 
-from ..bili.typing import ApiPlatform, QualityNumber, StreamFormat
+from blrec.bili.typing import ApiPlatform, QualityNumber, StreamFormat
 
 __all__ = ('StreamParamHolder',)
 

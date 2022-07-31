@@ -8,8 +8,9 @@ import urllib3
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
-from ...bili.live import Live
-from ...utils.io import wait_for
+from blrec.bili.live import Live
+from blrec.utils.io import wait_for
+
 from ..stream_remuxer import StreamRemuxer
 from .segment_fetcher import InitSectionData, SegmentData
 

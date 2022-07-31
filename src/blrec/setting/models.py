@@ -11,15 +11,17 @@ from pydantic import BaseSettings, Field, PrivateAttr, validator
 from pydantic.networks import EmailStr, HttpUrl
 from typing_extensions import Annotated
 
-from ..bili.typing import QualityNumber, StreamFormat
-from ..core.cover_downloader import CoverSaveStrategy
-from ..logging.typing import LOG_LEVEL
-from ..postprocess import DeleteStrategy
-from ..utils.string import camel_case
+from blrec.bili.typing import QualityNumber, StreamFormat
+from blrec.core.cover_downloader import CoverSaveStrategy
+from blrec.logging.typing import LOG_LEVEL
+from blrec.postprocess import DeleteStrategy
+from blrec.utils.string import camel_case
+
 from .typing import (
     EmailMessageType,
     PushdeerMessageType,
     PushplusMessageType,
+    RecordingMode,
     ServerchanMessageType,
     TelegramMessageType,
 )
@@ -142,6 +144,7 @@ class DanmakuSettings(DanmakuOptions):
 
 class RecorderOptions(BaseModel):
     stream_format: Optional[StreamFormat]
+    recording_mode: Optional[RecordingMode]
     quality_number: Optional[QualityNumber]
     fmp4_stream_timeout: Optional[int]
     read_timeout: Optional[int]  # seconds
@@ -176,6 +179,7 @@ class RecorderOptions(BaseModel):
 
 class RecorderSettings(RecorderOptions):
     stream_format: StreamFormat = 'flv'
+    recording_mode: RecordingMode = 'standard'
     quality_number: QualityNumber = 20000  # 4K, the highest quality.
     fmp4_stream_timeout: int = 10
     read_timeout: int = 3

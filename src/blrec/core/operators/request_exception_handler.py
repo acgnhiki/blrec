@@ -9,7 +9,7 @@ import requests
 import urllib3
 from reactivex import Observable, abc
 
-from ...utils import operators as utils_ops
+from blrec.utils import operators as utils_ops
 
 __all__ = ('RequestExceptionHandler',)
 

@@ -4,9 +4,9 @@ import re
 from datetime import datetime
 from typing import Tuple
 
-from ..bili.live import Live
-from ..path import escape_path
-from ..utils.mixins import AsyncCooperationMixin
+from blrec.bili.live import Live
+from blrec.path import escape_path
+from blrec.utils.mixins import AsyncCooperationMixin
 
 __all__ = ('PathProvider',)
 

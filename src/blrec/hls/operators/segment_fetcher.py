@@ -12,7 +12,10 @@ from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
-from ...bili.live import Live
+from blrec.bili.live import Live
+from blrec.utils.hash import cksum
+
+from ..exceptions import SegmentDataCorrupted
 
 __all__ = ('SegmentFetcher', 'InitSectionData', 'SegmentData')
 
@@ -22,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
 class InitSectionData:
+    init_section: InitializationSection
     payload: bytes
 
     def __len__(self) -> int:
@@ -30,6 +34,7 @@ class InitSectionData:
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
 class SegmentData:
+    segment: m3u8.Segment
     payload: bytes
 
     def __len__(self) -> int:
@@ -56,30 +61,52 @@ class SegmentFetcher:
             disposed = False
             subscription = SerialDisposable()
 
-            init_section: Optional[InitializationSection] = None
+            last_segment: Optional[m3u8.Segment] = None
 
             def on_next(seg: m3u8.Segment) -> None:
-                nonlocal init_section
+                nonlocal last_segment
                 url: str = ''
+
                 try:
-                    if getattr(seg, 'init_section', None) and (
-                        not init_section or seg.init_section.uri != init_section.uri
+                    if hasattr(seg, 'init_section') and (
+                        (
+                            last_segment is None
+                            or seg.init_section != last_segment.init_section
+                            or seg.discontinuity
+                        )
                     ):
                         url = seg.init_section.absolute_uri
                         data = self._fetch_segment(url)
-                        init_section = seg.init_section
-                        observer.on_next(InitSectionData(payload=data))
+                        observer.on_next(
+                            InitSectionData(init_section=seg.init_section, payload=data)
+                        )
+                    last_segment = seg
+
                     url = seg.absolute_uri
-                    data = self._fetch_segment(url)
-                    observer.on_next(SegmentData(payload=data))
+                    crc32 = seg.title.split('|')[-1]
+                    for _ in range(3):
+                        data = self._fetch_segment(url)
+                        crc32_of_data = cksum(data)
+                        if crc32_of_data == crc32:
+                            break
+                        logger.debug(
+                            'Segment data corrupted: '
+                            f'correct crc32: {crc32}, '
+                            f'crc32 of segment data: {crc32_of_data}, '
+                            f'segment url: {url}'
+                        )
+                    else:
+                        raise SegmentDataCorrupted(crc32, crc32_of_data)
                 except Exception as e:
                     logger.warning(f'Failed to fetch segment {url}: {repr(e)}')
+                else:
+                    observer.on_next(SegmentData(segment=seg, payload=data))
 
             def dispose() -> None:
                 nonlocal disposed
-                nonlocal init_section
+                nonlocal last_segment
                 disposed = True
-                init_section = None
+                last_segment = None
 
             subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler

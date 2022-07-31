@@ -19,8 +19,12 @@ class RemuxingProgress:
     total: int
 
 
+_ERROR_PATTERN = re.compile(r'\b(error|missing|invalid|corrupt)\b', re.IGNORECASE)
+
+
 @attr.s(auto_attribs=True, slots=True, frozen=True)
 class RemuxingResult:
+
     return_code: int
     output: str
 
@@ -28,13 +32,20 @@ class RemuxingResult:
         return self.return_code == 0
 
     def is_successful(self) -> bool:
-        return self.is_done() and not self.may_timestamps_incorrect()
+        return (
+            self.is_done()
+            and not self.may_timestamps_incorrect()
+            and not self.has_errors()
+        )
 
     def is_warned(self) -> bool:
         return self.is_done() and self.may_timestamps_incorrect()
 
     def is_failed(self) -> bool:
-        return not self.is_done()
+        return not self.is_done() or self.has_errors()
+
+    def has_errors(self) -> bool:
+        return _ERROR_PATTERN.search(self.output) is not None
 
     def may_timestamps_incorrect(self) -> bool:
         return 'Non-monotonous DTS in output stream' in self.output
@@ -49,8 +60,19 @@ def remux_video(
     remove_filler_data: bool = False,
 ) -> Observable[Union[RemuxingProgress, RemuxingResult]]:
     SIZE_PATTERN: Final = re.compile(r'size=\s*(?P<number>\d+)(?P<unit>[a-zA-Z]?B)')
-    filesize = os.path.getsize(in_path)
-    filename = os.path.basename(in_path)
+    if in_path.endswith('.m3u8'):
+        total = 0
+        for root, dirs, files in os.walk(os.path.dirname(in_path)):
+            for filename in files:
+                if not (filename.endswith('.m4s') or filename.endswith('.ts')):
+                    continue
+                total += os.path.getsize(os.path.join(root, filename))
+        postfix = os.path.join(
+            os.path.basename(os.path.dirname(in_path)), os.path.basename(in_path)
+        )
+    else:
+        total = os.path.getsize(in_path)
+        postfix = os.path.basename(in_path)
 
     def parse_size(line: str) -> int:
         match = SIZE_PATTERN.search(line)
@@ -75,7 +97,11 @@ def remux_video(
 
     def should_output_line(line: str) -> bool:
         line = line.strip()
-        return not (line.startswith('frame=') or line.startswith('Press [q]'))
+        return not (
+            line.startswith('frame=')
+            or line.startswith('Press [q]')
+            or (line.startswith('[hls') and 'Opening' in line and 'for reading' in line)
+        )
 
     def subscribe(
         observer: abc.ObserverBase[Union[RemuxingProgress, RemuxingResult]],
@@ -92,11 +118,11 @@ def remux_video(
 
             with tqdm(
                 desc='Remuxing',
-                total=filesize,
+                total=total,
                 unit='B',
                 unit_scale=True,
                 unit_divisor=1024,
-                postfix=filename,
+                postfix=postfix,
                 disable=not show_progress,
             ) as pbar:
                 cmd = f'ffmpeg -i "{in_path}"'
@@ -130,15 +156,15 @@ def remux_video(
                             if line.startswith('frame='):
                                 size = parse_size(line)
                                 pbar.update(size - pbar.n)
-                                progress = RemuxingProgress(size, filesize)
+                                progress = RemuxingProgress(size, total)
                                 observer.on_next(progress)
 
                             if should_output_line(line):
                                 out_lines.append(line)
 
                         if not disposed and process.returncode == 0:
-                            pbar.update(filesize)
-                            progress = RemuxingProgress(filesize, filesize)
+                            pbar.update(total)
+                            progress = RemuxingProgress(total, total)
                             observer.on_next(progress)
                 except Exception as e:
                     observer.on_error(e)

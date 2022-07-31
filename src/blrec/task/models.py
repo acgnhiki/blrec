@@ -1,14 +1,16 @@
 from __future__ import annotations
+
 from enum import Enum
 from typing import Optional
 
 import attr
 
-from ..bili.models import RoomInfo, UserInfo
-from ..bili.typing import StreamFormat, QualityNumber
-from ..core.cover_downloader import CoverSaveStrategy
-from ..postprocess import DeleteStrategy, PostprocessorStatus
-from ..postprocess.typing import Progress
+from blrec.bili.models import RoomInfo, UserInfo
+from blrec.bili.typing import QualityNumber, StreamFormat
+from blrec.core.cover_downloader import CoverSaveStrategy
+from blrec.postprocess import DeleteStrategy, PostprocessorStatus
+from blrec.postprocess.typing import Progress
+from blrec.setting.typing import RecordingMode
 
 
 class RunningStatus(str, Enum):
@@ -60,6 +62,7 @@ class TaskParam:
     save_raw_danmaku: bool
     # RecorderSettings
     stream_format: StreamFormat
+    recording_mode: RecordingMode
     quality_number: QualityNumber
     fmp4_stream_timeout: int
     read_timeout: int

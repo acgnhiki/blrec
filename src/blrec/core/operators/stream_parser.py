@@ -6,10 +6,11 @@ import logging
 from reactivex import Observable
 from reactivex import operators as ops
 
-from ...flv import operators as flv_ops
-from ...flv.exceptions import FlvDataError
-from ...flv.operators.typing import FLVStream
-from ...utils import operators as utils_ops
+from blrec.flv import operators as flv_ops
+from blrec.flv.exceptions import FlvDataError
+from blrec.flv.operators.typing import FLVStream
+from blrec.utils import operators as utils_ops
+
 from ..stream_param_holder import StreamParamHolder
 
 __all__ = ('StreamParser',)

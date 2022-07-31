@@ -1,16 +1,17 @@
-import re
 import os
+import re
 from pathlib import PurePath
 
-
 __all__ = (
-    'file_exists',
+    'cover_path',
     'create_file',
     'danmaku_path',
-    'cover_path',
-    'raw_danmaku_path',
-    'extra_metadata_path',
     'escape_path',
+    'extra_metadata_path',
+    'ffmpeg_metadata_path',
+    'record_metadata_path',
+    'file_exists',
+    'raw_danmaku_path',
 )
 
 
@@ -38,6 +39,14 @@ def raw_danmaku_path(video_path: str) -> str:
 
 def extra_metadata_path(video_path: str) -> str:
     return video_path + '.meta.json'
+
+
+def record_metadata_path(video_path: str) -> str:
+    return str(PurePath(video_path).with_suffix('.meta.json'))
+
+
+def ffmpeg_metadata_path(video_path: str) -> str:
+    return video_path + '.meta'
 
 
 def escape_path(path: str) -> str:

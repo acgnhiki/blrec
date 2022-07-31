@@ -4,9 +4,9 @@ from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Dict, Union
 
-from .. import __github__, __prog__, __version__
-from ..bili.helpers import get_quality_name
-from ..bili.live import Live
+from blrec import __github__, __prog__, __version__
+from blrec.bili.helpers import get_quality_name
+from blrec.bili.live import Live
 
 if TYPE_CHECKING:
     from .stream_recorder_impl import StreamRecorderImpl
@@ -54,6 +54,13 @@ class MetadataProvider:
             ', bluray' if '_bluray' in self._stream_recorder.stream_url else '',
         )
 
+        if self._stream_recorder.recording_mode == 'standard':
+            recording_mode_desc = '标准'
+        elif self._stream_recorder.recording_mode == 'raw':
+            recording_mode_desc = '原始'
+        else:
+            recording_mode_desc = '？？'
+
         return {
             'Title': self._live.room_info.title,
             'Artist': self._live.user_info.name,
@@ -71,6 +78,7 @@ HLS流可用时间: {hls_stream_available_time}
 流主机: {self._stream_recorder.stream_host}
 流格式：{self._stream_recorder.stream_format}
 流画质：{stream_quality}
+录制模式: {recording_mode_desc}
 录制程序：{__prog__} v{__version__} {__github__}''',
             'description': OrderedDict(
                 {
@@ -87,6 +95,7 @@ HLS流可用时间: {hls_stream_available_time}
                     'StreamHost': self._stream_recorder.stream_host,
                     'StreamFormat': self._stream_recorder.stream_format,
                     'StreamQuality': stream_quality,
+                    'RecordingMode': self._stream_recorder.recording_mode,
                     'Recorder': f'{__prog__} v{__version__} {__github__}',
                 }
             ),

@@ -263,6 +263,7 @@ class RecordTaskManager:
     ) -> None:
         task = self._get_task(room_id)
         task.stream_format = settings.stream_format
+        task.recording_mode = settings.recording_mode
         task.quality_number = settings.quality_number
         task.fmp4_stream_timeout = settings.fmp4_stream_timeout
         task.read_timeout = settings.read_timeout
@@ -306,6 +307,7 @@ class RecordTaskManager:
             cover_save_strategy=task.cover_save_strategy,
             save_raw_danmaku=task.save_raw_danmaku,
             stream_format=task.stream_format,
+            recording_mode=task.recording_mode,
             quality_number=task.quality_number,
             fmp4_stream_timeout=task.fmp4_stream_timeout,
             read_timeout=task.read_timeout,

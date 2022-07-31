@@ -7,8 +7,8 @@ from typing import Optional
 import requests
 from reactivex import Observable, abc
 
-from ...bili.live import Live
-from ...utils.mixins import AsyncCooperationMixin
+from blrec.bili.live import Live
+from blrec.utils.mixins import AsyncCooperationMixin
 
 __all__ = ('StreamFetcher',)
 

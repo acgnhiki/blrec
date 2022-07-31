@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from contextlib import suppress
 from pathlib import PurePath
-from typing import Any, Awaitable, Dict, Final, Iterator, List, Optional, Union
+from typing import Any, Awaitable, Dict, Final, Iterator, List, Optional, Tuple, Union
 
 from reactivex.scheduler import ThreadPoolScheduler
 
@@ -19,7 +20,7 @@ from ..logging.room_id import aio_task_with_room_id
 from ..path import extra_metadata_path
 from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin, SupportDebugMixin
 from .ffmpeg_metadata import make_metadata_file
-from .helpers import discard_file, get_extra_metadata
+from .helpers import copy_files_related, discard_dir, discard_file, get_extra_metadata
 from .models import DeleteStrategy, PostprocessorStatus
 from .remux import RemuxingProgress, RemuxingResult, remux_video
 from .typing import Progress
@@ -141,21 +142,43 @@ class Postprocessor(
             async with self._worker_semaphore:
                 logger.debug(f'Postprocessing... {video_path}')
 
-                if not await self._is_vaild_flv_file(video_path):
-                    logger.warning(f'The flv file may be invalid: {video_path}')
-
                 try:
-                    if self.remux_to_mp4:
-                        self._status = PostprocessorStatus.REMUXING
-                        result_path = await self._remux_flv_to_mp4(video_path)
-                    elif self.inject_extra_metadata:
-                        self._status = PostprocessorStatus.INJECTING
-                        result_path = await self._inject_extra_metadata(video_path)
+                    if video_path.endswith('.flv'):
+                        if not await self._is_vaild_flv_file(video_path):
+                            logger.warning(f'The flv file may be invalid: {video_path}')
+                        if self.remux_to_mp4:
+                            self._status = PostprocessorStatus.REMUXING
+                            (
+                                result_path,
+                                remuxing_result,
+                            ) = await self._remux_video_to_mp4(video_path)
+                            if not self._debug:
+                                await discard_file(
+                                    extra_metadata_path(video_path), 'DEBUG'
+                                )
+                                if self._should_delete_source_files(remuxing_result):
+                                    await discard_file(video_path)
+                        elif self.inject_extra_metadata:
+                            self._status = PostprocessorStatus.INJECTING
+                            result_path = await self._inject_extra_metadata(video_path)
+                        else:
+                            result_path = video_path
+
+                    elif video_path.endswith('.m3u8'):
+                        if self.remux_to_mp4:
+                            self._status = PostprocessorStatus.REMUXING
+                            (
+                                result_path,
+                                remuxing_result,
+                            ) = await self._remux_video_to_mp4(video_path)
+                            await copy_files_related(video_path)
+                            if not self._debug:
+                                if self._should_delete_source_files(remuxing_result):
+                                    await discard_dir(os.path.dirname(video_path))
+                        else:
+                            result_path = video_path
                     else:
                         result_path = video_path
-
-                    if not self._debug:
-                        await discard_file(extra_metadata_path(video_path), 'DEBUG')
 
                     self._completed_files.append(result_path)
                     await self._emit(
@@ -191,33 +214,37 @@ class Postprocessor(
             logger.info(f"Successfully injected metadata for '{path}'")
         return path
 
-    async def _remux_flv_to_mp4(self, in_path: str) -> str:
-        out_path = str(PurePath(in_path).with_suffix('.mp4'))
-        logger.info(f"Remuxing '{in_path}' to '{out_path}' ...")
+    async def _remux_video_to_mp4(self, in_path: str) -> Tuple[str, RemuxingResult]:
+        if in_path.endswith('.flv'):
+            out_path = str(PurePath(in_path).with_suffix('.mp4'))
+            metadata_path = await make_metadata_file(in_path)
+        elif in_path.endswith('.m3u8'):
+            out_path = str(PurePath(in_path).parent.with_suffix('.mp4'))
+            metadata_path = await make_metadata_file(in_path)
+        else:
+            raise NotImplementedError(in_path)
 
-        metadata_path = await make_metadata_file(in_path)
+        logger.info(f"Remuxing '{in_path}' to '{out_path}' ...")
         remux_result = await self._remux_video(in_path, out_path, metadata_path)
 
-        if remux_result.is_successful():
-            logger.info(f"Successfully remuxed '{in_path}' to '{out_path}'")
-            result_path = out_path
+        if remux_result.is_failed():
+            logger.error(f"Failed to remux '{in_path}' to '{out_path}'")
+            result_path = in_path
         elif remux_result.is_warned():
             logger.warning('Remuxing done, but ran into problems.')
             result_path = out_path
-        elif remux_result.is_failed:
-            logger.error(f"Failed to remux '{in_path}' to '{out_path}'")
-            result_path = in_path
+        elif remux_result.is_successful():
+            logger.info(f"Successfully remuxed '{in_path}' to '{out_path}'")
+            result_path = out_path
         else:
             pass
 
         logger.debug(f'ffmpeg output:\n{remux_result.output}')
 
-        if not self._debug:
+        if not self._debug and in_path.endswith('.flv'):
             await discard_file(metadata_path, 'DEBUG')
-        if self._should_delete_source_files(remux_result):
-            await discard_file(in_path)
 
-        return result_path
+        return result_path, remux_result
 
     def _analyse_metadata(self, path: str) -> Awaitable[None]:
         future: asyncio.Future[None] = asyncio.Future()

@@ -8,12 +8,13 @@ import aiofiles
 from aiofiles.threadpool.text import AsyncTextIOWrapper
 from tenacity import AsyncRetrying, retry_if_not_exception_type, stop_after_attempt
 
-from ..bili.live import Live
-from ..event.event_emitter import EventEmitter, EventListener
-from ..exception import exception_callback, submit_exception
-from ..logging.room_id import aio_task_with_room_id
-from ..path import raw_danmaku_path
-from ..utils.mixins import SwitchableMixin
+from blrec.bili.live import Live
+from blrec.event.event_emitter import EventEmitter, EventListener
+from blrec.exception import exception_callback, submit_exception
+from blrec.logging.room_id import aio_task_with_room_id
+from blrec.path import raw_danmaku_path
+from blrec.utils.mixins import SwitchableMixin
+
 from .raw_danmaku_receiver import RawDanmakuReceiver
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 

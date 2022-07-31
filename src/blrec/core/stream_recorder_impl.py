@@ -9,15 +9,16 @@ import urllib3
 from reactivex import abc
 from reactivex.typing import StartableFactory, StartableTarget
 
-from ..bili.live import Live
-from ..bili.typing import QualityNumber, StreamFormat
-from ..event.event_emitter import EventEmitter, EventListener
-from ..flv import operators as flv_ops
-from ..flv.metadata_dumper import MetadataDumper
-from ..flv.operators import StreamProfile
-from ..flv.utils import format_timestamp
-from ..logging.room_id import aio_task_with_room_id
-from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin
+from blrec.bili.live import Live
+from blrec.bili.typing import QualityNumber, StreamFormat
+from blrec.event.event_emitter import EventEmitter, EventListener
+from blrec.flv import operators as flv_ops
+from blrec.flv.operators import StreamProfile
+from blrec.flv.utils import format_timestamp
+from blrec.logging.room_id import aio_task_with_room_id
+from blrec.setting.typing import RecordingMode
+from blrec.utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin
+
 from . import operators as core_ops
 from .metadata_provider import MetadataProvider
 from .path_provider import PathProvider
@@ -60,6 +61,7 @@ class StreamRecorderImpl(
         path_template: str,
         *,
         stream_format: StreamFormat = 'flv',
+        recording_mode: RecordingMode = 'standard',
         quality_number: QualityNumber = 10000,
         buffer_size: Optional[int] = None,
         read_timeout: Optional[int] = None,
@@ -71,50 +73,30 @@ class StreamRecorderImpl(
 
         self._live = live
         self._session = requests.Session()
+
+        self._recording_mode = recording_mode
+        self._buffer_size = buffer_size
+        self._read_timeout = read_timeout
+        self._filesize_limit = filesize_limit
+        self._duration_limit = duration_limit
+
         self._stream_param_holder = StreamParamHolder(
             stream_format=stream_format, quality_number=quality_number
         )
         self._stream_url_resolver = core_ops.StreamURLResolver(
             live, self._stream_param_holder
         )
-        self._stream_fetcher = core_ops.StreamFetcher(
-            live, self._session, read_timeout=read_timeout
-        )
-        self._stream_parser = core_ops.StreamParser(
-            self._stream_param_holder,
-            ignore_eof=stream_format != 'flv',
-            ignore_value_error=stream_format != 'flv',
-        )
         self._progress_bar = core_ops.ProgressBar(live)
-        self._analyser = flv_ops.Analyser()
         self._metadata_provider = MetadataProvider(live, self)
-        self._injector = flv_ops.Injector(self._metadata_provider)
-        self._join_point_extractor = flv_ops.JoinPointExtractor()
-        self._limiter = flv_ops.Limiter(filesize_limit, duration_limit)
-        self._cutter = flv_ops.Cutter()
         self._path_provider = PathProvider(live, out_dir, path_template)
-        self._dumper = flv_ops.Dumper(self._path_provider, buffer_size)
         self._rec_statistics = core_ops.SizedStatistics()
-        self._recording_monitor = core_ops.RecordingMonitor(live, self._analyser)
-
-        self._prober: Union[flv_ops.Prober, core_ops.HLSProber]
         self._dl_statistics: Union[core_ops.StreamStatistics, core_ops.SizedStatistics]
-        if stream_format == 'flv':
-            self._prober = flv_ops.Prober()
-            self._dl_statistics = core_ops.StreamStatistics()
-        else:
-            self._prober = core_ops.HLSProber()
-            self._dl_statistics = core_ops.SizedStatistics()
 
         self._request_exception_handler = core_ops.RequestExceptionHandler()
         self._connection_error_handler = core_ops.ConnectionErrorHandler(
             live, disconnection_timeout=disconnection_timeout
         )
         self._exception_handler = core_ops.ExceptionHandler()
-        self._metadata_dumper = MetadataDumper(
-            self._dumper, self._analyser, self._join_point_extractor
-        )
-        self._metadata_dumper.enable()
 
         self._subscription: abc.DisposableBase
         self._completed: bool = False
@@ -125,37 +107,6 @@ class StreamRecorderImpl(
         self._record_start_time: Optional[int] = None
         self._stream_available_time: Optional[int] = None
         self._hls_stream_available_time: Optional[int] = None
-
-        def on_profile_updated(profile: StreamProfile) -> None:
-            self._stream_profile = profile
-
-        self._prober.profiles.subscribe(on_profile_updated)
-
-        def on_file_opened(args: Tuple[str, int]) -> None:
-            logger.info(f"Video file created: '{args[0]}'")
-            self._files.append(args[0])
-            self._record_start_time = args[1]
-            self._emit_event('video_file_created', *args)
-
-        def on_file_closed(path: str) -> None:
-            logger.info(f"Video file completed: '{path}'")
-            self._emit_event('video_file_completed', path)
-
-        self._dumper.file_opened.subscribe(on_file_opened)
-        self._dumper.file_closed.subscribe(on_file_closed)
-
-        def on_recording_interrupted(duration: float) -> None:
-            duration_string = format_timestamp(int(duration * 1000))
-            logger.info(f'Recording interrupted, current duration: {duration_string}')
-            self._emit_event('stream_recording_interrupted', duration)
-
-        def on_recording_recovered(timestamp: int) -> None:
-            datetime_string = datetime.fromtimestamp(timestamp).isoformat()
-            logger.info(f'Recording recovered, current date time {(datetime_string)}')
-            self._emit_event('stream_recording_recovered', timestamp)
-
-        self._recording_monitor.interrupted.subscribe(on_recording_interrupted)
-        self._recording_monitor.recovered.subscribe(on_recording_recovered)
 
     @property
     def stream_url(self) -> str:
@@ -226,6 +177,10 @@ class StreamRecorderImpl(
         return self._stream_param_holder.stream_format
 
     @property
+    def recording_mode(self) -> RecordingMode:
+        return self._recording_mode
+
+    @property
     def quality_number(self) -> QualityNumber:
         return self._stream_param_holder.quality_number
 
@@ -241,27 +196,27 @@ class StreamRecorderImpl(
 
     @property
     def filesize_limit(self) -> int:
-        return self._limiter.filesize_limit
+        return self._filesize_limit
 
     @filesize_limit.setter
     def filesize_limit(self, value: int) -> None:
-        self._limiter.filesize_limit = value
+        self._filesize_limit = value
 
     @property
     def duration_limit(self) -> int:
-        return self._limiter.duration_limit
+        return self._duration_limit
 
     @duration_limit.setter
     def duration_limit(self, value: int) -> None:
-        self._limiter.duration_limit = value
+        self._duration_limit = value
 
     @property
     def read_timeout(self) -> int:
-        return self._stream_fetcher.read_timeout
+        return self._read_timeout
 
     @read_timeout.setter
     def read_timeout(self, value: int) -> None:
-        self._stream_fetcher.read_timeout = value
+        self._read_timeout = value
 
     @property
     def disconnection_timeout(self) -> int:
@@ -273,22 +228,19 @@ class StreamRecorderImpl(
 
     @property
     def buffer_size(self) -> int:
-        return self._dumper.buffer_size
+        return self._buffer_size
 
     @buffer_size.setter
     def buffer_size(self, value: int) -> None:
-        self._dumper.buffer_size = value
+        self._buffer_size = value
 
     @property
     def recording_path(self) -> Optional[str]:
-        return self._dumper.path
+        return ''
 
     @property
     def metadata(self) -> Optional[flv_ops.MetaData]:
-        try:
-            return self._analyser.make_metadata()
-        except Exception:
-            return None
+        return None
 
     @property
     def stream_profile(self) -> StreamProfile:
@@ -304,10 +256,10 @@ class StreamRecorderImpl(
         self._files.clear()
 
     def can_cut_stream(self) -> bool:
-        return self._cutter.can_cut_stream()
+        return False
 
     def cut_stream(self) -> bool:
-        return self._cutter.cut_stream()
+        return False
 
     def update_progress_bar_info(self) -> None:
         self._progress_bar.update_bar_info()
@@ -320,6 +272,7 @@ class StreamRecorderImpl(
 
     async def _do_start(self) -> None:
         logger.debug('Starting stream recorder...')
+        self._on_start()
         self._reset()
         self._run()
         logger.debug('Started stream recorder')
@@ -332,7 +285,14 @@ class StreamRecorderImpl(
         for thread in self._threads:
             await self._loop.run_in_executor(None, thread.join, 30)
         self._threads.clear()
+        self._on_stop()
         logger.debug('Stopped stream recorder')
+
+    def _on_start(self) -> None:
+        pass
+
+    def _on_stop(self) -> None:
+        pass
 
     @abstractmethod
     def _run(self) -> None:
@@ -361,6 +321,30 @@ class StreamRecorderImpl(
         self._dl_statistics.freeze()
         self._rec_statistics.freeze()
         self._emit_event('stream_recording_completed')
+
+    def _on_profile_updated(self, profile: StreamProfile) -> None:
+        logger.debug(f'Stream profile: {profile}')
+        self._stream_profile = profile
+
+    def _on_video_file_opened(self, args: Tuple[str, int]) -> None:
+        logger.info(f"Video file created: '{args[0]}'")
+        self._files.append(args[0])
+        self._record_start_time = args[1]
+        self._emit_event('video_file_created', *args)
+
+    def _on_video_file_closed(self, path: str) -> None:
+        logger.info(f"Video file completed: '{path}'")
+        self._emit_event('video_file_completed', path)
+
+    def _on_recording_interrupted(self, duration: float) -> None:
+        duration_string = format_timestamp(int(duration * 1000))
+        logger.info(f'Recording interrupted, current duration: {duration_string}')
+        self._emit_event('stream_recording_interrupted', duration)
+
+    def _on_recording_recovered(self, timestamp: int) -> None:
+        datetime_string = datetime.fromtimestamp(timestamp).isoformat()
+        logger.info(f'Recording recovered, current date time {(datetime_string)}')
+        self._emit_event('stream_recording_recovered', timestamp)
 
     def _emit_event(self, name: str, *args: Any, **kwds: Any) -> None:
         self._run_coroutine(self._emit(name, *args, **kwds))

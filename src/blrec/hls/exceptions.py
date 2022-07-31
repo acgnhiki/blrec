@@ -1,0 +1,2 @@
+class SegmentDataCorrupted(ValueError):
+    pass

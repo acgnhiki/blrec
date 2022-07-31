@@ -7,8 +7,8 @@ from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 from tqdm import tqdm
 
-from ...bili.live import Live
-from ...flv.operators.typing import FLVStream, FLVStreamItem
+from blrec.bili.live import Live
+from blrec.flv.operators.typing import FLVStream, FLVStreamItem
 
 __all__ = ('ProgressBar',)
 

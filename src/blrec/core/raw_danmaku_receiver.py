@@ -2,13 +2,11 @@ import logging
 from asyncio import Queue, QueueFull
 from typing import Final
 
+from blrec.bili.danmaku_client import DanmakuClient, DanmakuListener
+from blrec.bili.typing import Danmaku
+from blrec.utils.mixins import StoppableMixin
 
-from ..bili.danmaku_client import DanmakuClient, DanmakuListener
-from ..bili.typing import Danmaku
-from ..utils.mixins import StoppableMixin
-
-
-__all__ = 'RawDanmakuReceiver',
+__all__ = ('RawDanmakuReceiver',)
 
 
 logger = logging.getLogger(__name__)

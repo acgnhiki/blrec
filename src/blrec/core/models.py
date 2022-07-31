@@ -3,8 +3,7 @@ from typing import Literal
 
 import attr
 
-from ..bili.typing import Danmaku
-
+from blrec.bili.typing import Danmaku
 
 logger = logging.getLogger(__name__)
 

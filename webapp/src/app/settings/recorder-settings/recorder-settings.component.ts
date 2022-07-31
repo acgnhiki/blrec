@@ -16,6 +16,7 @@ import type { Mutable } from '../../shared/utility-types';
 import {
   BUFFER_OPTIONS,
   STREAM_FORMAT_OPTIONS,
+  RECORDING_MODE_OPTIONS,
   QUALITY_OPTIONS,
   TIMEOUT_OPTIONS,
   DISCONNECTION_TIMEOUT_OPTIONS,
@@ -44,6 +45,9 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
   readonly streamFormatOptions = cloneDeep(STREAM_FORMAT_OPTIONS) as Mutable<
     typeof STREAM_FORMAT_OPTIONS
   >;
+  readonly recordingModeOptions = cloneDeep(RECORDING_MODE_OPTIONS) as Mutable<
+    typeof RECORDING_MODE_OPTIONS
+  >;
   readonly fmp4StreamTimeoutOptions = cloneDeep(TIMEOUT_OPTIONS) as Mutable<
     typeof TIMEOUT_OPTIONS
   >;
@@ -70,6 +74,7 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
   ) {
     this.settingsForm = formBuilder.group({
       streamFormat: [''],
+      recordingMode: [''],
       qualityNumber: [''],
       fmp4StreamTimeout: [''],
       readTimeout: [''],
@@ -82,6 +87,10 @@ export class RecorderSettingsComponent implements OnInit, OnChanges {
 
   get streamFormatControl() {
     return this.settingsForm.get('streamFormat') as FormControl;
+  }
+
+  get recordingModeControl() {
+    return this.settingsForm.get('recordingMode') as FormControl;
   }
 
   get qualityNumberControl() {

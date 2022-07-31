@@ -9,7 +9,7 @@ import urllib3
 from reactivex import Observable, abc
 from reactivex import operators as ops
 
-from ...bili.exceptions import (
+from blrec.bili.exceptions import (
     LiveRoomEncrypted,
     LiveRoomHidden,
     LiveRoomLocked,
@@ -19,9 +19,10 @@ from ...bili.exceptions import (
     NoStreamFormatAvailable,
     NoStreamQualityAvailable,
 )
-from ...bili.live import Live
-from ...utils import operators as utils_ops
-from ...utils.mixins import AsyncCooperationMixin
+from blrec.bili.live import Live
+from blrec.utils import operators as utils_ops
+from blrec.utils.mixins import AsyncCooperationMixin
+
 from ..stream_param_holder import StreamParamHolder, StreamParams
 
 __all__ = ('StreamURLResolver',)

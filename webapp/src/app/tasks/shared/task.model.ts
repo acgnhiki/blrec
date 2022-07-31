@@ -3,6 +3,7 @@ import {
   DeleteStrategy,
   StreamFormat,
   QualityNumber,
+  RecordingMode,
 } from '../../settings/shared/setting.model';
 
 export interface TaskData {
@@ -116,6 +117,7 @@ export interface TaskParam {
   readonly save_raw_danmaku: boolean;
 
   readonly stream_format: StreamFormat;
+  readonly recording_mode: RecordingMode;
   readonly quality_number: QualityNumber;
   readonly read_timeout: number;
   readonly disconnection_timeout: number;

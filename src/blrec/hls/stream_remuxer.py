@@ -1,16 +1,16 @@
 import errno
 import io
 import logging
-from contextlib import suppress
 import os
 import re
 import shlex
+from contextlib import suppress
 from subprocess import PIPE, CalledProcessError, Popen
 from threading import Condition, Thread
 from typing import Optional, cast
 
-from ..utils.io import wait_for
-from ..utils.mixins import StoppableMixin, SupportDebugMixin
+from blrec.utils.io import wait_for
+from blrec.utils.mixins import StoppableMixin, SupportDebugMixin
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +150,7 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
                     self._check_error(line)
 
         if not self._stopped and self._subprocess.returncode not in (0, 255):
-            # 255: Exiting normally, received signal 2.
+            # 255: Exiting standardly, received signal 2.
             raise CalledProcessError(self._subprocess.returncode, cmd=cmd)
 
     def _check_error(self, line: str) -> None:

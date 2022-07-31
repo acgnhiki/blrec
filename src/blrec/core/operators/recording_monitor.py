@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Final, Optional, TypeVar
+from typing import Callable, Final, Optional, TypeVar
 
 from reactivex import Observable, Subject, abc
 
-from ...bili.live import Live
-from ...flv import operators as flv_ops
-from ...utils.mixins import AsyncCooperationMixin
+from blrec.bili.live import Live
+from blrec.utils.mixins import AsyncCooperationMixin
 
 __all__ = ('RecordingMonitor',)
 
@@ -18,10 +17,10 @@ _T = TypeVar('_T')
 
 
 class RecordingMonitor(AsyncCooperationMixin):
-    def __init__(self, live: Live, analyser: flv_ops.Analyser) -> None:
+    def __init__(self, live: Live, duration_provider: Callable[..., float]) -> None:
         super().__init__()
         self._live = live
-        self._analyser = analyser
+        self._duration_provider = duration_provider
         self._interrupted: Subject[float] = Subject()
         self._recovered: Subject[int] = Subject()
 
@@ -59,7 +58,8 @@ class RecordingMonitor(AsyncCooperationMixin):
                 if recording:
                     failed_count += 1
                     if failed_count == CRITERIA:
-                        self._interrupted.on_next(self._analyser.duration)
+                        duration = self._duration_provider()
+                        self._interrupted.on_next(duration)
                 observer.on_error(exc)
 
             return source.subscribe(

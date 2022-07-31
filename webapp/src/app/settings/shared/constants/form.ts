@@ -63,6 +63,11 @@ export const STREAM_FORMAT_OPTIONS = [
   { label: 'HLS (fmp4)', value: 'fmp4' },
 ] as const;
 
+export const RECORDING_MODE_OPTIONS = [
+  { label: '标准', value: 'standard' },
+  { label: '原始', value: 'raw' },
+] as const;
+
 export const QUALITY_OPTIONS = [
   { label: '4K', value: 20000 },
   { label: '原画', value: 10000 },

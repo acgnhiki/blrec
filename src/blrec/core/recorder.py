@@ -7,15 +7,17 @@ from typing import Iterator, Optional
 
 import humanize
 
-from ..bili.danmaku_client import DanmakuClient
-from ..bili.live import Live
-from ..bili.live_monitor import LiveEventListener, LiveMonitor
-from ..bili.models import RoomInfo
-from ..bili.typing import QualityNumber, StreamFormat
-from ..event.event_emitter import EventEmitter, EventListener
-from ..flv.operators import MetaData, StreamProfile
-from ..logging.room_id import aio_task_with_room_id
-from ..utils.mixins import AsyncStoppableMixin
+from blrec.bili.danmaku_client import DanmakuClient
+from blrec.bili.live import Live
+from blrec.bili.live_monitor import LiveEventListener, LiveMonitor
+from blrec.bili.models import RoomInfo
+from blrec.bili.typing import QualityNumber, StreamFormat
+from blrec.event.event_emitter import EventEmitter, EventListener
+from blrec.flv.operators import MetaData, StreamProfile
+from blrec.logging.room_id import aio_task_with_room_id
+from blrec.setting.typing import RecordingMode
+from blrec.utils.mixins import AsyncStoppableMixin
+
 from .cover_downloader import CoverDownloader, CoverSaveStrategy
 from .danmaku_dumper import DanmakuDumper, DanmakuDumperEventListener
 from .danmaku_receiver import DanmakuReceiver
@@ -77,6 +79,7 @@ class Recorder(
         path_template: str,
         *,
         stream_format: StreamFormat = 'flv',
+        recording_mode: RecordingMode = 'standard',
         quality_number: QualityNumber = 10000,
         fmp4_stream_timeout: int = 10,
         buffer_size: Optional[int] = None,
@@ -108,6 +111,7 @@ class Recorder(
             out_dir=out_dir,
             path_template=path_template,
             stream_format=stream_format,
+            recording_mode=recording_mode,
             quality_number=quality_number,
             fmp4_stream_timeout=fmp4_stream_timeout,
             buffer_size=buffer_size,
@@ -155,6 +159,14 @@ class Recorder(
     @stream_format.setter
     def stream_format(self, value: StreamFormat) -> None:
         self._stream_recorder.stream_format = value
+
+    @property
+    def recording_mode(self) -> RecordingMode:
+        return self._stream_recorder.recording_mode
+
+    @recording_mode.setter
+    def recording_mode(self, value: RecordingMode) -> None:
+        self._stream_recorder.recording_mode = value
 
     @property
     def quality_number(self) -> QualityNumber:
@@ -365,6 +377,7 @@ class Recorder(
 
     async def on_live_ended(self, live: Live) -> None:
         logger.info('The live has ended')
+        await asyncio.sleep(3)
         self._stream_available = False
         self._stream_recorder.stream_available_time = None
         await self._stop_recording()

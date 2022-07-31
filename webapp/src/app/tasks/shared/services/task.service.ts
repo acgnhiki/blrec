@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { environment } from 'src/environments/environment';
 import { ResponseMessage } from '../../../shared/api.models';
@@ -161,6 +162,13 @@ export class TaskService {
   ): Observable<ResponseMessage> {
     const url = apiUrl + `/api/v1/tasks/recorder/disable`;
     return this.http.post<ResponseMessage>(url, { force, background });
+  }
+
+  canCutStream(roomId: number) {
+    const url = apiUrl + `/api/v1/tasks/${roomId}/cut`;
+    return this.http
+      .get<{ data: { result: boolean } }>(url)
+      .pipe(map((response) => response.data.result));
   }
 
   cutStream(roomId: number) {

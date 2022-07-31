@@ -19,6 +19,7 @@ export interface DanmakuSettings {
 export type DanmakuOptions = Nullable<DanmakuSettings>;
 
 export type StreamFormat = 'flv' | 'ts' | 'fmp4';
+export type RecordingMode = 'standard' | 'raw';
 
 export type QualityNumber =
   | 20000 // 4K
@@ -36,6 +37,7 @@ export enum CoverSaveStrategy {
 
 export interface RecorderSettings {
   streamFormat: StreamFormat;
+  recordingMode: RecordingMode;
   qualityNumber: QualityNumber;
   fmp4StreamTimeout: number;
   readTimeout: number;

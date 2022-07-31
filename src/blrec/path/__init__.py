@@ -1,20 +1,21 @@
 from .helpers import (
-    file_exists,
+    cover_path,
     create_file,
     danmaku_path,
-    cover_path,
-    raw_danmaku_path,
-    extra_metadata_path,
     escape_path,
+    extra_metadata_path,
+    file_exists,
+    raw_danmaku_path,
+    record_metadata_path,
 )
 
-
 __all__ = (
-    'file_exists',
+    'cover_path',
     'create_file',
     'danmaku_path',
-    'cover_path',
-    'raw_danmaku_path',
-    'extra_metadata_path',
     'escape_path',
+    'extra_metadata_path',
+    'file_exists',
+    'raw_danmaku_path',
+    'record_metadata_path',
 )

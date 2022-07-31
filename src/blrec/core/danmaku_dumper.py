@@ -7,22 +7,23 @@ from typing import Iterator, List, Optional
 
 from tenacity import AsyncRetrying, retry_if_not_exception_type, stop_after_attempt
 
-from .. import __github__, __prog__, __version__
-from ..bili.live import Live
-from ..core.models import GiftSendMsg, GuardBuyMsg, SuperChatMsg
-from ..danmaku.io import DanmakuWriter
-from ..danmaku.models import (
+from blrec import __github__, __prog__, __version__
+from blrec.bili.live import Live
+from blrec.core.models import GiftSendMsg, GuardBuyMsg, SuperChatMsg
+from blrec.danmaku.io import DanmakuWriter
+from blrec.danmaku.models import (
     Danmu,
     GiftSendRecord,
     GuardBuyRecord,
     Metadata,
     SuperChatRecord,
 )
-from ..event.event_emitter import EventEmitter, EventListener
-from ..exception import exception_callback, submit_exception
-from ..logging.room_id import aio_task_with_room_id
-from ..path import danmaku_path
-from ..utils.mixins import SwitchableMixin
+from blrec.event.event_emitter import EventEmitter, EventListener
+from blrec.exception import exception_callback, submit_exception
+from blrec.logging.room_id import aio_task_with_room_id
+from blrec.path import danmaku_path
+from blrec.utils.mixins import SwitchableMixin
+
 from .danmaku_receiver import DanmakuReceiver, DanmuMsg
 from .statistics import Statistics
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener

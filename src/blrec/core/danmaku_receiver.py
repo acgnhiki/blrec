@@ -2,9 +2,10 @@ import logging
 from asyncio import Queue, QueueFull
 from typing import Final
 
-from ..bili.danmaku_client import DanmakuClient, DanmakuCommand, DanmakuListener
-from ..bili.typing import Danmaku
-from ..utils.mixins import StoppableMixin
+from blrec.bili.danmaku_client import DanmakuClient, DanmakuCommand, DanmakuListener
+from blrec.bili.typing import Danmaku
+from blrec.utils.mixins import StoppableMixin
+
 from .models import DanmuMsg, GiftSendMsg, GuardBuyMsg, SuperChatMsg
 from .typing import DanmakuMsg
 

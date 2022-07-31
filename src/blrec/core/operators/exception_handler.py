@@ -6,9 +6,9 @@ from typing import Optional, TypeVar
 
 from reactivex import Observable, abc
 
-from ...bili.exceptions import LiveRoomEncrypted, LiveRoomHidden, LiveRoomLocked
-from ...utils import operators as utils_ops
-from ...utils.mixins import AsyncCooperationMixin
+from blrec.bili.exceptions import LiveRoomEncrypted, LiveRoomHidden, LiveRoomLocked
+from blrec.utils import operators as utils_ops
+from blrec.utils.mixins import AsyncCooperationMixin
 
 __all__ = ('ExceptionHandler',)
 

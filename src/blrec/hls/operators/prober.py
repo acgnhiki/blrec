@@ -7,16 +7,17 @@ from typing import List, Optional, Union
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
-from ...utils.ffprobe import StreamProfile, ffprobe
+from blrec.utils.ffprobe import StreamProfile, ffprobe
+
 from .segment_fetcher import InitSectionData, SegmentData
 
-__all__ = ('HLSProber', 'StreamProfile')
+__all__ = ('Prober', 'StreamProfile')
 
 
 logger = logging.getLogger(__name__)
 
 
-class HLSProber:
+class Prober:
     def __init__(self) -> None:
         self._profiles: Subject[StreamProfile] = Subject()
 
