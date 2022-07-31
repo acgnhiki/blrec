@@ -21,15 +21,12 @@ import {
 } from '../../settings/shared/setting.model';
 import {
   PATH_TEMPLATE_PATTERN,
-  FILESIZE_LIMIT_OPTIONS,
-  DURATION_LIMIT_OPTIONS,
   STREAM_FORMAT_OPTIONS,
   QUALITY_OPTIONS,
   TIMEOUT_OPTIONS,
   DISCONNECTION_TIMEOUT_OPTIONS,
   BUFFER_OPTIONS,
   DELETE_STRATEGIES,
-  SPLIT_FILE_TIP,
   COVER_SAVE_STRATEGIES,
   RECORDING_MODE_OPTIONS,
 } from '../../settings/shared/constants/form';
@@ -58,14 +55,7 @@ export class TaskSettingsDialogComponent implements OnChanges {
 
   readonly warningTip =
     '需要重启弹幕客户端才能生效，如果任务正在录制可能会丢失弹幕！';
-  readonly splitFileTip = SPLIT_FILE_TIP;
   readonly pathTemplatePattern = PATH_TEMPLATE_PATTERN;
-  readonly filesizeLimitOptions = cloneDeep(FILESIZE_LIMIT_OPTIONS) as Mutable<
-    typeof FILESIZE_LIMIT_OPTIONS
-  >;
-  readonly durationLimitOptions = cloneDeep(DURATION_LIMIT_OPTIONS) as Mutable<
-    typeof DURATION_LIMIT_OPTIONS
-  >;
   readonly streamFormatOptions = cloneDeep(STREAM_FORMAT_OPTIONS) as Mutable<
     typeof STREAM_FORMAT_OPTIONS
   >;
@@ -121,6 +111,7 @@ export class TaskSettingsDialogComponent implements OnChanges {
   }
 
   handleConfirm(): void {
+    debugger;
     this.confirm.emit(difference(this.options, this.taskOptions!));
     this.close();
   }
@@ -132,7 +123,6 @@ export class TaskSettingsDialogComponent implements OnChanges {
       const prop = key as keyof TaskOptions;
       const options = this.options[prop];
       const globalSettings = this.globalSettings[prop];
-
       Reflect.set(
         model,
         prop,

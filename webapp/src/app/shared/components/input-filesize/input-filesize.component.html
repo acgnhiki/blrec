@@ -1,0 +1,15 @@
+<form nz-form [formGroup]="formGroup">
+  <nz-form-item>
+    <nz-form-control [nzErrorTip]="errorTip">
+      <input nz-input type="text" formControlName="filesize" />
+      <ng-template #errorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入文件大小
+        </ng-container>
+        <ng-container *ngIf="control.hasError('pattern')">
+          输入有错误
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+</form>

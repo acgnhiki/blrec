@@ -23,16 +23,18 @@ export function filterValueChanges<T extends object>(control: AbstractControl) {
 
 export function trimString<T extends object>() {
   return pipe(
-    map(
-      (object: T) =>
-        transform(
-          object,
-          (result, value: any, prop) => {
-            result[prop] = isString(value) ? value.trim() : value;
-          },
-          {} as T
-        ) as T
-    )
+    map((object: T) => {
+      if (isString(object)) {
+        return object.trim() as unknown as T;
+      }
+      return transform(
+        object,
+        (result, value: any, prop) => {
+          result[prop] = isString(value) ? value.trim() : value;
+        },
+        {} as T
+      ) as T;
+    })
   );
 }
 

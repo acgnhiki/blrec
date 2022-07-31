@@ -1,4 +1,5 @@
 import { transform, isEqual, isObject } from 'lodash-es';
+import * as filesize from 'filesize';
 
 // ref: https://gist.github.com/Yimiprod/7ee176597fef230d1451
 export function difference(object: object, base: object): object {
@@ -84,4 +85,71 @@ export function toByteRateString(
 
   const digits = precision - Math.floor(Math.abs(Math.log10(num))) - 1;
   return num.toFixed(digits < 0 ? 0 : digits) + spacer + unit;
+}
+
+export function formatDuration(
+  totalSeconds: number,
+  concise: boolean = false
+): string {
+  if (!(totalSeconds > 0)) {
+    totalSeconds = 0;
+  }
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds / 60) % 60);
+  const seconds = Math.floor(totalSeconds % 60);
+
+  let result = '';
+
+  if (concise) {
+    if (hours > 0) {
+      result += hours + ':';
+    }
+  } else {
+    result += hours < 10 ? '0' + hours : hours;
+    result += ':';
+  }
+  result += minutes < 10 ? '0' + minutes : minutes;
+  result += ':';
+  result += seconds < 10 ? '0' + seconds : seconds;
+
+  return result;
+}
+
+export function parseDuration(str: string): number | null {
+  try {
+    const [_, hours, minutes, seconds] = /(\d{1,2}):(\d{2}):(\d{2})/.exec(str)!;
+    return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
+  } catch (error) {
+    console.error(`Failed to parse duration: ${str}`, error);
+    return null;
+  }
+}
+
+export function formatFilesize(size: number): string {
+  return filesize(size);
+}
+
+export function parseFilesize(str: string): number | null {
+  try {
+    const [_, num, unit] = /^(\d+(?:\.\d+)?)\s*([TGMK]?B)$/.exec(str)!;
+    switch (unit) {
+      case 'B':
+        return parseFloat(num);
+      case 'KB':
+        return 1024 ** 1 * parseFloat(num);
+      case 'MB':
+        return 1024 ** 2 * parseFloat(num);
+      case 'GB':
+        return 1024 ** 3 * parseFloat(num);
+      case 'TB':
+        return 1024 ** 4 * parseFloat(num);
+      default:
+        console.warn(`Unexpected unit: ${unit}`, str);
+        return null;
+    }
+  } catch (error) {
+    console.error(`Failed to parse filesize: ${str}`, error);
+    return null;
+  }
 }

@@ -44,9 +44,19 @@
     <nz-form-label
       class="setting-label"
       nzNoColon
-      [nzTooltipTitle]="splitFileTip"
+      [nzTooltipTitle]="filesizeLimitTip"
       >大小限制</nz-form-label
     >
+    <ng-template #filesizeLimitTip>
+      <p>
+        自动分割文件以限制录播文件大小
+        <br />
+        格式：数字 + 单位(GB, MB, KB, B)
+        <br />
+        不自动分割文件设置为 <strong>0 B</strong>
+        <br />
+      </p>
+    </ng-template>
     <nz-form-control
       class="setting-control select"
       [nzWarningTip]="syncFailedWarningTip"
@@ -54,20 +64,26 @@
         syncStatus.filesizeLimit ? filesizeLimitControl : 'warning'
       "
     >
-      <nz-select
-        formControlName="filesizeLimit"
-        [nzOptions]="filesizeLimitOptions"
-      >
-      </nz-select>
+      <app-input-filesize formControlName="filesizeLimit"></app-input-filesize>
     </nz-form-control>
   </nz-form-item>
   <nz-form-item class="setting-item">
     <nz-form-label
       class="setting-label"
       nzNoColon
-      [nzTooltipTitle]="splitFileTip"
+      [nzTooltipTitle]="durationLimitTip"
       >时长限制</nz-form-label
     >
+    <ng-template #durationLimitTip>
+      <p>
+        自动分割文件以限制录播文件时长
+        <br />
+        格式：HH:MM:SS
+        <br />
+        不自动分割文件设置为 <strong>00:00:00</strong>
+        <br />
+      </p>
+    </ng-template>
     <nz-form-control
       class="setting-control select"
       [nzWarningTip]="syncFailedWarningTip"
@@ -75,11 +91,7 @@
         syncStatus.durationLimit ? durationLimitControl : 'warning'
       "
     >
-      <nz-select
-        formControlName="durationLimit"
-        [nzOptions]="durationLimitOptions"
-      >
-      </nz-select>
+      <app-input-duration formControlName="durationLimit"></app-input-duration>
     </nz-form-control>
   </nz-form-item>
 </form>

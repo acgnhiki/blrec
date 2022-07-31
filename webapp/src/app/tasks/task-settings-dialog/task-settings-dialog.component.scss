@@ -1,4 +1,4 @@
-@use '../../settings/shared/styles/setting';
+@use "../../settings/shared/styles/setting";
 
 nz-divider {
   margin: 0 !important;
@@ -44,7 +44,8 @@ nz-divider {
     }
   }
 
-  &.input, &.textarea {
+  &.input,
+  &.textarea {
     grid-template-columns: repeat(2, 1fr);
 
     .setting-label {
@@ -77,6 +78,22 @@ nz-divider {
 
     label[nz-checkbox] {
       justify-self: end;
+    }
+  }
+}
+
+.filesize-limit,
+.duration-limit {
+  .setting-control {
+    &.input {
+      max-width: 8em !important;
+      width: 8em !important;
+    }
+
+    @media screen and (max-width: 319px) {
+      &.input {
+        margin-left: 0 !important;
+      }
     }
   }
 }

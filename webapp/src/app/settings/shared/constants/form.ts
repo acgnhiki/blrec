@@ -1,8 +1,5 @@
 import { CoverSaveStrategy, DeleteStrategy } from '../setting.model';
 
-import range from 'lodash-es/range';
-
-export const SPLIT_FILE_TIP = '会按照此限制自动分割文件';
 export const SYNC_FAILED_WARNING_TIP = '设置同步失败！';
 
 export const PATH_TEMPLATE_PATTERN =
@@ -28,22 +25,6 @@ export const PATH_TEMPLATE_VARIABLES: Readonly<PathTemplateVariable[]> = [
   { name: 'hour', desc: '文件创建日期时间之小时' },
   { name: 'minute', desc: '文件创建日期时间之分钟' },
   { name: 'second', desc: '文件创建日期时间之秒数' },
-] as const;
-
-export const FILESIZE_LIMIT_OPTIONS = [
-  { label: '不限', value: 0 },
-  ...range(1, 21).map((i) => ({
-    label: `${i} GB`,
-    value: 1024 ** 3 * i,
-  })),
-] as const;
-
-export const DURATION_LIMIT_OPTIONS = [
-  { label: '不限', value: 0 },
-  ...range(1, 25).map((i) => ({
-    label: `${i} 小时`,
-    value: 3600 * i,
-  })),
 ] as const;
 
 export const DELETE_STRATEGIES = [

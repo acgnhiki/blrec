@@ -242,18 +242,22 @@ class OutputOptions(BaseModel):
 
     @validator('filesize_limit')
     def _validate_filesize_limit(cls, value: Optional[int]) -> Optional[int]:
-        # allowed 1 ~ 20 GB, 0 indicates not limit.
+        # file size in bytes, 0 indicates not limit。
         if value is not None:
-            allowed_values = frozenset(1024**3 * i for i in range(0, 21))
-            cls._validate_with_collection(value, allowed_values)
+            if not (0 <= value <= 1073731086581):  # 1073731086581(999.99 GB)
+                raise ValueError(
+                    'The filesize limit must be in the range of 0 to 1073731086581'
+                )
         return value
 
     @validator('duration_limit')
     def _validate_duration_limit(cls, value: Optional[int]) -> Optional[int]:
-        # allowed 1 ~ 24 hours, 0 indicates not limit.
+        # duration in seconds, 0 indicates not limit。
         if value is not None:
-            allowed_values = frozenset(3600 * i for i in range(0, 25))
-            cls._validate_with_collection(value, allowed_values)
+            if not (0 <= value <= 359999):  # 359999(99:59:59)
+                raise ValueError(
+                    'The duration limit must be in the range of 0 to 359999'
+                )
         return value
 
 

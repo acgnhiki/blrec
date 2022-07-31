@@ -6,25 +6,23 @@ import {
   OnChanges,
   ChangeDetectorRef,
 } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 
-import { Observable } from 'rxjs';
-import cloneDeep from 'lodash-es/cloneDeep';
 import mapValues from 'lodash-es/mapValues';
 
-import type { Mutable } from '../../shared/utility-types';
 import { OutputSettings } from '../shared/setting.model';
+import { filterValueChanges } from '../shared/rx-operators';
 import {
   SettingsSyncService,
   SyncStatus,
   calcSyncStatus,
 } from '../shared/services/settings-sync.service';
-import {
-  DURATION_LIMIT_OPTIONS,
-  FILESIZE_LIMIT_OPTIONS,
-  SPLIT_FILE_TIP,
-  SYNC_FAILED_WARNING_TIP,
-} from '../shared/constants/form';
+import { SYNC_FAILED_WARNING_TIP } from '../shared/constants/form';
 
 @Component({
   selector: 'app-output-settings',
@@ -37,14 +35,7 @@ export class OutputSettingsComponent implements OnInit, OnChanges {
   syncStatus!: SyncStatus<OutputSettings>;
 
   readonly settingsForm: FormGroup;
-  readonly splitFileTip = SPLIT_FILE_TIP;
   readonly syncFailedWarningTip = SYNC_FAILED_WARNING_TIP;
-  readonly filesizeLimitOptions = cloneDeep(FILESIZE_LIMIT_OPTIONS) as Mutable<
-    typeof FILESIZE_LIMIT_OPTIONS
-  >;
-  readonly durationLimitOptions = cloneDeep(DURATION_LIMIT_OPTIONS) as Mutable<
-    typeof DURATION_LIMIT_OPTIONS
-  >;
 
   constructor(
     formBuilder: FormBuilder,
@@ -54,8 +45,22 @@ export class OutputSettingsComponent implements OnInit, OnChanges {
     this.settingsForm = formBuilder.group({
       outDir: [''],
       pathTemplate: [''],
-      filesizeLimit: [''],
-      durationLimit: [''],
+      filesizeLimit: [
+        '',
+        [
+          Validators.required,
+          Validators.min(0),
+          Validators.max(1073731086581), // 1073731086581(999.99 GB)
+        ],
+      ],
+      durationLimit: [
+        '',
+        [
+          Validators.required,
+          Validators.min(0),
+          Validators.max(359999), // 359999(99:59:59)
+        ],
+      ],
     });
   }
 
@@ -70,6 +75,7 @@ export class OutputSettingsComponent implements OnInit, OnChanges {
   get filesizeLimitControl() {
     return this.settingsForm.get('filesizeLimit') as FormControl;
   }
+
   get durationLimitControl() {
     return this.settingsForm.get('durationLimit') as FormControl;
   }
@@ -84,7 +90,9 @@ export class OutputSettingsComponent implements OnInit, OnChanges {
       .syncSettings(
         'output',
         this.settings,
-        this.settingsForm.valueChanges as Observable<OutputSettings>
+        this.settingsForm.valueChanges.pipe(
+          filterValueChanges<OutputSettings>(this.settingsForm)
+        )
       )
       .subscribe((detail) => {
         this.syncStatus = { ...this.syncStatus, ...calcSyncStatus(detail) };
