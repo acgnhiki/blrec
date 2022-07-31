@@ -332,7 +332,7 @@ class SpaceSettings(BaseModel):
 
     @validator('check_interval')
     def _validate_interval(cls, value: int) -> int:
-        allowed_values = frozenset((10, 30, *(60 * i for i in (1, 3, 5, 10))))
+        allowed_values = frozenset((0, 10, 30, *(60 * i for i in (1, 3, 5, 10))))
         cls._validate_with_collection(value, allowed_values)
         return value
 

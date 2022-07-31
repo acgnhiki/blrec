@@ -33,6 +33,7 @@ export class DiskSpaceSettingsComponent implements OnInit, OnChanges {
   readonly syncFailedWarningTip = SYNC_FAILED_WARNING_TIP;
 
   readonly intervalOptions = [
+    { label: '不检测', value: 0 },
     { label: '10 秒', value: 10 },
     { label: '30 秒', value: 30 },
     { label: '1 分钟', value: 60 },

@@ -35,9 +35,21 @@ class SpaceMonitor(
     ) -> None:
         super().__init__()
         self.path = path
-        self.check_interval = check_interval
+        self._check_interval = check_interval
         self.space_threshold = space_threshold
         self._monitoring: bool = False
+
+    @property
+    def check_interval(self) -> int:
+        return self._check_interval
+
+    @check_interval.setter
+    def check_interval(self, value: int) -> None:
+        self._check_interval = value
+        if value <= 0:
+            self.disable()
+        else:
+            self.enable()
 
     def _do_enable(self) -> None:
         asyncio.create_task(self.start())
