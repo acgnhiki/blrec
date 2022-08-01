@@ -52,6 +52,8 @@ class SpaceMonitor(
             self.enable()
 
     def _do_enable(self) -> None:
+        if self._check_interval <= 0:
+            return
         asyncio.create_task(self.start())
         logger.debug('Enabled space monitor')
 
