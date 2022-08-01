@@ -119,12 +119,7 @@ class SegmentFetcher:
     @retry(
         reraise=True,
         retry=retry_if_exception_type(
-            (
-                requests.exceptions.Timeout,
-                requests.exceptions.HTTPError,
-                urllib3.exceptions.TimeoutError,
-                urllib3.exceptions.ProtocolError,
-            )
+            (requests.exceptions.RequestException, urllib3.exceptions.HTTPError)
         ),
         wait=wait_exponential(multiplier=0.1, max=5),
         stop=stop_after_delay(60),
