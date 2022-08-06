@@ -5,6 +5,7 @@ import logging
 import time
 from typing import Optional, TypeVar
 
+import aiohttp
 import requests
 import urllib3
 from reactivex import Observable, abc
@@ -42,6 +43,8 @@ class RequestExceptionHandler:
                     logger.warning(repr(exc))
                 except asyncio.exceptions.TimeoutError:
                     logger.warning(repr(exc))
+                except aiohttp.ClientError:
+                    logger.warning(repr(exc))
                 except Exception:
                     pass
 
@@ -65,6 +68,7 @@ class RequestExceptionHandler:
                 requests.exceptions.RequestException,  # XXX: ConnectionError
                 urllib3.exceptions.HTTPError,
                 asyncio.exceptions.TimeoutError,
+                aiohttp.ClientError,
             ),
         ):
             return True
