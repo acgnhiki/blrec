@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Final, Optional
+from typing import Optional
 
 import m3u8
 import urllib3
-from ordered_set import OrderedSet
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
