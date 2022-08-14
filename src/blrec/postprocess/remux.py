@@ -19,7 +19,9 @@ class RemuxingProgress:
     total: int
 
 
-_ERROR_PATTERN = re.compile(r'\b(error|missing|invalid|corrupt)\b', re.IGNORECASE)
+_ERROR_PATTERN = re.compile(
+    r'\b(error|missing|invalid|corrupt|illegal|overflow|out of range)\b', re.IGNORECASE
+)
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
