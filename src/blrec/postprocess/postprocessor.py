@@ -17,7 +17,7 @@ from ..flv.helpers import is_valid_flv_file
 from ..flv.metadata_analysis import analyse_metadata
 from ..flv.metadata_injection import InjectingProgress, inject_metadata
 from ..logging.room_id import aio_task_with_room_id
-from ..path import extra_metadata_path
+from ..path import danmaku_path, extra_metadata_path
 from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin, SupportDebugMixin
 from .ffmpeg_metadata import make_metadata_file
 from .helpers import copy_files_related, discard_dir, discard_file, get_extra_metadata
@@ -172,6 +172,9 @@ class Postprocessor(
                                 remuxing_result,
                             ) = await self._remux_video_to_mp4(video_path)
                             await copy_files_related(video_path)
+                            if result_path != video_path:
+                                self._completed_files.append(danmaku_path(result_path))
+                                self._completed_files.remove(danmaku_path(video_path))
                             if not self._debug:
                                 if self._should_delete_source_files(remuxing_result):
                                     await discard_dir(os.path.dirname(video_path))

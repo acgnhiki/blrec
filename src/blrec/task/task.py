@@ -1,6 +1,6 @@
 import logging
 import os
-from pathlib import Path
+from pathlib import PurePath
 from typing import Iterator, Optional
 
 from blrec.bili.danmaku_client import DanmakuClient
@@ -133,7 +133,10 @@ class RecordTask:
                 size = os.path.getsize(path)
                 exists = True
             except FileNotFoundError:
-                mp4_path = str(Path(path).with_suffix('.mp4'))
+                if path.endswith('.m3u8'):
+                    mp4_path = str(PurePath(path).parent.with_suffix('.mp4'))
+                else:
+                    mp4_path = str(PurePath(path).with_suffix('.mp4'))
                 try:
                     size = os.path.getsize(mp4_path)
                     exists = True
@@ -175,8 +178,14 @@ class RecordTask:
                 size = os.path.getsize(path)
                 exists = True
             except FileNotFoundError:
-                size = 0
-                exists = False
+                _path = str(PurePath(path).parent.with_suffix('.xml'))
+                try:
+                    size = os.path.getsize(_path)
+                    exists = True
+                    path = _path
+                except FileNotFoundError:
+                    size = 0
+                    exists = False
 
             if not exists:
                 status = DanmukuFileStatus.MISSING
