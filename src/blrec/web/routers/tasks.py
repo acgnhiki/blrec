@@ -34,7 +34,7 @@ router = APIRouter(
 @router.get('/data')
 async def get_task_data(
     page: PositiveInt = 1,
-    size: conint(ge=10, lt=100) = 100,  # type: ignore
+    size: conint(ge=10, le=100) = 100,  # type: ignore
     filter: TaskDataFilter = Depends(task_data_filter)
 ) -> List[Dict[str, Any]]:
     start = (page - 1) * size
