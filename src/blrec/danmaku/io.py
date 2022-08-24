@@ -11,7 +11,14 @@ import aiofiles
 import attr
 from lxml import etree
 
-from .models import Danmu, GiftSendRecord, GuardBuyRecord, Metadata, SuperChatRecord
+from .models import (
+    Danmu,
+    GiftSendRecord,
+    GuardBuyRecord,
+    Metadata,
+    SuperChatRecord,
+    UserToast,
+)
 from .typing import Element
 
 __all__ = 'DanmakuReader', 'DanmakuWriter'
@@ -119,6 +126,9 @@ class DanmakuWriter:
     async def write_danmu(self, danmu: Danmu) -> None:
         await self._file.write(self._serialize_danmu(danmu))
 
+    async def write_user_toast(self, toast: UserToast) -> None:
+        await self._file.write(self._serialize_user_toast(toast))
+
     async def write_gift_send_record(self, record: GiftSendRecord) -> None:
         await self._file.write(self._serialize_gift_send_record(record))
 
@@ -178,6 +188,16 @@ class DanmakuWriter:
 
         return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
 
+    def _serialize_user_toast(self, toast: UserToast) -> str:
+        attrib = attr.asdict(
+            toast,
+            filter=lambda a, v: a.name != 'msg',
+            value_serializer=record_value_serializer,
+        )
+        elem = etree.Element('toast', attrib=attrib)
+        elem.text = remove_control_characters(toast.msg)
+        return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
+
     def _serialize_gift_send_record(self, record: GiftSendRecord) -> str:
         attrib = attr.asdict(record, value_serializer=record_value_serializer)
         elem = etree.Element('gift', attrib=attrib)
@@ -195,7 +215,7 @@ class DanmakuWriter:
             value_serializer=record_value_serializer,
         )
         elem = etree.Element('sc', attrib=attrib)
-        elem.text = record.message
+        elem.text = remove_control_characters(record.message)
         return '    ' + etree.tostring(elem, encoding='utf8').decode() + '\n'
 
 

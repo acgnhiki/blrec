@@ -38,6 +38,34 @@ class DanmuMsg:
         )
 
 
+@attr.s(auto_attribs=True, slots=True, frozen=True)
+class UserToastMsg:
+    start_time: int  # timestamp in seconds
+    uid: int
+    username: str
+    unit: str
+    num: int
+    price: int
+    role_name: str
+    guard_level: str
+    toast_msg: str
+
+    @staticmethod
+    def from_danmu(danmu: Danmaku) -> 'UserToastMsg':
+        data = danmu['data']
+        return UserToastMsg(
+            start_time=data['start_time'],
+            uid=data['uid'],
+            username=data['username'],
+            unit=data['unit'],
+            num=data['num'],
+            price=data['price'],
+            role_name=data['role_name'],
+            guard_level=data['guard_level'],
+            toast_msg=data['toast_msg'].replace('<%', '').replace('%>', ''),
+        )
+
+
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class GiftSendMsg:
     gift_name: str

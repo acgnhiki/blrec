@@ -31,6 +31,19 @@ class Danmu:
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
+class UserToast:
+    ts: float  # start_time
+    uid: int
+    user: str  # username
+    unit: str
+    count: int  # num
+    price: int
+    role: str  # role_name
+    level: str  # guard_level
+    msg: str  # toast_msg
+
+
+@attr.s(auto_attribs=True, slots=True, frozen=True)
 class GiftSendRecord:
     ts: float
     uid: int

@@ -6,7 +6,7 @@ from blrec.bili.danmaku_client import DanmakuClient, DanmakuCommand, DanmakuList
 from blrec.bili.typing import Danmaku
 from blrec.utils.mixins import StoppableMixin
 
-from .models import DanmuMsg, GiftSendMsg, GuardBuyMsg, SuperChatMsg
+from .models import DanmuMsg, GiftSendMsg, GuardBuyMsg, SuperChatMsg, UserToastMsg
 from .typing import DanmakuMsg
 
 __all__ = ('DanmakuReceiver',)
@@ -47,6 +47,8 @@ class DanmakuReceiver(DanmakuListener, StoppableMixin):
             msg = GuardBuyMsg.from_danmu(danmu)
         elif cmd == DanmakuCommand.SUPER_CHAT_MESSAGE.value:
             msg = SuperChatMsg.from_danmu(danmu)
+        elif cmd == DanmakuCommand.USER_TOAST_MSG.value:
+            msg = UserToastMsg.from_danmu(danmu)
         else:
             return
 

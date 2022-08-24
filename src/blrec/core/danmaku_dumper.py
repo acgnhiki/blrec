@@ -9,7 +9,7 @@ from tenacity import AsyncRetrying, retry_if_not_exception_type, stop_after_atte
 
 from blrec import __github__, __prog__, __version__
 from blrec.bili.live import Live
-from blrec.core.models import GiftSendMsg, GuardBuyMsg, SuperChatMsg
+from blrec.core.models import GiftSendMsg, GuardBuyMsg, SuperChatMsg, UserToastMsg
 from blrec.danmaku.io import DanmakuWriter
 from blrec.danmaku.models import (
     Danmu,
@@ -17,6 +17,7 @@ from blrec.danmaku.models import (
     GuardBuyRecord,
     Metadata,
     SuperChatRecord,
+    UserToast,
 )
 from blrec.event.event_emitter import EventEmitter, EventListener
 from blrec.exception import exception_callback, submit_exception
@@ -198,6 +199,8 @@ class DanmakuDumper(
             if isinstance(msg, DanmuMsg):
                 await writer.write_danmu(self._make_danmu(msg))
                 self._statistics.submit(1)
+            elif isinstance(msg, UserToastMsg):
+                await writer.write_user_toast(self._make_user_toast(msg))
             elif isinstance(msg, GiftSendMsg):
                 if not self.record_gift_send:
                     continue
@@ -286,6 +289,19 @@ class DanmakuDumper(
             price=msg.price * msg.rate,
             time=msg.time,
             message=msg.message,
+        )
+
+    def _make_user_toast(self, msg: UserToastMsg) -> UserToast:
+        return UserToast(
+            ts=self._calc_stime(msg.start_time * 1000),
+            uid=msg.uid,
+            user=msg.username,
+            unit=msg.unit,
+            count=msg.num,
+            price=msg.price,
+            role=msg.role_name,
+            level=msg.guard_level,
+            msg=msg.toast_msg,
         )
 
     def _calc_stime(self, timestamp: int) -> float:
