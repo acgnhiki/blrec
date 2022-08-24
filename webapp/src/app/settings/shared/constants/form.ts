@@ -2,6 +2,10 @@ import { CoverSaveStrategy, DeleteStrategy } from '../setting.model';
 
 export const SYNC_FAILED_WARNING_TIP = '设置同步失败！';
 
+export const BASE_URL_PATTERN = /^https?:\/\/.*$/;
+export const BASE_API_URL_DEFAULT = 'https://api.bilibili.com';
+export const BASE_LIVE_API_URL_DEFAULT = 'https://api.live.bilibili.com';
+
 export const PATH_TEMPLATE_PATTERN =
   /^(?:[^\\\/:*?"<>|\t\n\r\f\v\{\}]*?\{(?:roomid|uname|title|area|parent_area|year|month|day|hour|minute|second)\}[^\\\/:*?"<>|\t\n\r\f\v\{\}]*?)+?(?:\/(?:[^\\\/:*?"<>|\t\n\r\f\v\{\}]*?\{(?:roomid|uname|title|area|parent_area|year|month|day|hour|minute|second)\}[^\\\/:*?"<>|\t\n\r\f\v\{\}]*?)+?)*$/;
 

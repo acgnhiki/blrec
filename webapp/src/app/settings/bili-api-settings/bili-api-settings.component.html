@@ -1,0 +1,80 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item
+    class="setting-item actionable"
+    (click)="baseApiUrlEditDialog.open()"
+  >
+    <nz-form-label class="setting-label" [nzTooltipTitle]="baseApiUrlTip"
+      >BASE API URL</nz-form-label
+    >
+    <ng-template #baseApiUrlTip>
+      <p>主站 API 的 BASE URL</p>
+    </ng-template>
+    <nz-form-control
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.baseApiUrl ? baseApiUrlControl : 'warning'"
+    >
+      <nz-form-text class="setting-value"
+        >{{ baseApiUrlControl.value }}
+      </nz-form-text>
+      <app-base-api-url-edit-dialog
+        #baseApiUrlEditDialog
+        [value]="baseApiUrlControl.value"
+        (confirm)="baseApiUrlControl.setValue($event)"
+      ></app-base-api-url-edit-dialog>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item
+    class="setting-item actionable"
+    (click)="baseLiveApiUrlEditDialog.open()"
+  >
+    <nz-form-label class="setting-label" [nzTooltipTitle]="baseLiveApiUrlTip"
+      >BASE LIVE API URL</nz-form-label
+    >
+    <ng-template #baseLiveApiUrlTip>
+      <p>直播 API (getRoomPlayInfo 除外) 的 BASE URL</p>
+    </ng-template>
+    <nz-form-control
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.baseLiveApiUrl ? baseLiveApiUrlControl : 'warning'
+      "
+    >
+      <nz-form-text class="setting-value"
+        >{{ baseLiveApiUrlControl.value }}
+      </nz-form-text>
+      <app-base-live-api-url-edit-dialog
+        #baseLiveApiUrlEditDialog
+        [value]="baseLiveApiUrlControl.value"
+        (confirm)="baseLiveApiUrlControl.setValue($event)"
+      ></app-base-live-api-url-edit-dialog>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item
+    class="setting-item actionable"
+    (click)="basePlayInfoApiUrlEditDialog.open()"
+  >
+    <nz-form-label
+      class="setting-label"
+      [nzTooltipTitle]="basePalyInfoApiUrlTip"
+      >BASE PLAY INFO API URL</nz-form-label
+    >
+    <ng-template #basePalyInfoApiUrlTip>
+      <p>直播 API getRoomPlayInfo 的 BASE URL</p>
+    </ng-template>
+    <nz-form-control
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        syncStatus.basePlayInfoApiUrl ? basePlayInfoApiUrlControl : 'warning'
+      "
+    >
+      <nz-form-text class="setting-value"
+        >{{ basePlayInfoApiUrlControl.value }}
+      </nz-form-text>
+      <app-base-play-info-api-url-edit-dialog
+        #basePlayInfoApiUrlEditDialog
+        [value]="basePlayInfoApiUrlControl.value"
+        (confirm)="basePlayInfoApiUrlControl.setValue($event)"
+      ></app-base-play-info-api-url-edit-dialog>
+    </nz-form-control>
+  </nz-form-item>
+</form>

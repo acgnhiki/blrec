@@ -65,6 +65,10 @@ import { LogdirEditDialogComponent } from './logging-settings/logdir-edit-dialog
 import { PathTemplateEditDialogComponent } from './output-settings/path-template-edit-dialog/path-template-edit-dialog.component';
 import { MessageTemplateSettingsComponent } from './notification-settings/shared/components/message-template-settings/message-template-settings.component';
 import { MessageTemplateEditDialogComponent } from './notification-settings/shared/components/message-template-settings/message-template-edit-dialog/message-template-edit-dialog.component';
+import { BiliApiSettingsComponent } from './bili-api-settings/bili-api-settings.component';
+import { BaseApiUrlEditDialogComponent } from './bili-api-settings/base-api-url-edit-dialog/base-api-url-edit-dialog.component';
+import { BaseLiveApiUrlEditDialogComponent } from './bili-api-settings/base-live-api-url-edit-dialog/base-live-api-url-edit-dialog.component';
+import { BasePlayInfoApiUrlEditDialogComponent } from './bili-api-settings/base-play-info-api-url-edit-dialog/base-play-info-api-url-edit-dialog.component';
 
 @NgModule({
   declarations: [
@@ -101,6 +105,10 @@ import { MessageTemplateEditDialogComponent } from './notification-settings/shar
     PathTemplateEditDialogComponent,
     MessageTemplateSettingsComponent,
     MessageTemplateEditDialogComponent,
+    BiliApiSettingsComponent,
+    BaseApiUrlEditDialogComponent,
+    BaseLiveApiUrlEditDialogComponent,
+    BasePlayInfoApiUrlEditDialogComponent,
   ],
   imports: [
     CommonModule,

@@ -1,5 +1,5 @@
 <nz-modal
-  nzTitle="修改文件路径模板"
+  nzTitle="修改 BASE LIVE API URL"
   nzCentered
   [(nzVisible)]="visible"
   [nzOkDisabled]="control.invalid || control.value.trim() === value"
@@ -11,64 +11,34 @@
           <input
             type="text"
             required
-            [pattern]="pathTemplatePattern"
             nz-input
-            formControlName="pathTemplate"
+            formControlName="baseLiveApiUrl"
           />
           <ng-template #errorTip let-control>
             <ng-container *ngIf="control.hasError('required')">
-              请输入路径模板
+              不能为空
             </ng-container>
             <ng-container *ngIf="control.hasError('pattern')">
-              路径模板有错误
+              输入无效
             </ng-container>
           </ng-template>
         </nz-form-control>
       </nz-form-item>
-      <nz-collapse>
-        <nz-collapse-panel nzHeader="模板变量说明">
-          <nz-table
-            #table
-            [nzData]="pathTemplateVariables"
-            [nzPageSize]="11"
-            [nzShowPagination]="false"
-            [nzSize]="'small'"
-          >
-            <thead>
-              <tr>
-                <th>变量</th>
-                <th>说明</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of table.data">
-                <td>{{ item.name }}</td>
-                <td>{{ item.desc }}</td>
-              </tr>
-            </tbody>
-          </nz-table>
-          <p class="footnote">
-            <strong>
-              注意：变量名必须放在花括号中！使用日期时间变量以避免命名冲突！
-            </strong>
-          </p>
-        </nz-collapse-panel>
-      </nz-collapse>
     </form>
   </ng-container>
-
   <ng-template [nzModalFooter]>
     <button
       nz-button
       nzType="default"
       (click)="restoreDefault()"
-      [disabled]="control.value.trim() === pathTemplateDefault"
+      [disabled]="control.value.trim() === defaultBaseLiveApiUrl"
     >
       恢复默认
     </button>
     <button nz-button nzType="default" (click)="handleCancel()">取消</button>
     <button
       nz-button
+      nzDanger
       nzType="default"
       (click)="handleConfirm()"
       [disabled]="control.invalid || control.value.trim() === value"

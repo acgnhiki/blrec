@@ -53,18 +53,28 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         room_id: int,
         *,
         max_retries: int = 10,
+        headers: Optional[Dict[str, str]] = None,
     ) -> None:
         super().__init__()
         self.session = session
         self.appapi = appapi
         self.webapi = webapi
         self._room_id = room_id
+        self.headers = headers or {}
 
         self._api_platform: ApiPlatform = 'web'
         self._danmu_info: Dict[str, Any] = COMMON_DANMU_INFO
         self._host_index: int = 0
         self._retry_delay: int = 0
         self._MAX_RETRIES: Final[int] = max_retries
+
+    @property
+    def headers(self) -> Dict[str, str]:
+        return self._headers
+
+    @headers.setter
+    def headers(self, value: Dict[str, str]) -> None:
+        self._headers = {**value, 'Connection': 'Upgrade'}
 
     async def _do_start(self) -> None:
         await self._update_danmu_info()
@@ -76,6 +86,12 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         await self._terminate_message_loop()
         await self._disconnect()
         logger.debug('Stopped danmaku client')
+
+    async def restart(self) -> None:
+        logger.debug('Restarting danmaku client...')
+        await self.stop()
+        await self.start()
+        logger.debug('Restarted danmaku client')
 
     async def reconnect(self) -> None:
         if self.stopped:
@@ -117,7 +133,9 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         )
         logger.debug(f'Connecting WebSocket... {url}')
         try:
-            self._ws = await self.session.ws_connect(url, timeout=5)
+            self._ws = await self.session.ws_connect(
+                url, timeout=5, headers=self.headers
+            )
         except Exception as exc:
             logger.debug(f'Failed to connect WebSocket: {repr(exc)}')
             raise

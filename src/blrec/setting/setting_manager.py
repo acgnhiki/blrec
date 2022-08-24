@@ -16,6 +16,7 @@ from ..notification import (
 from ..webhook import WebHook
 from .helpers import shadow_settings, update_settings
 from .models import (
+    BiliApiOptions,
     DanmakuOptions,
     HeaderOptions,
     MessageTemplateSettings,
@@ -210,13 +211,24 @@ class SettingsManager:
             settings.enable_recorder = False
         await self.dump_settings()
 
+    def apply_task_bili_api_settings(
+        self, room_id: int, options: BiliApiOptions
+    ) -> None:
+        final_settings = self._settings.bili_api.copy()
+        shadow_settings(options, final_settings)
+        self._app._task_manager.apply_task_bili_api_settings(room_id, final_settings)
+
     async def apply_task_header_settings(
-        self, room_id: int, options: HeaderOptions, *, update_session: bool = True
+        self,
+        room_id: int,
+        options: HeaderOptions,
+        *,
+        restart_danmaku_client: bool = True,
     ) -> None:
         final_settings = self._settings.header.copy()
         shadow_settings(options, final_settings)
         await self._app._task_manager.apply_task_header_settings(
-            room_id, final_settings, update_session=update_session
+            room_id, final_settings, restart_danmaku_client=restart_danmaku_client
         )
 
     def apply_task_danmaku_settings(
@@ -263,6 +275,10 @@ class SettingsManager:
             max_bytes=self._settings.logging.max_bytes,
             backup_count=self._settings.logging.backup_count,
         )
+
+    def apply_bili_api_settings(self) -> None:
+        for settings in self._settings.tasks:
+            self.apply_task_bili_api_settings(settings.room_id, settings.bili_api)
 
     async def apply_header_settings(self) -> None:
         for settings in self._settings.tasks:

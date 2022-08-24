@@ -19,6 +19,7 @@ type PrimarySettings = Pick<
   Settings,
   | 'output'
   | 'logging'
+  | 'biliApi'
   | 'header'
   | 'danmaku'
   | 'recorder'
@@ -41,6 +42,7 @@ export class SettingsResolver implements Resolve<PrimarySettings> {
       .getSettings([
         'output',
         'logging',
+        'biliApi',
         'header',
         'danmaku',
         'recorder',

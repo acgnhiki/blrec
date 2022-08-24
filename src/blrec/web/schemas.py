@@ -44,6 +44,7 @@ AliasKeyOfSettings = Literal[
     'tasks',
     'output',
     'logging',
+    'biliApi',
     'header',
     'danmaku',
     'recorder',

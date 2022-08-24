@@ -50,6 +50,10 @@ class TaskParam:
     path_template: str
     filesize_limit: int
     duration_limit: int
+    # BiliApiSettings
+    base_api_url: str
+    base_live_api_url: str
+    base_play_info_api_url: str
     # HeaderSettings
     user_agent: str
     cookie: str

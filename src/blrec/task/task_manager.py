@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 from ..setting import (
     DanmakuSettings,
+    BiliApiSettings,
     HeaderSettings,
     OutputSettings,
     PostprocessingSettings,
@@ -76,8 +77,11 @@ class RecordTaskManager:
         self._tasks[settings.room_id] = task
 
         try:
+            self._settings_manager.apply_task_bili_api_settings(
+                settings.room_id, settings.bili_api
+            )
             await self._settings_manager.apply_task_header_settings(
-                settings.room_id, settings.header, update_session=False
+                settings.room_id, settings.header, restart_danmaku_client=False
             )
             await task.setup()
 
@@ -222,21 +226,29 @@ class RecordTaskManager:
         if coros:
             await asyncio.wait(coros)
 
-    async def apply_task_header_settings(
-        self, room_id: int, settings: HeaderSettings, *, update_session: bool = True
+    def apply_task_bili_api_settings(
+        self, room_id: int, settings: BiliApiSettings
     ) -> None:
         task = self._get_task(room_id)
+        task.base_api_url = settings.base_api_url
+        task.base_live_api_url = settings.base_live_api_url
+        task.base_play_info_api_url = settings.base_play_info_api_url
 
+    async def apply_task_header_settings(
+        self,
+        room_id: int,
+        settings: HeaderSettings,
+        *,
+        restart_danmaku_client: bool = True,
+    ) -> None:
+        task = self._get_task(room_id)
         # avoid unnecessary updates that will interrupt connections
         if task.user_agent == settings.user_agent and task.cookie == settings.cookie:
             return
-
         task.user_agent = settings.user_agent
         task.cookie = settings.cookie
-
-        if update_session:
-            # update task session to take the effect
-            await task.update_session()
+        if restart_danmaku_client:
+            await task.restart_danmaku_client()
 
     def apply_task_output_settings(
         self, room_id: int, settings: OutputSettings
@@ -296,6 +308,9 @@ class RecordTaskManager:
             path_template=task.path_template,
             filesize_limit=task.filesize_limit,
             duration_limit=task.duration_limit,
+            base_api_url=task.base_api_url,
+            base_live_api_url=task.base_live_api_url,
+            base_play_info_api_url=task.base_play_info_api_url,
             user_agent=task.user_agent,
             cookie=task.cookie,
             danmu_uname=task.danmu_uname,

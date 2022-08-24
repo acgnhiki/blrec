@@ -191,6 +191,30 @@ class RecordTask:
             yield DanmakuFileDetail(path=path, size=size, status=status)
 
     @property
+    def base_api_url(self) -> str:
+        return self._live.base_api_url
+
+    @base_api_url.setter
+    def base_api_url(self, value: str) -> None:
+        self._live.base_api_url = value
+
+    @property
+    def base_live_api_url(self) -> str:
+        return self._live.base_live_api_url
+
+    @base_live_api_url.setter
+    def base_live_api_url(self, value: str) -> None:
+        self._live.base_live_api_url = value
+
+    @property
+    def base_play_info_api_url(self) -> str:
+        return self._live.base_play_info_api_url
+
+    @base_play_info_api_url.setter
+    def base_play_info_api_url(self, value: str) -> None:
+        self._live.base_play_info_api_url = value
+
+    @property
     def user_agent(self) -> str:
         return self._live.user_agent
 
@@ -460,22 +484,13 @@ class RecordTask:
             await self._recorder.stop()
             await self._postprocessor.stop()
 
+    @aio_task_with_room_id
     async def update_info(self, raise_exception: bool = False) -> bool:
         return await self._live.update_info(raise_exception=raise_exception)
 
     @aio_task_with_room_id
-    async def update_session(self) -> None:
-        if self._monitor_enabled:
-            await self._danmaku_client.stop()
-
-        await self._live.deinit()
-        await self._live.init()
-        self._danmaku_client.session = self._live.session
-        self._danmaku_client.appapi = self._live.appapi
-        self._danmaku_client.webapi = self._live.webapi
-
-        if self._monitor_enabled:
-            await self._danmaku_client.start()
+    async def restart_danmaku_client(self) -> None:
+        await self._danmaku_client.restart()
 
     async def _setup(self) -> None:
         self._setup_danmaku_client()
@@ -488,7 +503,11 @@ class RecordTask:
 
     def _setup_danmaku_client(self) -> None:
         self._danmaku_client = DanmakuClient(
-            self._live.session, self._live.appapi, self._live.webapi, self._live.room_id
+            self._live.session,
+            self._live.appapi,
+            self._live.webapi,
+            self._live.room_id,
+            headers=self._live.headers,
         )
 
     def _setup_live_monitor(self) -> None:

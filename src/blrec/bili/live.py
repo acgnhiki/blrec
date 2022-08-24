@@ -40,8 +40,43 @@ class Live:
         self._cookie = cookie
         self._html_page_url = f'https://live.bilibili.com/{room_id}'
 
+        self._session = aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(limit=200),
+            raise_for_status=True,
+            trust_env=True,
+        )
+        self._appapi = AppApi(self._session, self.headers)
+        self._webapi = WebApi(self._session, self.headers)
+
         self._room_info: RoomInfo
         self._user_info: UserInfo
+
+    @property
+    def base_api_url(self) -> str:
+        return self._webapi.base_api_url
+
+    @base_api_url.setter
+    def base_api_url(self, value: str) -> None:
+        self._webapi.base_api_url = value
+        self._appapi.base_api_url = value
+
+    @property
+    def base_live_api_url(self) -> str:
+        return self._webapi.base_live_api_url
+
+    @base_live_api_url.setter
+    def base_live_api_url(self, value: str) -> None:
+        self._webapi.base_live_api_url = value
+        self._appapi.base_live_api_url = value
+
+    @property
+    def base_play_info_api_url(self) -> str:
+        return self._webapi.base_play_info_api_url
+
+    @base_play_info_api_url.setter
+    def base_play_info_api_url(self, value: str) -> None:
+        self._webapi.base_play_info_api_url = value
+        self._appapi.base_play_info_api_url = value
 
     @property
     def user_agent(self) -> str:
@@ -50,6 +85,8 @@ class Live:
     @user_agent.setter
     def user_agent(self, value: str) -> None:
         self._user_agent = value
+        self._webapi.headers = self.headers
+        self._appapi.headers = self.headers
 
     @property
     def cookie(self) -> str:
@@ -58,15 +95,25 @@ class Live:
     @cookie.setter
     def cookie(self, value: str) -> None:
         self._cookie = value
+        self._webapi.headers = self.headers
+        self._appapi.headers = self.headers
 
     @property
     def headers(self) -> Dict[str, str]:
         return {
-            'Referer': 'https://live.bilibili.com/',
-            'Connection': 'Keep-Alive',
-            'Accept-Encoding': 'gzip',
+            'Accept': '*/*',
+            'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en;q=0.3,en-US;q=0.2',
+            'Referer': f'https://live.bilibili.com/{self._room_id}',
+            'Origin': 'https://live.bilibili.com',
+            'Connection': 'keep-alive',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-site',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache',
             'User-Agent': self._user_agent,
             'Cookie': self._cookie,
+            'Accept-Encoding': 'gzip',
         }
 
     @property
@@ -94,15 +141,6 @@ class Live:
         return self._user_info
 
     async def init(self) -> None:
-        self._session = aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(limit=200),
-            headers=self.headers,
-            raise_for_status=True,
-            trust_env=True,
-        )
-        self._appapi = AppApi(self._session)
-        self._webapi = WebApi(self._session)
-
         self._room_info = await self.get_room_info()
         self._user_info = await self.get_user_info(self._room_info.uid)
 

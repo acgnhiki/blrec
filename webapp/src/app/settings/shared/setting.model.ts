@@ -1,5 +1,13 @@
 import type { Nullable, PartialDeep } from 'src/app/shared/utility-types';
 
+export interface BiliApiSettings {
+  baseApiUrl: string;
+  baseLiveApiUrl: string;
+  basePlayInfoApiUrl: string;
+}
+
+export type BiliApiOptions = Nullable<BiliApiSettings>;
+
 export interface HeaderSettings {
   userAgent: string;
   cookie: string;
@@ -65,6 +73,7 @@ export type PostprocessingOptions = Nullable<PostprocessingSettings>;
 
 export interface TaskOptions {
   output: OutputOptions;
+  biliApi: BiliApiOptions;
   header: HeaderOptions;
   danmaku: DanmakuOptions;
   recorder: RecorderOptions;
@@ -81,7 +90,7 @@ export interface TaskSettings extends TaskOptions {
 
 export type GlobalTaskSettings = Pick<
   Settings,
-  'output' | 'header' | 'danmaku' | 'recorder' | 'postprocessing'
+  'output' | 'biliApi' | 'header' | 'danmaku' | 'recorder' | 'postprocessing'
 >;
 
 export interface OutputSettings {
@@ -351,6 +360,7 @@ export interface Settings {
   tasks: TaskSettings[];
   output: OutputSettings;
   logging: LoggingSettings;
+  biliApi: BiliApiSettings;
   header: HeaderSettings;
   danmaku: DanmakuSettings;
   recorder: RecorderSettings;

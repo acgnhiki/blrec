@@ -19,6 +19,7 @@ KeyOfSettings = Literal[
     'tasks',
     'output',
     'logging',
+    'bili_api',
     'header',
     'danmaku',
     'recorder',

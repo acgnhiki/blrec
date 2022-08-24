@@ -1,8 +1,10 @@
-import os
-from abc import ABC, abstractmethod
 import asyncio
+import os
 import threading
+from abc import ABC, abstractmethod
 from typing import Awaitable, TypeVar, final
+
+from blrec.logging.room_id import aio_task_with_room_id
 
 
 class SwitchableMixin(ABC):
@@ -127,11 +129,16 @@ class AsyncCooperationMixin(ABC):
             # call submit_exception in a coroutine
             # workaround for `RuntimeError: no running event loop`
             submit_exception(exc)
+
         self._run_coroutine(wrapper())
 
     def _run_coroutine(self, coro: Awaitable[_T]) -> _T:
-        future = asyncio.run_coroutine_threadsafe(coro, self._loop)
+        future = asyncio.run_coroutine_threadsafe(self._with_room_id(coro), self._loop)
         return future.result()
+
+    @aio_task_with_room_id
+    async def _with_room_id(self, coro: Awaitable[_T]) -> _T:
+        return await coro
 
 
 class SupportDebugMixin(ABC):
@@ -139,9 +146,8 @@ class SupportDebugMixin(ABC):
         super().__init__()
 
     def _init_for_debug(self, room_id: int) -> None:
-        if (
-            (value := os.environ.get('DEBUG')) and
-            (value == '*' or room_id in value.split(','))
+        if (value := os.environ.get('DEBUG')) and (
+            value == '*' or room_id in value.split(',')
         ):
             self._debug = True
             self._debug_dir = os.path.expanduser(f'~/.blrec/debug/{room_id}')
