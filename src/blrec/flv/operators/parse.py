@@ -52,15 +52,17 @@ def parse(
                             observer.on_next(tag)
                         stream.close()
                 except EOFError as e:
+                    logger.debug(f'Error occurred while parsing stream: {repr(e)}')
                     if complete_on_eof:
                         observer.on_completed()
                     else:
                         if not ignore_eof:
                             observer.on_error(e)
                 except ValueError as e:
-                    if ignore_value_error:
-                        logger.debug(f'Error occurred while parsing stream: {repr(e)}')
-                    else:
+                    logger.debug(
+                        f'Error occurred while parsing stream: {repr(e)}', exc_info=e
+                    )
+                    if not ignore_value_error:
                         observer.on_error(e)
                 except Exception as e:
                     observer.on_error(e)

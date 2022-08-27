@@ -55,6 +55,10 @@ class StreamRemuxer(StoppableMixin, SupportDebugMixin):
     def exception(self) -> Optional[Exception]:
         return self._exception
 
+    @exception.setter
+    def exception(self, exc: Exception) -> None:
+        self._exception = exc
+
     def __enter__(self):  # type: ignore
         self.start()
         self.wait()
