@@ -17,7 +17,7 @@ from ..flv.helpers import is_valid_flv_file
 from ..flv.metadata_analysis import analyse_metadata
 from ..flv.metadata_injection import InjectingProgress, inject_metadata
 from ..logging.room_id import aio_task_with_room_id
-from ..path import danmaku_path, extra_metadata_path
+from ..path import danmaku_path, extra_metadata_path, record_metadata_path
 from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin, SupportDebugMixin
 from .ffmpeg_metadata import make_metadata_file
 from .helpers import copy_files_related, discard_dir, discard_file, get_extra_metadata
@@ -141,6 +141,8 @@ class Postprocessor(
 
             async with self._worker_semaphore:
                 logger.debug(f'Postprocessing... {video_path}')
+
+                await self._wait_for_metadata_file(video_path)
 
                 try:
                     if video_path.endswith('.flv'):
@@ -321,3 +323,22 @@ class Postprocessor(
             return False
 
         return False
+
+    async def _wait_for_metadata_file(self, video_path: str) -> None:
+        loop = asyncio.get_running_loop()
+
+        if video_path.endswith('.flv'):
+            path = extra_metadata_path(video_path)
+        elif video_path.endswith('.m3u8'):
+            path = record_metadata_path(video_path)
+        else:
+            return
+
+        for _ in range(10):
+            if await loop.run_in_executor(None, os.path.isfile, path):
+                break
+            else:
+                logger.debug(f'Not found metadata file: {path}')
+                await asyncio.sleep(1)
+        else:
+            logger.warning(f'No such metadata file: {path}')
