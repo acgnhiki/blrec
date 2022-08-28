@@ -1,5 +1,5 @@
 <nz-modal
-  nzTitle="修改 BASE PLAY INFO API URL"
+  nzTitle="修改直播流 API 主机地址"
   nzCentered
   [(nzVisible)]="visible"
   [nzOkDisabled]="control.invalid || control.value.trim() === value"
@@ -8,18 +8,19 @@
     <form nz-form [formGroup]="settingsForm">
       <nz-form-item>
         <nz-form-control [nzErrorTip]="errorTip">
-          <input
-            type="text"
-            required
+          <textarea
+            [rows]="5"
+            wrap="soft"
             nz-input
-            formControlName="basePlayInfoApiUrl"
-          />
+            required
+            formControlName="basePlayInfoApiUrls"
+          ></textarea>
           <ng-template #errorTip let-control>
             <ng-container *ngIf="control.hasError('required')">
               不能为空
             </ng-container>
-            <ng-container *ngIf="control.hasError('pattern')">
-              输入无效
+            <ng-container *ngIf="control.hasError('baseUrl')">
+              输入无效: {{ control.getError("baseUrl").value | json }}
             </ng-container>
           </ng-template>
         </nz-form-control>

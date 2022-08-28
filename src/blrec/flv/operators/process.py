@@ -17,15 +17,13 @@ __all__ = ('process',)
 logger = logging.getLogger(__name__)
 
 
-def process(
-    sort_tags: bool = False, trace: bool = False
-) -> Callable[[FLVStream], FLVStream]:
+def process(sort_tags: bool = False) -> Callable[[FLVStream], FLVStream]:
     def _process(source: FLVStream) -> FLVStream:
         if sort_tags:
             return source.pipe(
                 defragment(),
                 split(),
-                sort(trace=trace),
+                sort(),
                 ops.filter(lambda v: not is_avc_end_sequence_tag(v)),  # type: ignore
                 correct(),
                 fix(),

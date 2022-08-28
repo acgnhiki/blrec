@@ -29,7 +29,6 @@ import {
   DELETE_STRATEGIES,
   COVER_SAVE_STRATEGIES,
   RECORDING_MODE_OPTIONS,
-  BASE_URL_PATTERN,
 } from '../../settings/shared/constants/form';
 
 type OptionsModel = NonNullable<TaskOptions>;
@@ -56,7 +55,6 @@ export class TaskSettingsDialogComponent implements OnChanges {
 
   readonly warningTip =
     '需要重启弹幕客户端才能生效，如果任务正在录制可能会丢失弹幕！';
-  readonly baseUrlPattern = BASE_URL_PATTERN;
   readonly pathTemplatePattern = PATH_TEMPLATE_PATTERN;
   readonly streamFormatOptions = cloneDeep(STREAM_FORMAT_OPTIONS) as Mutable<
     typeof STREAM_FORMAT_OPTIONS

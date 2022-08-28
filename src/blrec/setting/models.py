@@ -35,7 +35,6 @@ __all__ = (
     'Settings',
     'SettingsIn',
     'SettingsOut',
-    'BiliApiOptions',
     'BiliApiSettings',
     'HeaderOptions',
     'HeaderSettings',
@@ -112,16 +111,10 @@ class BaseModel(PydanticBaseModel):
             )
 
 
-class BiliApiOptions(BaseModel):
-    base_api_url: Optional[str]
-    base_live_api_url: Optional[str]
-    base_play_info_api_url: Optional[str]
-
-
-class BiliApiSettings(BiliApiOptions):
-    base_api_url: str = 'https://api.bilibili.com'
-    base_live_api_url: str = 'https://api.live.bilibili.com'
-    base_play_info_api_url: str = base_live_api_url
+class BiliApiSettings(BaseModel):
+    base_api_urls: List[str] = ['https://api.bilibili.com']
+    base_live_api_urls: List[str] = ['https://api.live.bilibili.com']
+    base_play_info_api_urls: List[str] = ['https://api.live.bilibili.com']
 
 
 class HeaderOptions(BaseModel):
@@ -299,7 +292,6 @@ class OutputSettings(OutputOptions):
 
 class TaskOptions(BaseModel):
     output: OutputOptions = OutputOptions()
-    bili_api: BiliApiOptions = BiliApiOptions()
     header: HeaderOptions = HeaderOptions()
     danmaku: DanmakuOptions = DanmakuOptions()
     recorder: RecorderOptions = RecorderOptions()
@@ -309,14 +301,7 @@ class TaskOptions(BaseModel):
     def from_settings(cls, settings: TaskSettings) -> TaskOptions:
         return cls(
             **settings.dict(
-                include={
-                    'output',
-                    'bili_api',
-                    'header',
-                    'danmaku',
-                    'recorder',
-                    'postprocessing',
-                }
+                include={'output', 'header', 'danmaku', 'recorder', 'postprocessing'}
             )
         )
 

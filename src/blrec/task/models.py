@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 import attr
 
@@ -51,9 +51,9 @@ class TaskParam:
     filesize_limit: int
     duration_limit: int
     # BiliApiSettings
-    base_api_url: str
-    base_live_api_url: str
-    base_play_info_api_url: str
+    base_api_urls: List[str]
+    base_live_api_urls: List[str]
+    base_play_info_api_urls: List[str]
     # HeaderSettings
     user_agent: str
     cookie: str

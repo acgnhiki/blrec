@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Callable, List, Optional
 
 from reactivex import Observable, abc
@@ -21,8 +22,10 @@ __all__ = ('sort',)
 
 logger = logging.getLogger(__name__)
 
+TRACE_OP_SORT = bool(os.environ.get('TRACE_OP_SORT'))
 
-def sort(trace: bool = False) -> Callable[[FLVStream], FLVStream]:
+
+def sort() -> Callable[[FLVStream], FLVStream]:
     "Sort tags in GOP by timestamp to ensure subsequent operators work as expected."
 
     def _sort(source: FLVStream) -> FLVStream:
@@ -43,7 +46,7 @@ def sort(trace: bool = False) -> Callable[[FLVStream], FLVStream]:
                 if not gop_tags:
                     return
 
-                if trace:
+                if TRACE_OP_SORT:
                     logger.debug(
                         'Tags in GOP:\n'
                         f'Number of tags: {len(gop_tags)}\n'

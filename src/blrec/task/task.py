@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import PurePath
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 
 from blrec.bili.danmaku_client import DanmakuClient
 from blrec.bili.live import Live
@@ -200,28 +200,28 @@ class RecordTask:
             yield DanmakuFileDetail(path=path, size=size, status=status)
 
     @property
-    def base_api_url(self) -> str:
-        return self._live.base_api_url
+    def base_api_urls(self) -> List[str]:
+        return self._live.base_api_urls
 
-    @base_api_url.setter
-    def base_api_url(self, value: str) -> None:
-        self._live.base_api_url = value
-
-    @property
-    def base_live_api_url(self) -> str:
-        return self._live.base_live_api_url
-
-    @base_live_api_url.setter
-    def base_live_api_url(self, value: str) -> None:
-        self._live.base_live_api_url = value
+    @base_api_urls.setter
+    def base_api_urls(self, value: List[str]) -> None:
+        self._live.base_api_urls = value
 
     @property
-    def base_play_info_api_url(self) -> str:
-        return self._live.base_play_info_api_url
+    def base_live_api_urls(self) -> List[str]:
+        return self._live.base_live_api_urls
 
-    @base_play_info_api_url.setter
-    def base_play_info_api_url(self, value: str) -> None:
-        self._live.base_play_info_api_url = value
+    @base_live_api_urls.setter
+    def base_live_api_urls(self, value: List[str]) -> None:
+        self._live.base_live_api_urls = value
+
+    @property
+    def base_play_info_api_urls(self) -> List[str]:
+        return self._live.base_play_info_api_urls
+
+    @base_play_info_api_urls.setter
+    def base_play_info_api_urls(self, value: List[str]) -> None:
+        self._live.base_play_info_api_urls = value
 
     @property
     def user_agent(self) -> str:

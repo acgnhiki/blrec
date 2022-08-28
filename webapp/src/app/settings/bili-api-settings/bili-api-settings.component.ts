@@ -38,22 +38,22 @@ export class BiliApiSettingsComponent implements OnInit, OnChanges {
     private settingsSyncService: SettingsSyncService
   ) {
     this.settingsForm = formBuilder.group({
-      baseApiUrl: [''],
-      baseLiveApiUrl: [''],
-      basePlayInfoApiUrl: [''],
+      baseApiUrls: [[]],
+      baseLiveApiUrls: [[]],
+      basePlayInfoApiUrls: [[]],
     });
   }
 
-  get baseApiUrlControl() {
-    return this.settingsForm.get('baseApiUrl') as FormControl;
+  get baseApiUrlsControl() {
+    return this.settingsForm.get('baseApiUrls') as FormControl;
   }
 
-  get baseLiveApiUrlControl() {
-    return this.settingsForm.get('baseLiveApiUrl') as FormControl;
+  get baseLiveApiUrlsControl() {
+    return this.settingsForm.get('baseLiveApiUrls') as FormControl;
   }
 
-  get basePlayInfoApiUrlControl() {
-    return this.settingsForm.get('basePlayInfoApiUrl') as FormControl;
+  get basePlayInfoApiUrlsControl() {
+    return this.settingsForm.get('basePlayInfoApiUrls') as FormControl;
   }
 
   ngOnChanges(): void {
@@ -66,7 +66,8 @@ export class BiliApiSettingsComponent implements OnInit, OnChanges {
       .syncSettings(
         'biliApi',
         this.settings,
-        this.settingsForm.valueChanges as Observable<BiliApiSettings>
+        this.settingsForm.valueChanges as Observable<BiliApiSettings>,
+        false
       )
       .subscribe((detail) => {
         this.syncStatus = { ...this.syncStatus, ...calcSyncStatus(detail) };

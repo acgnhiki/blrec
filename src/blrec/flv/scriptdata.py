@@ -1,26 +1,25 @@
+import logging
 from io import BytesIO
-from typing import Any, BinaryIO, Dict, Mapping, TypedDict
-
+from typing import Any, BinaryIO, Mapping, TypedDict
 
 from .amf import AMFReader, AMFWriter
-
 
 __all__ = (
     'load',
     'loads',
     'dump',
     'dumps',
-
     'ScriptData',
-
     'ScriptDataParser',
     'ScriptDataDumper',
 )
 
+logger = logging.getLogger(__name__)
+
 
 class ScriptData(TypedDict):
     name: str
-    value: Dict[str, Any]
+    value: Any
 
 
 class ScriptDataParser:
@@ -29,7 +28,17 @@ class ScriptDataParser:
 
     def parse(self) -> ScriptData:
         name = self._parse_name()
-        value = self._parse_value()
+        try:
+            value = self._parse_value()
+        except EOFError:
+            logger.debug(f'No script data: {name}')
+            value = {}
+        if not isinstance(value, dict):
+            if name == 'onMetaData':
+                logger.debug(f'Invalid onMetaData: {value}')
+                value = {}
+            else:
+                logger.debug(f'Unusual script data: {name}, {value}')
         return ScriptData(name=name, value=value)
 
     def _parse_name(self) -> str:
@@ -37,10 +46,8 @@ class ScriptDataParser:
         assert isinstance(value, str)
         return value
 
-    def _parse_value(self) -> Dict[str, Any]:
-        value = self._reader.read_value()
-        assert isinstance(value, dict)
-        return value
+    def _parse_value(self) -> Any:
+        return self._reader.read_value()
 
 
 class ScriptDataDumper:

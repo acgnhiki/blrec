@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import time
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List
 
 import aiohttp
 from jsonpath import jsonpath
@@ -52,31 +52,31 @@ class Live:
         self._user_info: UserInfo
 
     @property
-    def base_api_url(self) -> str:
-        return self._webapi.base_api_url
+    def base_api_urls(self) -> List[str]:
+        return self._webapi.base_api_urls
 
-    @base_api_url.setter
-    def base_api_url(self, value: str) -> None:
-        self._webapi.base_api_url = value
-        self._appapi.base_api_url = value
-
-    @property
-    def base_live_api_url(self) -> str:
-        return self._webapi.base_live_api_url
-
-    @base_live_api_url.setter
-    def base_live_api_url(self, value: str) -> None:
-        self._webapi.base_live_api_url = value
-        self._appapi.base_live_api_url = value
+    @base_api_urls.setter
+    def base_api_urls(self, value: List[str]) -> None:
+        self._webapi.base_api_urls = value
+        self._appapi.base_api_urls = value
 
     @property
-    def base_play_info_api_url(self) -> str:
-        return self._webapi.base_play_info_api_url
+    def base_live_api_urls(self) -> List[str]:
+        return self._webapi.base_live_api_urls
 
-    @base_play_info_api_url.setter
-    def base_play_info_api_url(self, value: str) -> None:
-        self._webapi.base_play_info_api_url = value
-        self._appapi.base_play_info_api_url = value
+    @base_live_api_urls.setter
+    def base_live_api_urls(self, value: List[str]) -> None:
+        self._webapi.base_live_api_urls = value
+        self._appapi.base_live_api_urls = value
+
+    @property
+    def base_play_info_api_urls(self) -> List[str]:
+        return self._webapi.base_play_info_api_urls
+
+    @base_play_info_api_urls.setter
+    def base_play_info_api_urls(self, value: List[str]) -> None:
+        self._webapi.base_play_info_api_urls = value
+        self._appapi.base_play_info_api_urls = value
 
     @property
     def user_agent(self) -> str:
@@ -102,7 +102,7 @@ class Live:
     def headers(self) -> Dict[str, str]:
         return {
             'Accept': '*/*',
-            'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en;q=0.3,en-US;q=0.2',
+            'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en;q=0.3,en-US;q=0.2',  # noqa
             'Referer': f'https://live.bilibili.com/{self._room_id}',
             'Origin': 'https://live.bilibili.com',
             'Connection': 'keep-alive',
@@ -249,13 +249,14 @@ class Live:
         select_alternative: bool = False,
     ) -> str:
         if api_platform == 'web':
-            info = await self._webapi.get_room_play_info(self._room_id, qn)
+            paly_infos = await self._webapi.get_room_play_infos(self._room_id, qn)
         else:
-            info = await self._appapi.get_room_play_info(self._room_id, qn)
+            paly_infos = await self._appapi.get_room_play_infos(self._room_id, qn)
 
-        self._check_room_play_info(info)
+        for info in paly_infos:
+            self._check_room_play_info(info)
 
-        streams = jsonpath(info, '$.playurl_info.playurl.stream[*]')
+        streams = jsonpath(paly_infos, '$[*].playurl_info.playurl.stream[*]')
         if not streams:
             raise NoStreamAvailable(stream_format, stream_codec, qn)
         formats = jsonpath(
@@ -266,10 +267,10 @@ class Live:
         codecs = jsonpath(formats, f'$[*].codec[?(@.codec_name == "{stream_codec}")]')
         if not codecs:
             raise NoStreamCodecAvailable(stream_format, stream_codec, qn)
-        codec = codecs[0]
 
-        accept_qn = cast(List[QualityNumber], codec['accept_qn'])
-        if qn not in accept_qn or codec['current_qn'] != qn:
+        accept_qns = jsonpath(codecs, '$[*].accept_qn[*]')
+        current_qns = jsonpath(codecs, '$[*].current_qn')
+        if qn not in accept_qns or not all(map(lambda q: q == qn, current_qns)):
             raise NoStreamQualityAvailable(stream_format, stream_codec, qn)
 
         def sort_by_host(info: Any) -> int:
@@ -282,16 +283,23 @@ class Live:
                     return 1
                 if num == '08':
                     return 2
+                if num == '05':
+                    return 3
+                if num == '07':
+                    return 4
                 return 1000 + int(num)
-            elif re.search(r'cn-[a-z]+-[a-z]+', host):
-                return 2000
             elif 'mcdn' in host:
+                return 2000
+            elif re.search(r'cn-[a-z]+-[a-z]+', host):
                 return 5000
             else:
                 return 10000
 
-        url_info = sorted(codec['url_info'], key=sort_by_host)
-        urls = [i['host'] + codec['base_url'] + i['extra'] for i in url_info]
+        url_infos = sorted(
+            ({**i, 'base_url': c['base_url']} for c in codecs for i in c['url_info']),
+            key=sort_by_host,
+        )
+        urls = [i['host'] + i['base_url'] + i['extra'] for i in url_infos]
 
         if not select_alternative:
             return urls[0]

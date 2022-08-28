@@ -53,14 +53,15 @@ export class SettingsSyncService {
   syncSettings<K extends SK, V extends SV>(
     key: K,
     initialValue: V,
-    valueChanges: Observable<V>
+    valueChanges: Observable<V>,
+    deepDiff: boolean = true
   ): Observable<DetailWithResult<V> | DetailWithError<V>> {
     return valueChanges.pipe(
       scan<V, [V, V, Partial<V>]>(
         ([, prev], curr) => [
           prev,
           curr,
-          difference(curr!, prev!) as Partial<V>,
+          difference(curr!, prev!, deepDiff) as Partial<V>,
         ],
         [initialValue, initialValue, {} as Partial<V>]
       ),

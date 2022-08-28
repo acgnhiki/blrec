@@ -13,10 +13,8 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import {
-  BASE_LIVE_API_URL_DEFAULT,
-  BASE_URL_PATTERN,
-} from '../../shared/constants/form';
+import { BASE_LIVE_API_URL_DEFAULT } from '../../shared/constants/form';
+import { baseUrlValidator } from '../../shared/directives/base-url-validator.directive';
 
 @Component({
   selector: 'app-base-live-api-url-edit-dialog',
@@ -25,11 +23,11 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BaseLiveApiUrlEditDialogComponent implements OnChanges {
-  @Input() value = '';
+  @Input() value = [];
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
   @Output() cancel = new EventEmitter<undefined>();
-  @Output() confirm = new EventEmitter<string>();
+  @Output() confirm = new EventEmitter<string[]>();
 
   readonly settingsForm: FormGroup;
   readonly defaultBaseLiveApiUrl = BASE_LIVE_API_URL_DEFAULT;
@@ -39,15 +37,12 @@ export class BaseLiveApiUrlEditDialogComponent implements OnChanges {
     private changeDetector: ChangeDetectorRef
   ) {
     this.settingsForm = formBuilder.group({
-      baseLiveApiUrl: [
-        '',
-        [Validators.required, Validators.pattern(BASE_URL_PATTERN)],
-      ],
+      baseLiveApiUrls: ['', [Validators.required, baseUrlValidator()]],
     });
   }
 
   get control() {
-    return this.settingsForm.get('baseLiveApiUrl') as FormControl;
+    return this.settingsForm.get('baseLiveApiUrls') as FormControl;
   }
 
   ngOnChanges(): void {
@@ -70,7 +65,7 @@ export class BaseLiveApiUrlEditDialogComponent implements OnChanges {
   }
 
   setValue(): void {
-    this.control.setValue(this.value);
+    this.control.setValue(this.value.join('\n'));
     this.changeDetector.markForCheck();
   }
 
@@ -80,7 +75,12 @@ export class BaseLiveApiUrlEditDialogComponent implements OnChanges {
   }
 
   handleConfirm(): void {
-    this.confirm.emit(this.control.value.trim());
+    const value = this.control.value as string;
+    const baseUrls = value
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => !!line);
+    this.confirm.emit(baseUrls);
     this.close();
   }
 

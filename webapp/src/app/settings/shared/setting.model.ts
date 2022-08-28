@@ -1,9 +1,9 @@
 import type { Nullable, PartialDeep } from 'src/app/shared/utility-types';
 
 export interface BiliApiSettings {
-  baseApiUrl: string;
-  baseLiveApiUrl: string;
-  basePlayInfoApiUrl: string;
+  baseApiUrls: string[];
+  baseLiveApiUrls: string[];
+  basePlayInfoApiUrls: string[];
 }
 
 export type BiliApiOptions = Nullable<BiliApiSettings>;

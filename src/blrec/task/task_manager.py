@@ -77,9 +77,9 @@ class RecordTaskManager:
         self._tasks[settings.room_id] = task
 
         try:
-            self._settings_manager.apply_task_bili_api_settings(
-                settings.room_id, settings.bili_api
-            )
+            bili_api = self._settings_manager.get_settings({'bili_api'}).bili_api
+            assert bili_api is not None
+            self.apply_task_bili_api_settings(settings.room_id, bili_api)
             await self._settings_manager.apply_task_header_settings(
                 settings.room_id, settings.header, restart_danmaku_client=False
             )
@@ -230,9 +230,9 @@ class RecordTaskManager:
         self, room_id: int, settings: BiliApiSettings
     ) -> None:
         task = self._get_task(room_id)
-        task.base_api_url = settings.base_api_url
-        task.base_live_api_url = settings.base_live_api_url
-        task.base_play_info_api_url = settings.base_play_info_api_url
+        task.base_api_urls = settings.base_api_urls
+        task.base_live_api_urls = settings.base_live_api_urls
+        task.base_play_info_api_urls = settings.base_play_info_api_urls
 
     async def apply_task_header_settings(
         self,
@@ -308,9 +308,9 @@ class RecordTaskManager:
             path_template=task.path_template,
             filesize_limit=task.filesize_limit,
             duration_limit=task.duration_limit,
-            base_api_url=task.base_api_url,
-            base_live_api_url=task.base_live_api_url,
-            base_play_info_api_url=task.base_play_info_api_url,
+            base_api_urls=task.base_api_urls,
+            base_live_api_urls=task.base_live_api_urls,
+            base_play_info_api_urls=task.base_play_info_api_urls,
             user_agent=task.user_agent,
             cookie=task.cookie,
             danmu_uname=task.danmu_uname,

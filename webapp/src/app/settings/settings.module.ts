@@ -34,6 +34,7 @@ import { WebhookSettingsResolver } from './shared/services/webhook-settings.reso
 import { SettingsRoutingModule } from './settings-routing.module';
 import { SettingsComponent } from './settings.component';
 import { SwitchActionableDirective } from './shared/directives/switch-actionable.directive';
+import { BaseUrlValidatorDirective } from './shared/directives/base-url-validator.directive';
 import { DiskSpaceSettingsComponent } from './disk-space-settings/disk-space-settings.component';
 import { NotificationSettingsComponent } from './notification-settings/notification-settings.component';
 import { LoggingSettingsComponent } from './logging-settings/logging-settings.component';
@@ -74,6 +75,7 @@ import { BasePlayInfoApiUrlEditDialogComponent } from './bili-api-settings/base-
   declarations: [
     SettingsComponent,
     SwitchActionableDirective,
+    BaseUrlValidatorDirective,
     DiskSpaceSettingsComponent,
     NotificationSettingsComponent,
     LoggingSettingsComponent,

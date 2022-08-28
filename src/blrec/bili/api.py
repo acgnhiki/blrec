@@ -1,8 +1,10 @@
+import asyncio
 import hashlib
 import logging
+import os
 from abc import ABC
 from datetime import datetime
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional
 from urllib.parse import urlencode
 
 import aiohttp
@@ -16,15 +18,17 @@ __all__ = 'AppApi', 'WebApi'
 
 logger = logging.getLogger(__name__)
 
+TRACE_API_REQ = bool(os.environ.get('TRACE_API_REQ'))
+
 
 class BaseApi(ABC):
-    base_api_url: str = 'https://api.bilibili.com'
-    base_live_api_url: str = 'https://api.live.bilibili.com'
-    base_play_info_api_url: str = base_live_api_url
-
     def __init__(
         self, session: aiohttp.ClientSession, headers: Optional[Dict[str, str]] = None
     ):
+        self.base_api_urls: List[str] = ['https://api.bilibili.com']
+        self.base_live_api_urls: List[str] = ['https://api.live.bilibili.com']
+        self.base_play_info_api_urls: List[str] = ['https://api.live.bilibili.com']
+
         self._session = session
         self.headers = headers or {}
         self.timeout = 10
@@ -45,14 +49,61 @@ class BaseApi(ABC):
             )
 
     @retry(reraise=True, stop=stop_after_delay(5), wait=wait_exponential(0.1))
-    async def _get_json(self, *args: Any, **kwds: Any) -> JsonResponse:
-        async with self._session.get(
-            *args, **kwds, timeout=self.timeout, headers=self.headers
-        ) as res:
-            logger.debug(f'real url: {res.real_url}')
-            json_res = await res.json()
+    async def _get_json_res(self, *args: Any, **kwds: Any) -> JsonResponse:
+        kwds = {'timeout': self.timeout, 'headers': self.headers, **kwds}
+        async with self._session.get(*args, **kwds) as res:
+            if TRACE_API_REQ:
+                logger.debug(f'Request info: {res.request_info}')
+            try:
+                json_res = await res.json()
+            except aiohttp.ContentTypeError:
+                text_res = await res.text()
+                logger.debug(f'Response text: {text_res[:200]}')
+                raise
             self._check_response(json_res)
             return json_res
+
+    async def _get_json(
+        self, base_urls: List[str], path: str, *args: Any, **kwds: Any
+    ) -> JsonResponse:
+        if not base_urls:
+            raise ValueError('No base urls')
+        exception = None
+        for base_url in base_urls:
+            url = base_url + path
+            try:
+                return await self._get_json_res(url, *args, **kwds)
+            except Exception as exc:
+                exception = exc
+                if TRACE_API_REQ:
+                    logger.debug(f'Failed to get json from {url}', exc_info=exc)
+        else:
+            assert exception is not None
+            raise exception
+
+    async def _get_jsons_concurrently(
+        self, base_urls: List[str], path: str, *args: Any, **kwds: Any
+    ) -> List[JsonResponse]:
+        if not base_urls:
+            raise ValueError('No base urls')
+        urls = [base_url + path for base_url in base_urls]
+        aws = (self._get_json_res(url, *args, **kwds) for url in urls)
+        results = await asyncio.gather(*aws, return_exceptions=True)
+        exceptions = []
+        json_responses = []
+        for idx, item in enumerate(results):
+            if isinstance(item, Exception):
+                if TRACE_API_REQ:
+                    logger.debug(f'Failed to get json from {urls[idx]}', exc_info=item)
+                exceptions.append(item)
+            elif isinstance(item, dict):
+                json_responses.append(item)
+            else:
+                if TRACE_API_REQ:
+                    logger.debug(repr(item))
+        if not json_responses:
+            raise exceptions[0]
+        return json_responses
 
 
 class AppApi(BaseApi):
@@ -85,15 +136,15 @@ class AppApi(BaseApi):
         params.update(sign=sign)
         return params
 
-    async def get_room_play_info(
+    async def get_room_play_infos(
         self,
         room_id: int,
         qn: QualityNumber = 10000,
         *,
         only_video: bool = False,
         only_audio: bool = False,
-    ) -> ResponseData:
-        url = self.base_play_info_api_url + '/xlive/app-room/v2/index/getRoomPlayInfo'
+    ) -> List[ResponseData]:
+        path = '/xlive/app-room/v2/index/getRoomPlayInfo'
         params = self.signed(
             {
                 'actionKey': 'appkey',
@@ -121,11 +172,13 @@ class AppApi(BaseApi):
                 'ts': int(datetime.utcnow().timestamp()),
             }
         )
-        r = await self._get_json(url, params=params, headers=self._headers)
-        return r['data']
+        json_responses = await self._get_jsons_concurrently(
+            self.base_play_info_api_urls, path, params=params
+        )
+        return [r['data'] for r in json_responses]
 
     async def get_info_by_room(self, room_id: int) -> ResponseData:
-        url = self.base_live_api_url + '/xlive/app-room/v1/index/getInfoByRoom'
+        path = '/xlive/app-room/v1/index/getInfoByRoom'
         params = self.signed(
             {
                 'actionKey': 'appkey',
@@ -138,11 +191,12 @@ class AppApi(BaseApi):
                 'ts': int(datetime.utcnow().timestamp()),
             }
         )
-        r = await self._get_json(url, params=params)
-        return r['data']
+        json_res = await self._get_json(self.base_live_api_urls, path, params=params)
+        return json_res['data']
 
     async def get_user_info(self, uid: int) -> ResponseData:
-        url = self.base_api_url + '/x/v2/space'
+        base_api_urls = ['https://app.bilibili.com']
+        path = '/x/v2/space'
         params = self.signed(
             {
                 'build': '6640400',
@@ -153,11 +207,11 @@ class AppApi(BaseApi):
                 'vmid': uid,
             }
         )
-        r = await self._get_json(url, params=params)
-        return r['data']
+        json_res = await self._get_json(base_api_urls, path, params=params)
+        return json_res['data']
 
     async def get_danmu_info(self, room_id: int) -> ResponseData:
-        url = self.base_live_api_url + '/xlive/app-room/v1/index/getDanmuInfo'
+        path = '/xlive/app-room/v1/index/getDanmuInfo'
         params = self.signed(
             {
                 'actionKey': 'appkey',
@@ -170,20 +224,21 @@ class AppApi(BaseApi):
                 'ts': int(datetime.utcnow().timestamp()),
             }
         )
-        r = await self._get_json(url, params=params)
-        return r['data']
+        json_res = await self._get_json(self.base_live_api_urls, path, params=params)
+        return json_res['data']
 
 
 class WebApi(BaseApi):
     async def room_init(self, room_id: int) -> ResponseData:
-        url = self.base_live_api_url + '/room/v1/Room/room_init'
-        r = await self._get_json(url, params={'id': room_id})
-        return r['data']
+        path = '/room/v1/Room/room_init'
+        params = {'id': room_id}
+        json_res = await self._get_json(self.base_live_api_urls, path, params=params)
+        return json_res['data']
 
-    async def get_room_play_info(
+    async def get_room_play_infos(
         self, room_id: int, qn: QualityNumber = 10000
-    ) -> ResponseData:
-        url = self.base_play_info_api_url + '/xlive/web-room/v2/index/getRoomPlayInfo'
+    ) -> List[ResponseData]:
+        path = '/xlive/web-room/v2/index/getRoomPlayInfo'
         params = {
             'room_id': room_id,
             'protocol': '0,1',
@@ -193,34 +248,37 @@ class WebApi(BaseApi):
             'platform': 'web',
             'ptype': 8,
         }
-        r = await self._get_json(url, params=params)
-        return r['data']
+        json_responses = await self._get_jsons_concurrently(
+            self.base_play_info_api_urls, path, params=params
+        )
+        return [r['data'] for r in json_responses]
 
     async def get_info_by_room(self, room_id: int) -> ResponseData:
-        url = self.base_live_api_url + '/xlive/web-room/v1/index/getInfoByRoom'
+        path = '/xlive/web-room/v1/index/getInfoByRoom'
         params = {'room_id': room_id}
-        r = await self._get_json(url, params=params)
-        return r['data']
+        json_res = await self._get_json(self.base_live_api_urls, path, params=params)
+        return json_res['data']
 
     async def get_info(self, room_id: int) -> ResponseData:
-        url = self.base_live_api_url + '/room/v1/Room/get_info'
+        path = '/room/v1/Room/get_info'
         params = {'room_id': room_id}
-        r = await self._get_json(url, params=params)
-        return r['data']
+        json_res = await self._get_json(self.base_live_api_urls, path, params=params)
+        return json_res['data']
 
     async def get_timestamp(self) -> int:
-        url = self.base_live_api_url + '/av/v1/Time/getTimestamp?platform=pc'
-        r = await self._get_json(url)
-        return r['data']['timestamp']
+        path = '/av/v1/Time/getTimestamp'
+        params = {'platform': 'pc'}
+        json_res = await self._get_json(self.base_live_api_urls, path, params=params)
+        return json_res['data']['timestamp']
 
     async def get_user_info(self, uid: int) -> ResponseData:
-        url = self.base_api_url + '/x/space/acc/info'
+        path = '/x/space/acc/info'
         params = {'mid': uid}
-        r = await self._get_json(url, params=params)
-        return r['data']
+        json_res = await self._get_json(self.base_api_urls, path, params=params)
+        return json_res['data']
 
     async def get_danmu_info(self, room_id: int) -> ResponseData:
-        url = self.base_live_api_url + '/xlive/web-room/v1/index/getDanmuInfo'
+        path = '/xlive/web-room/v1/index/getDanmuInfo'
         params = {'id': room_id}
-        r = await self._get_json(url, params=params)
-        return r['data']
+        json_res = await self._get_json(self.base_live_api_urls, path, params=params)
+        return json_res['data']

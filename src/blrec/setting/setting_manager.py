@@ -16,7 +16,6 @@ from ..notification import (
 from ..webhook import WebHook
 from .helpers import shadow_settings, update_settings
 from .models import (
-    BiliApiOptions,
     DanmakuOptions,
     HeaderOptions,
     MessageTemplateSettings,
@@ -211,13 +210,6 @@ class SettingsManager:
             settings.enable_recorder = False
         await self.dump_settings()
 
-    def apply_task_bili_api_settings(
-        self, room_id: int, options: BiliApiOptions
-    ) -> None:
-        final_settings = self._settings.bili_api.copy()
-        shadow_settings(options, final_settings)
-        self._app._task_manager.apply_task_bili_api_settings(room_id, final_settings)
-
     async def apply_task_header_settings(
         self,
         room_id: int,
@@ -277,8 +269,10 @@ class SettingsManager:
         )
 
     def apply_bili_api_settings(self) -> None:
-        for settings in self._settings.tasks:
-            self.apply_task_bili_api_settings(settings.room_id, settings.bili_api)
+        for task_settings in self._settings.tasks:
+            self._app._task_manager.apply_task_bili_api_settings(
+                task_settings.room_id, self._settings.bili_api
+            )
 
     async def apply_header_settings(self) -> None:
         for settings in self._settings.tasks:

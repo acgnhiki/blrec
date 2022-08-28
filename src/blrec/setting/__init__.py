@@ -1,14 +1,13 @@
 from .helpers import shadow_settings, update_settings
 from .models import (
     DEFAULT_SETTINGS_FILE,
+    BiliApiSettings,
     DanmakuOptions,
     DanmakuSettings,
     EmailMessageTemplateSettings,
     EmailNotificationSettings,
     EmailSettings,
     EnvSettings,
-    BiliApiOptions,
-    BiliApiSettings,
     HeaderOptions,
     HeaderSettings,
     LoggingSettings,
@@ -47,7 +46,6 @@ __all__ = (
     'Settings',
     'SettingsIn',
     'SettingsOut',
-    'BiliApiOptions',
     'BiliApiSettings',
     'HeaderOptions',
     'HeaderSettings',

@@ -141,7 +141,7 @@ class FLVStreamRecorderImpl(StreamRecorderImpl, SupportDebugMixin):
                 self._stream_parser,
                 self._connection_error_handler,
                 self._request_exception_handler,
-                flv_ops.process(sort_tags=True, trace=self._debug),
+                flv_ops.process(sort_tags=True),
                 self._cutter,
                 self._limiter,
                 self._join_point_extractor,

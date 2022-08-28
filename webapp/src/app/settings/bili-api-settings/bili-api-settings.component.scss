@@ -1,1 +1,6 @@
-@use '../shared/styles/setting';
+@use "../shared/styles/setting";
+@use "src/app/shared/styles/text";
+
+nz-form-control {
+  @include text.elide-text-overflow;
+}

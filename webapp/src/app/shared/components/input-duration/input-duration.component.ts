@@ -42,7 +42,7 @@ export class InputDurationComponent implements OnInit, ControlValueAccessor {
     this.formGroup = formBuilder.group({
       duration: [
         '',
-        [Validators.required, Validators.pattern(/^\d{2}:[0~5]\d:[0~5]\d$/)],
+        [Validators.required, Validators.pattern(/^\d{2}:[0-5]\d:[0-5]\d$/)],
       ],
     });
   }

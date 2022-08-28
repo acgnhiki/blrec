@@ -2,7 +2,11 @@ import { transform, isEqual, isObject } from 'lodash-es';
 import * as filesize from 'filesize';
 
 // ref: https://gist.github.com/Yimiprod/7ee176597fef230d1451
-export function difference(object: object, base: object): object {
+export function difference(
+  object: object,
+  base: object,
+  deep: boolean = true
+): object {
   function diff(object: object, base: object) {
     return transform(object, (result: object, value: any, key: string) => {
       const baseValue = Reflect.get(base, key);
@@ -10,7 +14,7 @@ export function difference(object: object, base: object): object {
         Reflect.set(
           result,
           key,
-          isObject(value) && isObject(baseValue)
+          deep && isObject(value) && isObject(baseValue)
             ? diff(value, baseValue)
             : value
         );

@@ -186,7 +186,6 @@ export class TaskItemComponent implements OnChanges, OnDestroy {
       this.settingService.getTaskOptions(this.roomId),
       this.settingService.getSettings([
         'output',
-        'biliApi',
         'header',
         'danmaku',
         'recorder',
