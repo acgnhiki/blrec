@@ -176,7 +176,10 @@ class Postprocessor(
                             await copy_files_related(video_path)
                             if result_path != video_path:
                                 self._completed_files.append(danmaku_path(result_path))
-                                self._completed_files.remove(danmaku_path(video_path))
+                                with suppress(ValueError):
+                                    self._completed_files.remove(
+                                        danmaku_path(video_path)
+                                    )
                             if not self._debug:
                                 if self._should_delete_source_files(remuxing_result):
                                     await discard_dir(os.path.dirname(video_path))
