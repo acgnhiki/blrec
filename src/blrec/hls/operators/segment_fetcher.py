@@ -11,7 +11,14 @@ import urllib3
 from m3u8.model import InitializationSection
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
-from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
+from tenacity import (
+    retry,
+    retry_all,
+    retry_if_exception_type,
+    retry_if_not_exception_type,
+    stop_after_delay,
+    wait_exponential,
+)
 
 from blrec.bili.live import Live
 from blrec.utils.hash import cksum
@@ -137,8 +144,11 @@ class SegmentFetcher:
 
     @retry(
         reraise=True,
-        retry=retry_if_exception_type(
-            (requests.exceptions.RequestException, urllib3.exceptions.HTTPError)
+        retry=retry_all(
+            retry_if_exception_type(
+                (requests.exceptions.RequestException, urllib3.exceptions.HTTPError)
+            ),
+            retry_if_not_exception_type(requests.exceptions.HTTPError),
         ),
         wait=wait_exponential(max=10),
         stop=stop_after_delay(60),
