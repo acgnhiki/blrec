@@ -70,6 +70,9 @@ import { BiliApiSettingsComponent } from './bili-api-settings/bili-api-settings.
 import { BaseApiUrlEditDialogComponent } from './bili-api-settings/base-api-url-edit-dialog/base-api-url-edit-dialog.component';
 import { BaseLiveApiUrlEditDialogComponent } from './bili-api-settings/base-live-api-url-edit-dialog/base-live-api-url-edit-dialog.component';
 import { BasePlayInfoApiUrlEditDialogComponent } from './bili-api-settings/base-play-info-api-url-edit-dialog/base-play-info-api-url-edit-dialog.component';
+import { BarkNotificationSettingsComponent } from './notification-settings/bark-notification-settings/bark-notification-settings.component';
+import { BarkSettingsComponent } from './notification-settings/bark-notification-settings/bark-settings/bark-settings.component';
+import { BarkNotificationSettingsResolver } from './shared/services/bark-notification-settings.resolver';
 
 @NgModule({
   declarations: [
@@ -98,6 +101,8 @@ import { BasePlayInfoApiUrlEditDialogComponent } from './bili-api-settings/base-
     PushplusSettingsComponent,
     TelegramNotificationSettingsComponent,
     TelegramSettingsComponent,
+    BarkNotificationSettingsComponent,
+    BarkSettingsComponent,
     NotifierSettingsComponent,
     WebhookManagerComponent,
     WebhookEditDialogComponent,
@@ -147,7 +152,8 @@ import { BasePlayInfoApiUrlEditDialogComponent } from './bili-api-settings/base-
     PushdeerNotificationSettingsResolver,
     PushplusNotificationSettingsResolver,
     TelegramNotificationSettingsResolver,
+    BarkNotificationSettingsResolver,
     WebhookSettingsResolver,
   ],
 })
-export class SettingsModule {}
+export class SettingsModule { }

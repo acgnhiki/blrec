@@ -38,7 +38,8 @@ export class MessageTemplateSettingsComponent implements OnInit, OnChanges {
     | 'serverchanNotification'
     | 'pushdeerNotification'
     | 'pushplusNotification'
-    | 'telegramNotification';
+    | 'telegramNotification'
+    | 'barkNotification';
 
   messageTypes!: MessageType[];
   beganMessageTemplateSettings!: CommonMessageTemplateSettings;
@@ -50,7 +51,7 @@ export class MessageTemplateSettingsComponent implements OnInit, OnChanges {
     private changeDetector: ChangeDetectorRef,
     private message: NzMessageService,
     private settingService: SettingService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     switch (this.keyOfSettings) {

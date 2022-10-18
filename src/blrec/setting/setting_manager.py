@@ -12,6 +12,7 @@ from ..notification import (
     Pushplus,
     Serverchan,
     Telegram,
+    Bark,
 )
 from ..webhook import WebHook
 from .helpers import shadow_settings, update_settings
@@ -345,6 +346,14 @@ class SettingsManager:
         self._apply_notification_settings(notifier, settings)
         self._apply_message_template_settings(notifier, settings)
 
+    def apply_bark_notification_settings(self) -> None:
+        notifier = self._app._bark_notifier
+        settings = self._settings.bark_notification
+        self._apply_bark_settings(notifier.provider)
+        self._apply_notifier_settings(notifier, settings)
+        self._apply_notification_settings(notifier, settings)
+        self._apply_message_template_settings(notifier, settings)
+
     def apply_webhooks_settings(self) -> None:
         webhooks = [WebHook.from_settings(s) for s in self._settings.webhooks]
         self._app._webhook_emitter.webhooks = webhooks
@@ -370,6 +379,10 @@ class SettingsManager:
     def _apply_telegram_settings(self, telegram: Telegram) -> None:
         telegram.token = self._settings.telegram_notification.token
         telegram.chatid = self._settings.telegram_notification.chatid
+
+    def _apply_bark_settings(self, bark: Bark) -> None:
+        bark.server = self._settings.bark_notification.server
+        bark.pushkey = self._settings.bark_notification.pushkey
 
     def _apply_notifier_settings(
         self, notifier: Notifier, settings: NotifierSettings

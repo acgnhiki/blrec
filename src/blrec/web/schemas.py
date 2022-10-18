@@ -55,5 +55,6 @@ AliasKeyOfSettings = Literal[
     'pushdeerNotification',
     'pushplusNotification',
     'telegramNotification',
+    'barkNotification',
     'webhooks',
 ]

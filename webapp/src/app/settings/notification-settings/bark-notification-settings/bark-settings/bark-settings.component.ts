@@ -15,7 +15,7 @@ import {
 
 import mapValues from 'lodash-es/mapValues';
 
-import { PushdeerSettings } from '../../../shared/setting.model';
+import { BarkSettings } from '../../../shared/setting.model';
 import { filterValueChanges } from '../../../shared/rx-operators';
 import {
   SettingsSyncService,
@@ -25,14 +25,14 @@ import {
 import { SYNC_FAILED_WARNING_TIP } from 'src/app/settings/shared/constants/form';
 
 @Component({
-  selector: 'app-pushdeer-settings',
-  templateUrl: './pushdeer-settings.component.html',
-  styleUrls: ['./pushdeer-settings.component.scss'],
+  selector: 'app-bark-settings',
+  templateUrl: './bark-settings.component.html',
+  styleUrls: ['./bark-settings.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PushdeerSettingsComponent implements OnInit, OnChanges {
-  @Input() settings!: PushdeerSettings;
-  syncStatus!: SyncStatus<PushdeerSettings>;
+export class BarkSettingsComponent implements OnInit, OnChanges {
+  @Input() settings!: BarkSettings;
+  syncStatus!: SyncStatus<BarkSettings>;
 
   readonly settingsForm: FormGroup;
   readonly syncFailedWarningTip = SYNC_FAILED_WARNING_TIP;
@@ -49,7 +49,7 @@ export class PushdeerSettingsComponent implements OnInit, OnChanges {
         [
           Validators.required,
           Validators.pattern(
-            /^PDU\d+T[a-zA-Z\d]{32}(,PDU\d+T[a-zA-Z\d]{32}){0,99}$/
+            /^[a-zA-Z\d]+$/
           ),
         ],
       ],
@@ -73,10 +73,10 @@ export class PushdeerSettingsComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.settingsSyncService
       .syncSettings(
-        'pushdeerNotification',
+        'barkNotification',
         this.settings,
         this.settingsForm.valueChanges.pipe(
-          filterValueChanges<Partial<PushdeerSettings>>(this.settingsForm)
+          filterValueChanges<Partial<BarkSettings>>(this.settingsForm)
         )
       )
       .subscribe((detail) => {
