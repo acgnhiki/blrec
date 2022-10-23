@@ -4,6 +4,7 @@ from .playlist_resolver import PlaylistResolver
 from .prober import Prober, StreamProfile
 from .segment_dumper import SegmentDumper
 from .segment_fetcher import InitSectionData, SegmentData, SegmentFetcher
+from .segment_parser import SegmentParser
 from .segment_remuxer import SegmentRemuxer
 
 __all__ = (
@@ -15,6 +16,7 @@ __all__ = (
     'SegmentData',
     'SegmentDumper',
     'SegmentFetcher',
+    'SegmentParser',
     'SegmentRemuxer',
     'StreamProfile',
 )

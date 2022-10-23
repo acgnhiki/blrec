@@ -55,9 +55,7 @@ class HLSStreamRecorderImpl(StreamRecorderImpl):
         self._prober = hls_ops.Prober()
         self._dl_statistics = core_ops.SizedStatistics()
 
-        self._stream_parser = core_ops.StreamParser(
-            self._stream_param_holder, ignore_eof=True, ignore_value_error=True
-        )
+        self._segment_parser = hls_ops.SegmentParser()
         self._analyser = flv_ops.Analyser()
         self._injector = flv_ops.Injector(self._metadata_provider)
         self._join_point_extractor = flv_ops.JoinPointExtractor()
@@ -145,13 +143,10 @@ class HLSStreamRecorderImpl(StreamRecorderImpl):
                 self._dl_statistics,
                 self._prober,
                 ops.observe_on(
-                    NewThreadScheduler(self._thread_factory('SegmentRemuxer'))
-                ),
-                self._segment_remuxer,
-                ops.observe_on(
                     NewThreadScheduler(self._thread_factory('StreamRecorder'))
                 ),
-                self._stream_parser,
+                self._segment_remuxer,
+                self._segment_parser,
                 flv_ops.process(),
                 self._cutter,
                 self._limiter,

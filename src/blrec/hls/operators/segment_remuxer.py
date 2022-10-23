@@ -2,121 +2,72 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import Final, List, Optional, Union
+import os
+from typing import Optional, Union
 
-import urllib3
+import av
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
-from tenacity import Retrying, stop_after_delay, wait_fixed
-from tenacity.retry import retry_if_not_exception_type
 
 from blrec.bili.live import Live
-from blrec.utils.io import wait_for
 
-from ..stream_remuxer import StreamRemuxer
 from .segment_fetcher import InitSectionData, SegmentData
 
 __all__ = ('SegmentRemuxer',)
 
 
 logger = logging.getLogger(__name__)
-logging.getLogger(urllib3.__name__).setLevel(logging.WARNING)
+
+TRACE_REMUX_SEGMENT = bool(os.environ.get('TRACE_REMUX_SEGMENT'))
+TRACE_LIBAV = bool(os.environ.get('TRACE_LIBAV'))
+if TRACE_LIBAV:
+    logging.getLogger('libav').setLevel(5)
+else:
+    av.logging.set_level(av.logging.FATAL)
 
 
 class SegmentRemuxer:
-    _SEGMENT_DATA_CACHE: Final = 10
-    _MAX_SEGMENT_DATA_CACHE: Final = 15
-
     def __init__(self, live: Live) -> None:
         self._live = live
-        self._timeout: float = 10
-        self._stream_remuxer = StreamRemuxer(live.room_id, remove_filler_data=True)
 
     def __call__(
         self, source: Observable[Union[InitSectionData, SegmentData]]
-    ) -> Observable[io.RawIOBase]:
+    ) -> Observable[bytes]:
         return self._remux(source)
 
     def _remux(
         self, source: Observable[Union[InitSectionData, SegmentData]]
-    ) -> Observable[io.RawIOBase]:
+    ) -> Observable[bytes]:
         def subscribe(
-            observer: abc.ObserverBase[io.RawIOBase],
+            observer: abc.ObserverBase[bytes],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
             disposed = False
             subscription = SerialDisposable()
 
             init_section_data: Optional[bytes] = None
-            segment_data_cache: List[bytes] = []
-            self._stream_remuxer.stop()
 
             def reset() -> None:
-                nonlocal init_section_data, segment_data_cache
+                nonlocal init_section_data
                 init_section_data = None
-                segment_data_cache = []
-                self._stream_remuxer.stop()
-
-            def write(data: bytes) -> int:
-                return wait_for(
-                    self._stream_remuxer.input.write,
-                    args=(data,),
-                    timeout=self._timeout,
-                )
 
             def on_next(data: Union[InitSectionData, SegmentData]) -> None:
                 nonlocal init_section_data
-                nonlocal segment_data_cache
 
                 if isinstance(data, InitSectionData):
                     init_section_data = data.payload
-                    segment_data_cache.clear()
-                    logger.debug('Stop stream remuxer for init section')
-                    self._stream_remuxer.stop()
+                    observer.on_next(b'')
+                    return
 
-                if self._stream_remuxer.exception and not self._stream_remuxer.stopped:
-                    logger.debug(
-                        'Stop stream remuxer due to '
-                        + repr(self._stream_remuxer.exception)
-                    )
-                    self._stream_remuxer.stop()
+                if init_section_data is None:
+                    return
 
                 try:
-                    if self._stream_remuxer.stopped:
-                        self._stream_remuxer.start()
-                        while True:
-                            ready = self._stream_remuxer.wait(timeout=1)
-                            if disposed:
-                                return
-                            if ready:
-                                break
-
-                        observer.on_next(RemuxedStream(self._stream_remuxer))
-
-                        if init_section_data:
-                            write(init_section_data)
-                        if segment_data_cache:
-                            for cached_data in segment_data_cache:
-                                write(cached_data)
-                        if isinstance(data, InitSectionData):
-                            return
-
-                    write(data.payload)
-                except Exception as e:
-                    logger.warning(f'Failed to write data to stream remuxer: {repr(e)}')
-                    logger.debug(f'Stop stream remuxer due to {repr(e)}')
-                    self._stream_remuxer.stop()
-                    if len(segment_data_cache) >= self._MAX_SEGMENT_DATA_CACHE:
-                        segment_data_cache = segment_data_cache[
-                            -self._MAX_SEGMENT_DATA_CACHE + 1 :
-                        ]
+                    remuxed_data = self._remux_segemnt(init_section_data + data.payload)
+                except av.FFmpegError as e:
+                    logger.warning(f'Failed to remux segment: {repr(e)}', exc_info=e)
                 else:
-                    if len(segment_data_cache) >= self._SEGMENT_DATA_CACHE:
-                        segment_data_cache = segment_data_cache[
-                            -self._SEGMENT_DATA_CACHE + 1 :
-                        ]
-
-                segment_data_cache.append(data.payload)
+                    observer.on_next(remuxed_data)
 
             def dispose() -> None:
                 nonlocal disposed
@@ -131,56 +82,30 @@ class SegmentRemuxer:
 
         return Observable(subscribe)
 
+    def _remux_segemnt(self, data: bytes, format: str = 'flv') -> bytes:
+        in_file = io.BytesIO(data)
+        out_file = io.BytesIO()
 
-class CloseRemuxedStream(Exception):
-    pass
+        with av.open(in_file) as in_container:
+            with av.open(out_file, mode='w', format=format) as out_container:
+                in_video_stream = in_container.streams.video[0]
+                in_audio_stream = in_container.streams.audio[0]
+                out_video_stream = out_container.add_stream(template=in_video_stream)
+                out_audio_stream = out_container.add_stream(template=in_audio_stream)
 
+                for packet in in_container.demux():
+                    if TRACE_REMUX_SEGMENT:
+                        logger.debug(repr(packet))
+                    # We need to skip the "flushing" packets that `demux` generates.
+                    if packet.dts is None:
+                        continue
+                    # We need to assign the packet to the new stream.
+                    if packet.stream.type == 'video':
+                        packet.stream = out_video_stream
+                    elif packet.stream.type == 'audio':
+                        packet.stream = out_audio_stream
+                    else:
+                        raise NotImplementedError(packet.stream.type)
+                    out_container.mux(packet)
 
-class RemuxedStream(io.RawIOBase):
-    def __init__(
-        self, stream_remuxer: StreamRemuxer, *, read_timeout: float = 10
-    ) -> None:
-        self._stream_remuxer = stream_remuxer
-        self._read_timeout = read_timeout
-        self._offset: int = 0
-
-    def read(self, size: int = -1) -> bytes:
-        if self._stream_remuxer.stopped:
-            ready = self._stream_remuxer.wait(timeout=self._read_timeout)
-            if not ready:
-                msg = f'Stream remuxer not ready in {self._read_timeout} seconds'
-                logger.debug(msg)
-                raise EOFError(msg)
-
-        try:
-            for attempt in Retrying(
-                reraise=True,
-                retry=retry_if_not_exception_type(TimeoutError),
-                wait=wait_fixed(1),
-                stop=stop_after_delay(self._read_timeout),
-            ):
-                with attempt:
-                    data = wait_for(
-                        self._stream_remuxer.output.read,
-                        args=(size,),
-                        timeout=self._read_timeout,
-                    )
-        except Exception as exc:
-            logger.warning(f'Failed to read data from stream remuxer: {repr(exc)}')
-            self._stream_remuxer.exception = exc
-            raise EOFError(exc)
-        else:
-            assert data is not None
-            self._offset += len(data)
-            return data
-
-    def tell(self) -> int:
-        return self._offset
-
-    def close(self) -> None:
-        if self._stream_remuxer.stopped:
-            return
-        if self._stream_remuxer.exception:
-            return
-        logger.debug('Close remuxed stream')
-        self._stream_remuxer.exception = CloseRemuxedStream()
+        return out_file.getvalue()
