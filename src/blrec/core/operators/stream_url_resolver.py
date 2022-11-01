@@ -5,7 +5,6 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import requests
-import urllib3
 from reactivex import Observable, abc
 from reactivex import operators as ops
 
@@ -29,7 +28,6 @@ __all__ = ('StreamURLResolver',)
 
 
 logger = logging.getLogger(__name__)
-logging.getLogger(urllib3.__name__).setLevel(logging.WARNING)
 
 
 class StreamURLResolver(AsyncCooperationMixin):
@@ -49,13 +47,13 @@ class StreamURLResolver(AsyncCooperationMixin):
     def stream_host(self) -> str:
         return self._stream_host
 
-    def _reset(self) -> None:
+    def reset(self) -> None:
         self._stream_url = ''
         self._stream_host = ''
         self._stream_params = None
 
     def __call__(self, source: Observable[StreamParams]) -> Observable[str]:
-        self._reset()
+        self.reset()
         return self._solve(source).pipe(
             ops.do_action(on_error=self._before_retry),
             utils_ops.retry(delay=1, should_retry=self._should_retry),

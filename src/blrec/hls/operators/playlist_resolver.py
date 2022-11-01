@@ -5,20 +5,30 @@ import os
 from typing import Optional
 
 import m3u8
-import urllib3
 from reactivex import Observable, abc
+from reactivex import operators as ops
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
+
+from blrec.core import operators as core_ops
+from blrec.utils import operators as utils_ops
+
+from ..exceptions import NoNewSegments
 
 __all__ = ('PlaylistResolver',)
 
 
 logger = logging.getLogger(__name__)
-logging.getLogger(urllib3.__name__).setLevel(logging.WARNING)
 
 
 class PlaylistResolver:
+    def __init__(self, stream_url_resolver: core_ops.StreamURLResolver) -> None:
+        self._stream_url_resolver = stream_url_resolver
+
     def __call__(self, source: Observable[m3u8.M3U8]) -> Observable[m3u8.Segment]:
-        return self._solve(source)
+        return self._solve(source).pipe(
+            ops.do_action(on_error=self._before_retry),
+            utils_ops.retry(should_retry=self._should_retry),
+        )
 
     def _name_of(self, uri: str) -> str:
         name, ext = os.path.splitext(uri)
@@ -35,18 +45,18 @@ class PlaylistResolver:
             disposed = False
             subscription = SerialDisposable()
 
+            attempts: int = 0
             last_sequence_number: Optional[int] = None
 
             def on_next(playlist: m3u8.M3U8) -> None:
-                nonlocal last_sequence_number
+                nonlocal attempts, last_sequence_number
 
                 if playlist.is_endlist:
                     logger.debug('Playlist ended')
 
+                new_segments = []
                 for seg in playlist.segments:
-                    uri = seg.uri
-                    name = self._name_of(uri)
-                    num = int(name)
+                    num = self._sequence_number_of(seg.uri)
                     if last_sequence_number is not None:
                         if last_sequence_number >= num:
                             continue
@@ -57,8 +67,20 @@ class PlaylistResolver:
                                 f'current sequence number: {num}'
                             )
                             seg.discontinuity = True
-                    observer.on_next(seg)
+                    new_segments.append(seg)
                     last_sequence_number = num
+
+                if not new_segments:
+                    attempts += 1
+                    if attempts > 3:
+                        attempts = 0
+                        observer.on_error(NoNewSegments())
+                    return
+                else:
+                    attempts = 0
+
+                for seg in new_segments:
+                    observer.on_next(seg)
 
             def dispose() -> None:
                 nonlocal disposed
@@ -73,3 +95,15 @@ class PlaylistResolver:
             return CompositeDisposable(subscription, Disposable(dispose))
 
         return Observable(subscribe)
+
+    def _should_retry(self, exc: Exception) -> bool:
+        if isinstance(exc, NoNewSegments):
+            return True
+        else:
+            return False
+
+    def _before_retry(self, exc: Exception) -> None:
+        if not isinstance(exc, NoNewSegments):
+            return
+        logger.warning('No new segments received, trying to update the stream url.')
+        self._stream_url_resolver.reset()
