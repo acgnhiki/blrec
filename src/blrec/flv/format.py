@@ -1,37 +1,33 @@
-from io import BytesIO, SEEK_CUR
+from io import SEEK_CUR, BytesIO
 from typing import cast
 
 import attr
 
-from .struct_io import StructReader, StructWriter
+from .exceptions import FlvDataError, FlvHeaderError, FlvTagError
 from .io_protocols import RandomIO
-from .exceptions import FlvHeaderError, FlvDataError, FlvTagError
 from .models import (
-    FlvTag,
-    TagType,
-    FlvHeader,
-    FlvTagHeader,
-    TAG_HEADER_SIZE,
     AUDIO_TAG_HEADER_SIZE,
+    TAG_HEADER_SIZE,
     VIDEO_TAG_HEADER_SIZE,
-
+    AACPacketType,
     AudioTag,
     AudioTagHeader,
+    AVCPacketType,
+    CodecID,
+    FlvHeader,
+    FlvTag,
+    FlvTagHeader,
+    FrameType,
+    ScriptTag,
     SoundFormat,
     SoundRate,
     SoundSize,
     SoundType,
-    AACPacketType,
-
+    TagType,
     VideoTag,
     VideoTagHeader,
-    CodecID,
-    FrameType,
-    AVCPacketType,
-
-    ScriptTag,
 )
-
+from .struct_io import StructReader, StructWriter
 
 __all__ = 'FlvParser', 'FlvDumper'
 
@@ -73,7 +69,7 @@ class FlvParser:
             body_size = tag_header.data_size - AUDIO_TAG_HEADER_SIZE
             if no_body:
                 self._stream.seek(body_size, SEEK_CUR)
-                body = None
+                body = b''
             else:
                 body = self._reader.read(body_size)
             audio_tag_header = self.parse_audio_tag_header(header_data)
@@ -88,7 +84,7 @@ class FlvParser:
             body_size = tag_header.data_size - VIDEO_TAG_HEADER_SIZE
             if no_body:
                 self._stream.seek(body_size, SEEK_CUR)
-                body = None
+                body = b''
             else:
                 body = self._reader.read(body_size)
             video_tag_header = self.parse_video_tag_header(header_data)
@@ -102,14 +98,10 @@ class FlvParser:
             body_size = tag_header.data_size
             if no_body:
                 self._stream.seek(body_size, SEEK_CUR)
-                body = None
+                body = b''
             else:
                 body = self._reader.read(body_size)
-            return ScriptTag(
-                offset=offset,
-                **attr.asdict(tag_header),
-                body=body,
-            )
+            return ScriptTag(offset=offset, **attr.asdict(tag_header), body=body)
         else:
             raise FlvDataError(f'Unsupported tag type: {tag_header.tag_type}')
 
@@ -157,9 +149,7 @@ class FlvParser:
         flag = reader.read_ui8()
         sound_format = SoundFormat(flag >> 4)
         if sound_format != SoundFormat.AAC:
-            raise FlvDataError(
-                f'Unsupported sound format: {sound_format}', data
-            )
+            raise FlvDataError(f'Unsupported sound format: {sound_format}', data)
         sound_rate = SoundRate((flag >> 2) & 0b0000_0011)
         sound_size = SoundSize((flag >> 1) & 0b0000_0001)
         sound_type = SoundType(flag & 0b0000_0001)
@@ -177,9 +167,7 @@ class FlvParser:
             raise FlvDataError(f'Unsupported video codec: {codec_id}', data)
         avc_packet_type = AVCPacketType(reader.read_ui8())
         composition_time = reader.read_ui24()
-        return VideoTagHeader(
-            frame_type, codec_id, avc_packet_type, composition_time
-        )
+        return VideoTagHeader(frame_type, codec_id, avc_packet_type, composition_time)
 
 
 class FlvDumper:
@@ -221,28 +209,24 @@ class FlvDumper:
     def dump_flv_tag_header(self, tag: FlvTag) -> None:
         self._writer.write_ui8((int(tag.filtered) << 5) | tag.tag_type.value)
         self._writer.write_ui24(tag.data_size)
-        self._writer.write_ui24(tag.timestamp & 0x00ffffff)
+        self._writer.write_ui24(tag.timestamp & 0x00FFFFFF)
         self._writer.write_ui8(tag.timestamp >> 24)
         self._writer.write_ui24(tag.stream_id)
 
     def dump_audio_tag_header(self, tag: AudioTag) -> None:
         if tag.sound_format != SoundFormat.AAC:
-            raise FlvDataError(
-                f'Unsupported sound format: {tag.sound_format}', tag
-            )
+            raise FlvDataError(f'Unsupported sound format: {tag.sound_format}', tag)
         self._writer.write_ui8(
-            (tag.sound_format.value << 4) |
-            (tag.sound_rate.value << 2) |
-            (tag.sound_size.value << 1) |
-            tag.sound_type.value
+            (tag.sound_format.value << 4)
+            | (tag.sound_rate.value << 2)
+            | (tag.sound_size.value << 1)
+            | tag.sound_type.value
         )
         self._writer.write_ui8(tag.aac_packet_type)
 
     def dump_video_tag_header(self, tag: VideoTag) -> None:
         if tag.codec_id != CodecID.AVC:
             raise FlvDataError(f'Unsupported video codec: {tag.codec_id}', tag)
-        self._writer.write_ui8(
-            (tag.frame_type.value << 4) | tag.codec_id.value
-        )
+        self._writer.write_ui8((tag.frame_type.value << 4) | tag.codec_id.value)
         self._writer.write_ui8(tag.avc_packet_type.value)
         self._writer.write_ui24(tag.composition_time)

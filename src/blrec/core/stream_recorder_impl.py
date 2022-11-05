@@ -1,3 +1,4 @@
+import io
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -75,8 +76,8 @@ class StreamRecorderImpl(
         self._session = requests.Session()
 
         self._recording_mode = recording_mode
-        self._buffer_size = buffer_size
-        self._read_timeout = read_timeout
+        self._buffer_size = buffer_size or io.DEFAULT_BUFFER_SIZE
+        self._read_timeout = read_timeout or 3
         self._filesize_limit = filesize_limit
         self._duration_limit = duration_limit
 

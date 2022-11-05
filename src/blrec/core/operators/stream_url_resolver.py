@@ -54,7 +54,7 @@ class StreamURLResolver(AsyncCooperationMixin):
 
     def __call__(self, source: Observable[StreamParams]) -> Observable[str]:
         self.reset()
-        return self._solve(source).pipe(
+        return self._solve(source).pipe(  # type: ignore
             ops.do_action(on_error=self._before_retry),
             utils_ops.retry(delay=1, should_retry=self._should_retry),
         )
