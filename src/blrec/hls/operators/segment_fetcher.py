@@ -23,8 +23,6 @@ from tenacity import (
 from blrec.bili.live import Live
 from blrec.utils.hash import cksum
 
-from ..exceptions import SegmentDataCorrupted
-
 __all__ = ('SegmentFetcher', 'InitSectionData', 'SegmentData')
 
 
@@ -122,7 +120,7 @@ class SegmentFetcher:
                             f'segment url: {url}'
                         )
                     else:
-                        raise SegmentDataCorrupted(crc32, crc32_of_data)
+                        logger.warning(f'Segment data corrupted: {url}')
                 except Exception as exc:
                     logger.warning(f'Failed to fetch segment {url}', exc_info=exc)
                 else:
