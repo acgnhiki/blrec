@@ -38,19 +38,6 @@
   </nz-form-item>
   <nz-form-item class="setting-item">
     <nz-form-label class="setting-label" nzNoColon
-      >日志文件分割大小</nz-form-label
-    >
-    <nz-form-control
-      class="setting-control select"
-      [nzWarningTip]="syncFailedWarningTip"
-      [nzValidateStatus]="syncStatus.maxBytes ? maxBytesControl : 'warning'"
-    >
-      <nz-select formControlName="maxBytes" [nzOptions]="maxBytesOptions">
-      </nz-select>
-    </nz-form-control>
-  </nz-form-item>
-  <nz-form-item class="setting-item">
-    <nz-form-label class="setting-label" nzNoColon
       >日志文件备份数量</nz-form-label
     >
     <nz-form-control

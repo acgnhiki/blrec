@@ -42,12 +42,7 @@ export class LoggingSettingsComponent implements OnInit, OnChanges {
     { label: 'CRITICAL', value: 'CRITICAL' },
   ];
 
-  readonly maxBytesOptions = range(1, 11).map((i) => ({
-    label: `${i} MB`,
-    value: 1024 ** 2 * i,
-  }));
-
-  readonly backupOptions = range(1, 31).map((i) => ({
+  readonly backupOptions = range(0, 91).map((i) => ({
     label: i.toString(),
     value: i,
   }));
@@ -60,7 +55,6 @@ export class LoggingSettingsComponent implements OnInit, OnChanges {
     this.settingsForm = formBuilder.group({
       logDir: [''],
       consoleLogLevel: [''],
-      maxBytes: [''],
       backupCount: [''],
     });
   }
@@ -71,10 +65,6 @@ export class LoggingSettingsComponent implements OnInit, OnChanges {
 
   get consoleLogLevelControl() {
     return this.settingsForm.get('consoleLogLevel') as FormControl;
-  }
-
-  get maxBytesControl() {
-    return this.settingsForm.get('maxBytes') as FormControl;
   }
 
   get backupCountControl() {

@@ -1,18 +1,17 @@
-import os
-import logging
-from logging import LogRecord, Handler
-from logging.handlers import RotatingFileHandler
-from datetime import datetime
 import asyncio
-import threading
 import atexit
+import logging
+import os
+import threading
+from datetime import datetime
+from logging import Handler, LogRecord
+from logging.handlers import TimedRotatingFileHandler
 from typing import Any, List, Optional
 
-from colorama import init, deinit, Fore, Back, Style
+from colorama import Back, Fore, Style, deinit, init
 from tqdm import tqdm
 
 from .typing import LOG_LEVEL
-
 
 __all__ = 'configure_logger', 'ConsoleHandler', 'TqdmOutputStream'
 
@@ -57,7 +56,7 @@ def obtain_room_id() -> str:
         name = task.get_name()
 
     if '::' in name:
-        if (room_id := name.split('::')[-1]):
+        if room_id := name.split('::')[-1]:
             return room_id
 
     return ''
@@ -66,7 +65,7 @@ def obtain_room_id() -> str:
 def record_factory(*args: Any, **kwargs: Any) -> LogRecord:
     record = _old_factory(*args, **kwargs)
 
-    if (room_id := obtain_room_id()):
+    if room_id := obtain_room_id():
         record.roomid = '[' + room_id + '] '  # type: ignore
     else:
         record.roomid = ''  # type: ignore
@@ -84,7 +83,6 @@ def configure_logger(
     log_dir: str,
     *,
     console_log_level: LOG_LEVEL = 'INFO',
-    max_bytes: Optional[int] = None,
     backup_count: Optional[int] = None,
 ) -> None:
     # config root logger
@@ -104,10 +102,10 @@ def configure_logger(
 
     # logging to file
     log_file_path = make_log_file_path(log_dir)
-    file_handler = RotatingFileHandler(
-        log_file_path,
-        maxBytes=max_bytes or 1024 ** 2 * 10,
-        backupCount=backup_count or 1,
+    file_handler = TimedRotatingFileHandler(
+        filename=log_file_path,
+        when='MIDNIGHT',
+        backupCount=backup_count or 0,
         encoding='utf-8',
     )
     file_handler.setLevel(logging.DEBUG)

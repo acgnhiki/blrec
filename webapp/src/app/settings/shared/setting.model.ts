@@ -113,7 +113,6 @@ export type LogLevel =
 export interface LoggingSettings {
   logDir: string;
   consoleLogLevel: LogLevel;
-  maxBytes: number;
   backupCount: number;
 }
 

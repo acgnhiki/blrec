@@ -265,7 +265,6 @@ class SettingsManager:
         configure_logger(
             log_dir=self._settings.logging.log_dir,
             console_log_level=self._settings.logging.console_log_level,
-            max_bytes=self._settings.logging.max_bytes,
             backup_count=self._settings.logging.backup_count,
         )
 

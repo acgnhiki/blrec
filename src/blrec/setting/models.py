@@ -326,12 +326,7 @@ def log_dir_factory() -> str:
 class LoggingSettings(BaseModel):
     log_dir: Annotated[str, Field(default_factory=log_dir_factory)]
     console_log_level: LOG_LEVEL = 'INFO'
-    max_bytes: Annotated[
-        int, Field(ge=1024**2, le=1024**2 * 10, multiple_of=1024**2)
-    ] = (
-        1024**2 * 10
-    )  # allowed 1 ~ 10 MB
-    backup_count: Annotated[int, Field(ge=1, le=30)] = 30
+    backup_count: Annotated[int, Field(ge=0, le=90)] = 30
 
     @validator('log_dir')
     def _validate_dir(cls, path: str) -> str:
