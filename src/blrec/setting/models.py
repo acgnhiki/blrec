@@ -24,6 +24,7 @@ from .typing import (
     RecordingMode,
     ServerchanMessageType,
     TelegramMessageType,
+    BarkMessageType,
 )
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ __all__ = (
     'PushdeerSettings',
     'PushplusSettings',
     'TelegramSettings',
+    'BarkSettings'
     'NotifierSettings',
     'NotificationSettings',
     'EmailMessageTemplateSettings',
@@ -61,11 +63,13 @@ __all__ = (
     'PushdeerMessageTemplateSettings',
     'PushplusMessageTemplateSettings',
     'TelegramMessageTemplateSettings',
+    'BarkMessageTemplateSettings',
     'EmailNotificationSettings',
     'ServerchanNotificationSettings',
     'PushdeerNotificationSettings',
     'PushplusNotificationSettings',
     'TelegramNotificationSettings',
+    'BarkNotificationSettings',
     'WebHookSettings',
 )
 
@@ -419,6 +423,23 @@ class TelegramSettings(BaseModel):
         return value
 
 
+class BarkSettings(BaseModel):
+    server: str = ''
+    pushkey: str = ''
+
+    @validator('server')
+    def _validate_server(cls, value: str) -> str:
+        if value != '' and not re.fullmatch(r'https?://.+', value):
+            raise ValueError('server is invalid')
+        return value
+
+    @validator('pushkey')
+    def _validate_pushkey(cls, value: str) -> str:
+        if value != '' and not re.fullmatch(r'[a-zA-Z\d]+', value):
+            raise ValueError('pushkey is invalid')
+        return value
+
+
 class NotifierSettings(BaseModel):
     enabled: bool = False
 
@@ -520,6 +541,21 @@ class TelegramMessageTemplateSettings(MessageTemplateSettings):
     error_message_content: str = ''
 
 
+class BarkMessageTemplateSettings(MessageTemplateSettings):
+    began_message_type: BarkMessageType = 'markdown'
+    began_message_title: str = ''
+    began_message_content: str = ''
+    ended_message_type: BarkMessageType = 'markdown'
+    ended_message_title: str = ''
+    ended_message_content: str = ''
+    space_message_type: BarkMessageType = 'markdown'
+    space_message_title: str = ''
+    space_message_content: str = ''
+    error_message_type: BarkMessageType = 'markdown'
+    error_message_title: str = ''
+    error_message_content: str = ''
+
+
 class EmailNotificationSettings(
     EmailSettings, NotifierSettings, NotificationSettings, EmailMessageTemplateSettings
 ):
@@ -558,6 +594,15 @@ class TelegramNotificationSettings(
     NotifierSettings,
     NotificationSettings,
     TelegramMessageTemplateSettings,
+):
+    pass
+
+
+class BarkNotificationSettings(
+    BarkSettings,
+    NotifierSettings,
+    NotificationSettings,
+    BarkMessageTemplateSettings,
 ):
     pass
 
@@ -607,6 +652,7 @@ class Settings(BaseModel):
     pushdeer_notification: PushdeerNotificationSettings = PushdeerNotificationSettings()
     pushplus_notification: PushplusNotificationSettings = PushplusNotificationSettings()
     telegram_notification: TelegramNotificationSettings = TelegramNotificationSettings()
+    bark_notification: BarkNotificationSettings = BarkNotificationSettings()
     webhooks: Annotated[List[WebHookSettings], Field(max_items=50)] = []
 
     @classmethod
@@ -655,6 +701,7 @@ class SettingsIn(BaseModel):
     pushdeer_notification: Optional[PushdeerNotificationSettings] = None
     pushplus_notification: Optional[PushplusNotificationSettings] = None
     telegram_notification: Optional[TelegramNotificationSettings] = None
+    bark_notification: Optional[BarkNotificationSettings] = None
     webhooks: Optional[List[WebHookSettings]] = None
 
 

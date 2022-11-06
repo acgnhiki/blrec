@@ -1,0 +1,20 @@
+<app-sub-page pageTitle="Bark 通知">
+  <ng-template appSubPageContent>
+    <app-page-section>
+      <app-notifier-settings [settings]="notifierSettings" keyOfSettings="barkNotification"></app-notifier-settings>
+    </app-page-section>
+
+    <app-page-section name="Bark">
+      <app-bark-settings [settings]="barkSettings"></app-bark-settings>
+    </app-page-section>
+
+    <app-page-section name="事件">
+      <app-event-settings [settings]="notificationSettings" keyOfSettings="barkNotification"></app-event-settings>
+    </app-page-section>
+
+    <app-page-section name="消息">
+      <app-message-template-settings [settings]="messageTemplateSettings" keyOfSettings="barkNotification">
+      </app-message-template-settings>
+    </app-page-section>
+  </ng-template>
+</app-sub-page>

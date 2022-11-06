@@ -32,7 +32,8 @@ export class NotifierSettingsComponent implements OnInit, OnChanges {
     | 'serverchanNotification'
     | 'pushdeerNotification'
     | 'pushplusNotification'
-    | 'telegramNotification';
+    | 'telegramNotification'
+    | 'barkNotification';
 
   syncStatus!: SyncStatus<NotifierSettings>;
 

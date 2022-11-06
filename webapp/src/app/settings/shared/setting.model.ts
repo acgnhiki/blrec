@@ -169,7 +169,17 @@ export const KEYS_OF_TELEGRAM_SETTINGS = ['token', 'chatid'] as const;
 export interface NotifierSettings {
   enabled: boolean;
 }
+export interface BarkSettings {
+  server: string;
+  pushkey: string;
+}
 
+export const KEYS_OF_BARK_SETTINGS = ['server', 'pushkey'] as const;
+
+export interface PushplusSettings {
+  token: string;
+  topic: string;
+}
 export const KEYS_OF_NOTIFIER_SETTINGS = ['enabled'] as const;
 
 export interface NotificationSettings {
@@ -202,6 +212,8 @@ export type PushplusMessageType =
   | MarkdownMessageType
   | HtmlMessageType;
 export type TelegramMessageType = MarkdownMessageType | HtmlMessageType;
+export type BarkMessageType = TextMessageType;
+
 
 export interface MessageTemplateSettings {
   beganMessageType: string;
@@ -307,6 +319,20 @@ export interface TelegramMessageTemplateSettings {
   errorMessageTitle: string;
   errorMessageContent: string;
 }
+export interface BarkMessageTemplateSettings {
+  beganMessageType: BarkMessageType;
+  beganMessageTitle: string;
+  beganMessageContent: string;
+  endedMessageType: BarkMessageType;
+  endedMessageTitle: string;
+  endedMessageContent: string;
+  spaceMessageType: BarkMessageType;
+  spaceMessageTitle: string;
+  spaceMessageContent: string;
+  errorMessageType: BarkMessageType;
+  errorMessageTitle: string;
+  errorMessageContent: string;
+}
 
 export type EmailNotificationSettings = EmailSettings &
   NotifierSettings &
@@ -332,6 +358,11 @@ export type TelegramNotificationSettings = TelegramSettings &
   NotifierSettings &
   NotificationSettings &
   TelegramMessageTemplateSettings;
+
+export type BarkNotificationSettings = BarkSettings &
+  NotifierSettings &
+  NotificationSettings &
+  BarkMessageTemplateSettings;
 
 export interface WebhookEventSettings {
   liveBegan: boolean;
@@ -371,6 +402,7 @@ export interface Settings {
   pushdeerNotification: PushdeerNotificationSettings;
   pushplusNotification: PushplusNotificationSettings;
   telegramNotification: TelegramNotificationSettings;
+  barkNotification: BarkNotificationSettings;
   webhooks: WebhookSettings[];
 }
 

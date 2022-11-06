@@ -17,6 +17,7 @@ from ..setting.typing import (
     PushplusMessageType,
     ServerchanMessageType,
     TelegramMessageType,
+    BarkMessageType,
 )
 from ..utils.patterns import Singleton
 
@@ -27,6 +28,7 @@ __all__ = (
     'Pushdeer',
     'Pushplus',
     'Telegram',
+    'Bark',
 )
 
 
@@ -251,3 +253,50 @@ class Telegram(MessagingProvider):
                         response['result']['error_code'],
                         response['result']['description'],
                     )
+
+
+class BarkResponse(TypedDict):
+    code: int
+    message: str
+    timestamp: int
+
+
+class Bark(MessagingProvider):
+    _server: Final = 'https://api.day.app'
+    _endpoint: Final = '/push'
+
+    def __init__(self, server: str = '', pushkey: str = '') -> None:
+        super().__init__()
+        self.server = server
+        self.pushkey = pushkey
+
+    async def send_message(
+        self, title: str, content: str, msg_type: MessageType
+    ) -> None:
+        self._check_parameters()
+        await self._post_message(title, content, cast(BarkMessageType, msg_type))
+
+    def _check_parameters(self) -> None:
+        if not self.pushkey:
+            raise ValueError('No pushkey supplied')
+
+    async def _post_message(
+        self, title: str, content: str, msg_type: BarkMessageType
+    ) -> None:
+        url = urljoin(self.server or self._server, self._endpoint)
+        # content size is limited to a maximum size of 4 KB (4096 bytes)
+        if len(content.encode()) >= 4096:
+            content = content.encode()[:4090].decode(errors='ignore') + ' ...'
+        payload = {
+            "title": title,
+            "body": content,
+            "device_key": self.pushkey,
+            "badge": 1,
+            "icon": "https://raw.githubusercontent.com/acgnhiki/blrec/master/webapp/src/assets/icons/icon-72x72.png",
+            "group": "blrec",
+        }
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.post(url, json=payload) as res:
+                response = cast(BarkResponse, await res.json())
+                if response['code'] != 200:
+                    raise HTTPException(response['message'])

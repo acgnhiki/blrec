@@ -36,6 +36,7 @@ from .providers import (
     Pushplus,
     Serverchan,
     Telegram,
+    Bark,
 )
 
 __all__ = (
@@ -46,6 +47,7 @@ __all__ = (
     'PushdeerNotifier',
     'PushplusNotifier',
     'TelegramNotifier',
+    'BarkNotifer',
 )
 
 
@@ -403,3 +405,15 @@ class TelegramNotifier(MessageNotifier):
 
     def _get_error_message_content(self, msg_type: Optional[MessageType] = None) -> str:
         return super()._get_error_message_content(msg_type='text')
+
+
+class BarkNotifier(MessageNotifier):
+    provider = Bark.get_instance()
+
+    def _do_enable(self) -> None:
+        super()._do_enable()
+        logger.debug('Enabled Bark notifier')
+
+    def _do_disable(self) -> None:
+        super()._do_disable()
+        logger.debug('Disabled Bark notifier')

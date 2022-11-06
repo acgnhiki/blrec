@@ -1,0 +1,33 @@
+<form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label align-required" nzFor="server" nzNoColon>server</nz-form-label>
+    <nz-form-control class="setting-control input" nzHasFeedback [nzErrorTip]="serverErrorTip"
+      [nzWarningTip]="syncFailedWarningTip" [nzValidateStatus]="
+        serverControl.valid && !syncStatus.server ? 'warning' : serverControl
+      ">
+      <input id="server" type="url" placeholder="默认为官方服务器 https://api.day.app" nz-input formControlName="server" />
+      <ng-template #serverErrorTip let-control>
+        <ng-container *ngIf="control.hasError('pattern')">
+          server 无效
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label class="setting-label" nzFor="pushkey" nzNoColon nzRequired>pushkey</nz-form-label>
+    <nz-form-control class="setting-control input" nzHasFeedback [nzErrorTip]="pushkeyErrorTip"
+      [nzWarningTip]="syncFailedWarningTip" [nzValidateStatus]="
+        pushkeyControl.valid && !syncStatus.pushkey ? 'warning' : pushkeyControl
+      ">
+      <input id="pushkey" type="text" placeholder="" required nz-input formControlName="pushkey" />
+      <ng-template #pushkeyErrorTip let-control>
+        <ng-container *ngIf="control.hasError('required')">
+          请输入 pushkey！
+        </ng-container>
+        <ng-container *ngIf="control.hasError('pattern')">
+          pushkey 无效
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
+</form>

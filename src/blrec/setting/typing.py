@@ -12,6 +12,7 @@ ServerchanMessageType = MarkdownMessageType
 PushdeerMessageType = Union[TextMessageType, MarkdownMessageType]
 PushplusMessageType = Union[TextMessageType, MarkdownMessageType, HtmlMessageType]
 TelegramMessageType = Union[MarkdownMessageType, HtmlMessageType]
+BarkMessageType = Union[TextMessageType, MarkdownMessageType]
 
 
 KeyOfSettings = Literal[
@@ -30,6 +31,7 @@ KeyOfSettings = Literal[
     'pushdeer_notification',
     'pushplus_notification',
     'telegram_notification',
+    'bark_notification',
     'webhooks',
 ]
 
