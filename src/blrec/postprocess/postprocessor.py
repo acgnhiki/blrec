@@ -155,9 +155,6 @@ class Postprocessor(
                                 remuxing_result,
                             ) = await self._remux_video_to_mp4(video_path)
                             if not self._debug:
-                                await discard_file(
-                                    extra_metadata_path(video_path), 'DEBUG'
-                                )
                                 if self._should_delete_source_files(remuxing_result):
                                     await discard_file(video_path)
                         elif self.inject_extra_metadata:
@@ -165,6 +162,8 @@ class Postprocessor(
                             result_path = await self._inject_extra_metadata(video_path)
                         else:
                             result_path = video_path
+                        if not self._debug:
+                            await discard_file(extra_metadata_path(video_path), 'DEBUG')
 
                     elif video_path.endswith('.m3u8'):
                         if self.remux_to_mp4:
