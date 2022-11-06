@@ -49,7 +49,9 @@ class HLSStreamRecorderImpl(StreamRecorderImpl):
 
         self._playlist_fetcher = hls_ops.PlaylistFetcher(self._live, self._session)
         self._playlist_resolver = hls_ops.PlaylistResolver(self._stream_url_resolver)
-        self._segment_fetcher = hls_ops.SegmentFetcher(self._live, self._session)
+        self._segment_fetcher = hls_ops.SegmentFetcher(
+            self._live, self._session, self._stream_url_resolver
+        )
         self._segment_remuxer = hls_ops.SegmentRemuxer(live)
 
         self._prober = hls_ops.Prober()

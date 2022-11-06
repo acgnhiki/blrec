@@ -48,7 +48,9 @@ class HLSRawStreamRecorderImpl(StreamRecorderImpl):
 
         self._playlist_fetcher = hls_ops.PlaylistFetcher(self._live, self._session)
         self._playlist_dumper = hls_ops.PlaylistDumper(self._path_provider)
-        self._segment_fetcher = hls_ops.SegmentFetcher(self._live, self._session)
+        self._segment_fetcher = hls_ops.SegmentFetcher(
+            self._live, self._session, self._stream_url_resolver
+        )
         self._segment_dumper = hls_ops.SegmentDumper(self._playlist_dumper)
         self._ff_metadata_dumper = MetadataDumper(
             self._playlist_dumper, self._metadata_provider

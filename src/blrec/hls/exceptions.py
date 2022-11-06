@@ -4,3 +4,7 @@ class SegmentDataCorrupted(ValueError):
 
 class NoNewSegments(Exception):
     pass
+
+
+class FetchSegmentError(Exception):
+    pass
