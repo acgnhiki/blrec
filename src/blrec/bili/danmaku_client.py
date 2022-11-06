@@ -267,6 +267,9 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         while True:
             try:
                 wsmsg = await self._ws.receive(timeout=self._HEARTBEAT_INTERVAL)
+            except asyncio.TimeoutError as e:
+                logger.debug(f'Failed to receive message due to: {repr(e)}')
+                continue
             except Exception as e:
                 await self._handle_error(e)
             else:
