@@ -404,6 +404,7 @@ class PushplusSettings(BaseModel):
 class TelegramSettings(BaseModel):
     token: str = ''
     chatid: str = ''
+    server: str = ''
 
     @validator('token')
     def _validate_token(cls, value: str) -> str:
@@ -417,6 +418,11 @@ class TelegramSettings(BaseModel):
             raise ValueError('chatid is invalid')
         return value
 
+    @validator('server')
+    def _validate_server(cls, value: str) -> str:
+        if value != '' and not re.fullmatch(r'^https?:\/\/[a-zA-Z0-9-_.]+(:[0-9]+)?', value):
+            raise ValueError('server is invalid')
+        return value
 
 class BarkSettings(BaseModel):
     server: str = ''

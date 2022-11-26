@@ -57,4 +57,28 @@
       </ng-template>
     </nz-form-control>
   </nz-form-item>
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label align-required"
+      nzFor="server"
+      nzNoColon
+      >server</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control input"
+      nzHasFeedback
+      [nzErrorTip]="serverErrorTip"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="
+        serverControl.valid && !syncStatus.server ? 'warning' : serverControl
+      "
+    >
+      <input id="server" type="url" placeholder="默认为官方接口 https://api.telegram.org" nz-input formControlName="server" />
+      <ng-template #serverErrorTip let-control>
+        <ng-container *ngIf="control.hasError('pattern')">
+          server 无效
+        </ng-container>
+      </ng-template>
+    </nz-form-control>
+  </nz-form-item>
 </form>

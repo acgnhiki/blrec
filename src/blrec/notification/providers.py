@@ -218,10 +218,13 @@ class TelegramResponse(TypedDict):
 
 
 class Telegram(MessagingProvider):
-    def __init__(self, token: str = '', chatid: str = '') -> None:
+    _server: Final = 'https://api.telegram.org'
+
+    def __init__(self, token: str = '', chatid: str = '', server: str = '') -> None:
         super().__init__()
         self.token = token
         self.chatid = chatid
+        self.server = server
 
     async def send_message(
         self, title: str, content: str, msg_type: MessageType
@@ -238,11 +241,12 @@ class Telegram(MessagingProvider):
     async def _post_message(
         self, title: str, content: str, msg_type: TelegramMessageType
     ) -> None:
-        url = f'https://api.telegram.org/bot{self.token}/sendMessage'
+        url = urljoin(self.server or self._server, f'/bot{self.token}/sendMessage')
         payload = {
             'chat_id': self.chatid,
             'text': title + '\n\n' + content,
             'parse_mode': 'MarkdownV2' if msg_type == 'markdown' else 'HTML',
+            'disable_web_page_preview': True,
         }
 
         async with aiohttp.ClientSession(raise_for_status=True) as session:

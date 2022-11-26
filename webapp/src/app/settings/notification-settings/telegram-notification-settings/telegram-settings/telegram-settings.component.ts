@@ -45,6 +45,7 @@ export class TelegramSettingsComponent implements OnInit, OnChanges {
     this.settingsForm = formBuilder.group({
       token: ['', [Validators.required, Validators.pattern(/^[0-9]{8,10}:[a-zA-Z0-9_-]{35}$/)]],
       chatid: ['', [Validators.required, Validators.pattern(/^(-|[0-9]){0,}$/)]],
+      server: ['', [Validators.pattern(/^https?:\/\/[a-zA-Z0-9-_.]+(:[0-9]+)?/)]],
     });
   }
 
@@ -56,8 +57,13 @@ export class TelegramSettingsComponent implements OnInit, OnChanges {
     return this.settingsForm.get('chatid') as FormControl;
   }
 
+  get serverControl() {
+    return this.settingsForm.get('server') as FormControl;
+  }
+
   ngOnChanges(): void {
     this.syncStatus = mapValues(this.settings, () => true);
+    console.log(this.settings);
     this.settingsForm.setValue(this.settings);
   }
 
@@ -67,7 +73,7 @@ export class TelegramSettingsComponent implements OnInit, OnChanges {
         'telegramNotification',
         this.settings,
         this.settingsForm.valueChanges.pipe(
-          filterValueChanges<TelegramSettings>(this.settingsForm)
+          filterValueChanges<Partial<TelegramSettings>>(this.settingsForm)
         )
       )
       .subscribe((detail) => {

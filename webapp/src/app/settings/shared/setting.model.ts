@@ -161,9 +161,10 @@ export const KEYS_OF_PUSHPLUS_SETTINGS = ['token', 'topic'] as const;
 export interface TelegramSettings {
   token: string;
   chatid: string;
+  server: string;
 }
 
-export const KEYS_OF_TELEGRAM_SETTINGS = ['token', 'chatid'] as const;
+export const KEYS_OF_TELEGRAM_SETTINGS = ['token', 'chatid', 'server'] as const;
 
 export interface NotifierSettings {
   enabled: boolean;
