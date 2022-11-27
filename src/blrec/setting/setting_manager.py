@@ -378,6 +378,7 @@ class SettingsManager:
     def _apply_telegram_settings(self, telegram: Telegram) -> None:
         telegram.token = self._settings.telegram_notification.token
         telegram.chatid = self._settings.telegram_notification.chatid
+        telegram.server = self._settings.telegram_notification.server
 
     def _apply_bark_settings(self, bark: Bark) -> None:
         bark.server = self._settings.bark_notification.server
