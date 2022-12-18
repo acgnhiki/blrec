@@ -1,10 +1,9 @@
 import logging
 import secrets
-from typing import Optional, Set, Dict
+from typing import Dict, Optional, Set
 
-from fastapi import status, Request, Header
+from fastapi import Header, Request, status
 from fastapi.exceptions import HTTPException
-
 
 logger = logging.getLogger(__name__)
 
@@ -21,34 +20,26 @@ attempting_clients: Dict[str, int] = {}
 
 
 async def authenticate(
-    request: Request,
-    x_api_key: Optional[str] = Header(None),
+    request: Request, x_api_key: Optional[str] = Header(None)
 ) -> None:
     assert api_key, 'api_key is required'
 
     if not x_api_key:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='No api key',
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='No api key'
         )
 
+    assert request.client is not None, 'client should not be None'
     client_ip = request.client.host
     assert client_ip, 'client_ip is required'
 
     if client_ip in blacklist:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='Blacklisted',
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Blacklisted')
     if client_ip not in whitelist:
-        if (
-            len(whitelist) >= MAX_WHITELIST or
-            len(blacklist) >= MAX_BLACKLIST
-        ):
+        if len(whitelist) >= MAX_WHITELIST or len(blacklist) >= MAX_BLACKLIST:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail='Max clients allowed in whitelist or blacklist '
-                       'will exceeded',
+                detail='Max clients allowed in whitelist or blacklist ' 'will exceeded',
             )
         if len(attempting_clients) >= MAX_ATTEMPTING_CLIENTS:
             raise HTTPException(
@@ -71,8 +62,7 @@ async def authenticate(
         if client_ip in whitelist:
             whitelist.remove(client_ip)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='API key is invalid',
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='API key is invalid'
         )
 
     if client_ip in attempting_clients:

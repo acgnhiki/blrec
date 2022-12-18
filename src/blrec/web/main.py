@@ -137,12 +137,12 @@ api.include_router(update.router)
 
 
 class WebAppFiles(StaticFiles):
-    async def lookup_path(
+    def lookup_path(
         self, path: str
     ) -> Tuple[str, Optional[os.stat_result]]:
         if path == '404.html':
             path = 'index.html'
-        return await super().lookup_path(path)
+        return super().lookup_path(path)
 
     def file_response(self, full_path: str, *args, **kwargs) -> Response:  # type: ignore # noqa
         # ignore MIME types from Windows registry
