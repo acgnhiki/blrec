@@ -14,7 +14,6 @@ from blrec.bili.models import RoomInfo
 from blrec.bili.typing import QualityNumber, StreamFormat
 from blrec.event.event_emitter import EventEmitter, EventListener
 from blrec.flv.operators import MetaData, StreamProfile
-from blrec.logging.room_id import aio_task_with_room_id
 from blrec.setting.typing import RecordingMode
 from blrec.utils.mixins import AsyncStoppableMixin
 
@@ -457,8 +456,6 @@ class Recorder(
         await self._prepare()
         if self._stream_available:
             await self._stream_recorder.start()
-        else:
-            asyncio.create_task(self._guard())
 
         logger.info('Started recording')
         await self._emit('recording_started', self)
@@ -488,29 +485,6 @@ class Recorder(
         self._danmaku_dumper.set_live_start_time(live_start_time)
         self._danmaku_dumper.clear_files()
         self._stream_recorder.clear_files()
-
-    @aio_task_with_room_id
-    async def _guard(self, timeout: float = 60) -> None:
-        await asyncio.sleep(timeout)
-        if not self._recording:
-            return
-        if self._stream_available:
-            return
-        logger.debug(
-            f'Stream not available in {timeout} seconds, the event maybe lost.'
-        )
-
-        await self._live.update_info()
-        if self._live.is_living():
-            logger.debug('The live is living now')
-            self._stream_available = True
-            if self._stream_recorder.stopped:
-                await self._stream_recorder.start()
-        else:
-            logger.debug('The live has ended before streaming')
-            self._stream_available = False
-            if not self._stream_recorder.stopped:
-                await self.stop()
 
     def _print_waiting_message(self) -> None:
         logger.info('Waiting... until the live starts')
