@@ -1,7 +1,6 @@
 import logging
 from typing import Optional
 
-from reactivex import operators as ops
 from reactivex.scheduler import NewThreadScheduler
 
 from blrec.bili.live import Live
@@ -9,6 +8,7 @@ from blrec.bili.typing import QualityNumber
 from blrec.flv import operators as flv_ops
 from blrec.flv.metadata_dumper import MetadataDumper
 from blrec.hls import operators as hls_ops
+from blrec.utils import operators as utils_ops
 
 from . import operators as core_ops
 from .stream_recorder_impl import StreamRecorderImpl
@@ -130,22 +130,19 @@ class HLSStreamRecorderImpl(StreamRecorderImpl):
             self._stream_param_holder.get_stream_params()  # type: ignore
             .pipe(
                 self._stream_url_resolver,
-                ops.subscribe_on(
-                    NewThreadScheduler(self._thread_factory('PlaylistFetcher'))
-                ),
                 self._playlist_fetcher,
                 self._recording_monitor,
                 self._connection_error_handler,
                 self._request_exception_handler,
                 self._playlist_resolver,
-                ops.observe_on(
-                    NewThreadScheduler(self._thread_factory('SegmentFetcher'))
+                utils_ops.observe_on_new_thread(
+                    queue_size=60, thread_name=f'SegmentFetcher::{self._live.room_id}'
                 ),
                 self._segment_fetcher,
                 self._dl_statistics,
                 self._prober,
-                ops.observe_on(
-                    NewThreadScheduler(self._thread_factory('StreamRecorder'))
+                utils_ops.observe_on_new_thread(
+                    queue_size=10, thread_name=f'StreamRecorder::{self._live.room_id}'
                 ),
                 self._segment_remuxer,
                 self._segment_parser,
@@ -160,5 +157,8 @@ class HLSStreamRecorderImpl(StreamRecorderImpl):
                 self._progress_bar,
                 self._exception_handler,
             )
-            .subscribe(on_completed=self._on_completed)
+            .subscribe(
+                on_completed=self._on_completed,
+                scheduler=NewThreadScheduler(self._thread_factory('HLSStreamRecorder')),
+            )
         )

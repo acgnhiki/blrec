@@ -1,13 +1,13 @@
 import logging
 from typing import Optional
 
-from reactivex import operators as ops
 from reactivex.scheduler import NewThreadScheduler
 
 from blrec.bili.live import Live
 from blrec.bili.typing import QualityNumber
 from blrec.hls import operators as hls_ops
 from blrec.hls.metadata_dumper import MetadataDumper
+from blrec.utils import operators as utils_ops
 
 from . import operators as core_ops
 from .stream_recorder_impl import StreamRecorderImpl
@@ -84,16 +84,14 @@ class HLSRawStreamRecorderImpl(StreamRecorderImpl):
             self._stream_param_holder.get_stream_params()  # type: ignore
             .pipe(
                 self._stream_url_resolver,
-                ops.subscribe_on(
-                    NewThreadScheduler(self._thread_factory('PlaylistDownloader'))
-                ),
                 self._playlist_fetcher,
                 self._recording_monitor,
                 self._connection_error_handler,
                 self._request_exception_handler,
                 self._playlist_dumper,
-                ops.observe_on(
-                    NewThreadScheduler(self._thread_factory('SegmentDownloader'))
+                utils_ops.observe_on_new_thread(
+                    queue_size=60,
+                    thread_name=f'SegmentDownloader::{self._live.room_id}',
                 ),
                 self._segment_fetcher,
                 self._dl_statistics,
@@ -103,5 +101,10 @@ class HLSRawStreamRecorderImpl(StreamRecorderImpl):
                 self._progress_bar,
                 self._exception_handler,
             )
-            .subscribe(on_completed=self._on_completed)
+            .subscribe(
+                on_completed=self._on_completed,
+                scheduler=NewThreadScheduler(
+                    self._thread_factory('HLSRawStreamRecorder')
+                ),
+            )
         )
