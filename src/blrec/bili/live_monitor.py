@@ -122,8 +122,10 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
         danmu_cmd = danmu['cmd']
 
         if danmu_cmd == DanmakuCommand.LIVE.value:
+            await self._live.update_room_info()
             await self._handle_status_change(LiveStatus.LIVE)
         elif danmu_cmd == DanmakuCommand.PREPARING.value:
+            await self._live.update_room_info()
             if danmu.get('round', None) == 1:
                 await self._handle_status_change(LiveStatus.ROUND)
             else:
