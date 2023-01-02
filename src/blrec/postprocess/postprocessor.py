@@ -148,6 +148,8 @@ class Postprocessor(
                     if video_path.endswith('.flv'):
                         if not await self._is_vaild_flv_file(video_path):
                             logger.warning(f'The flv file may be invalid: {video_path}')
+                            if os.path.getsize(video_path) < 1024**2:
+                                continue
                         if self.remux_to_mp4:
                             self._status = PostprocessorStatus.REMUXING
                             (
