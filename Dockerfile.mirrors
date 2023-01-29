@@ -20,6 +20,7 @@ RUN sed -i "s/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g" /etc/apt/sources.li
 ENV DEFAULT_SETTINGS_FILE=/cfg/settings.toml
 ENV DEFAULT_LOG_DIR=/log
 ENV DEFAULT_OUT_DIR=/rec
+ENV TZ="Asia/Shanghai"
 
 EXPOSE 2233
 ENTRYPOINT ["blrec", "--host", "0.0.0.0"]
