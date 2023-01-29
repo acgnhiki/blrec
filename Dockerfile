@@ -18,6 +18,7 @@ RUN apt-get update && \
 ENV DEFAULT_SETTINGS_FILE=/cfg/settings.toml
 ENV DEFAULT_LOG_DIR=/log
 ENV DEFAULT_OUT_DIR=/rec
+ENV TZ="Asia/Shanghai"
 
 EXPOSE 2233
 ENTRYPOINT ["blrec", "--host", "0.0.0.0"]
