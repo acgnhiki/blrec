@@ -72,7 +72,7 @@ jobs:
 
       - name: Add search path
         working-directory: build
-        run: Add-Content -Path "python\python310._pth" "Lib\site-packages"
+        run: Add-Content -Path "python\python311._pth" "Lib\site-packages"
 
       - name: Copy run.bat
         working-directory: build
