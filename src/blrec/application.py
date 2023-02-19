@@ -1,42 +1,35 @@
-import os
-import logging
 import asyncio
+import logging
+import os
 from typing import Iterator, List, Optional
 
 import attr
 import psutil
 
 from . import __prog__, __version__
-from .flv.operators import MetaData, StreamProfile
-from .disk_space import SpaceMonitor, SpaceReclaimer
 from .bili.helpers import ensure_room_id
+from .disk_space import SpaceMonitor, SpaceReclaimer
+from .event.event_submitters import SpaceEventSubmitter
+from .exception import ExceptionHandler, ExistsError, exception_callback
+from .flv.operators import MetaData, StreamProfile
+from .notification import (
+    BarkNotifier,
+    EmailNotifier,
+    PushdeerNotifier,
+    PushplusNotifier,
+    ServerchanNotifier,
+    TelegramNotifier,
+)
+from .setting import Settings, SettingsIn, SettingsManager, SettingsOut, TaskOptions
+from .setting.typing import KeySetOfSettings
 from .task import (
+    DanmakuFileDetail,
     RecordTaskManager,
     TaskData,
     TaskParam,
     VideoFileDetail,
-    DanmakuFileDetail,
-)
-from .exception import ExistsError, ExceptionHandler, exception_callback
-from .event.event_submitters import SpaceEventSubmitter
-from .setting import (
-    SettingsManager,
-    Settings,
-    SettingsIn,
-    SettingsOut,
-    TaskOptions,
-)
-from .setting.typing import KeySetOfSettings
-from .notification import (
-    EmailNotifier,
-    ServerchanNotifier,
-    PushdeerNotifier,
-    PushplusNotifier,
-    TelegramNotifier,
-    BarkNotifier,
 )
 from .webhook import WebHookEmitter
-
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +98,7 @@ class Application:
             await self.exit()
 
     async def launch(self) -> None:
+        logger.info('Launching Application...')
         self._setup()
         logger.debug(f'Default umask {os.umask(000)}')
         logger.info(f'Launched Application v{__version__}')
@@ -112,10 +106,12 @@ class Application:
         task.add_done_callback(exception_callback)
 
     async def exit(self) -> None:
+        logger.info('Exiting Application...')
         await self._exit()
         logger.info('Exited Application')
 
     async def abort(self) -> None:
+        logger.info('Aborting Application...')
         await self._exit(force=True)
         logger.info('Aborted Application')
 
@@ -128,6 +124,7 @@ class Application:
         logger.info('Restarting Application...')
         await self.exit()
         await self.launch()
+        logger.info('Restarted Application')
 
     def has_task(self, room_id: int) -> bool:
         return self._task_manager.has_task(room_id)
@@ -136,9 +133,7 @@ class Application:
         room_id = await ensure_room_id(room_id)
 
         if self._task_manager.has_task(room_id):
-            raise ExistsError(
-                f'a task for the room {room_id} is already existed'
-            )
+            raise ExistsError(f'a task for the room {room_id} is already existed')
 
         settings = self._settings_manager.find_task_settings(room_id)
         if not settings:
@@ -214,9 +209,7 @@ class Application:
         await self._settings_manager.mark_task_recorder_enabled(room_id)
         logger.info(f'Successfully enabled recorder for task {room_id}')
 
-    async def disable_task_recorder(
-        self, room_id: int, force: bool = False
-    ) -> None:
+    async def disable_task_recorder(self, room_id: int, force: bool = False) -> None:
         logger.info(f'Disabling recorder for task {room_id}...')
         await self._task_manager.disable_task_recorder(room_id, force)
         await self._settings_manager.mark_task_recorder_disabled(room_id)
@@ -249,9 +242,7 @@ class Application:
     def get_task_stream_profile(self, room_id: int) -> StreamProfile:
         return self._task_manager.get_task_stream_profile(room_id)
 
-    def get_task_video_file_details(
-        self, room_id: int
-    ) -> Iterator[VideoFileDetail]:
+    def get_task_video_file_details(self, room_id: int) -> Iterator[VideoFileDetail]:
         yield from self._task_manager.get_task_video_file_details(room_id)
 
     def get_task_danmaku_file_details(
@@ -291,9 +282,7 @@ class Application:
     async def change_task_options(
         self, room_id: int, options: TaskOptions
     ) -> TaskOptions:
-        return await self._settings_manager.change_task_options(
-            room_id, options
-        )
+        return await self._settings_manager.change_task_options(room_id, options)
 
     def _setup(self) -> None:
         self._setup_logger()
@@ -320,9 +309,7 @@ class Application:
         self._space_event_submitter = SpaceEventSubmitter(self._space_monitor)
 
     def _setup_space_reclaimer(self) -> None:
-        self._space_reclaimer = SpaceReclaimer(
-            self._space_monitor, self._out_dir,
-        )
+        self._space_reclaimer = SpaceReclaimer(self._space_monitor, self._out_dir)
         self._settings_manager.apply_space_reclaimer_settings()
         self._space_reclaimer.enable()
 

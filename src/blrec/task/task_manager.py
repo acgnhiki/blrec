@@ -54,13 +54,14 @@ class RecordTaskManager:
         logger.info('Load all tasks complete')
 
     async def destroy_all_tasks(self) -> None:
-        logger.info('Destroying all tasks...')
-        if not self._tasks:
-            return
-        await asyncio.wait([t.destroy() for t in self._tasks.values() if t.ready])
+        logger.debug('Destroying all tasks...')
+        for task in self._tasks.values():
+            if not task.ready:
+                continue
+            await task.destroy()
         self._tasks.clear()
         malloc_trim(0)
-        logger.info('Successfully destroyed all task')
+        logger.debug('Successfully destroyed all task')
 
     def has_task(self, room_id: int) -> bool:
         return room_id in self._tasks
@@ -113,74 +114,110 @@ class RecordTaskManager:
         logger.info(f'Successfully added task {settings.room_id}')
 
     async def remove_task(self, room_id: int) -> None:
+        logger.debug(f'Removing task {room_id}...')
         task = self._get_task(room_id, check_ready=True)
         await task.disable_recorder(force=True)
         await task.disable_monitor()
         await task.destroy()
         del self._tasks[room_id]
         malloc_trim(0)
+        logger.debug(f'Removed task {room_id}')
 
     async def remove_all_tasks(self) -> None:
-        coros = [self.remove_task(i) for i, t in self._tasks.items() if t.ready]
-        if coros:
-            await asyncio.wait(coros)
+        logger.debug('Removing all tasks...')
+        for room_id, task in self._tasks.items():
+            if not task.ready:
+                continue
+            await self.remove_task(room_id)
         malloc_trim(0)
+        logger.debug('Removed all tasks')
 
     async def start_task(self, room_id: int) -> None:
+        logger.debug(f'Starting task {room_id}...')
         task = self._get_task(room_id, check_ready=True)
         await task.update_info()
         await task.enable_monitor()
         await task.enable_recorder()
+        logger.debug(f'Started task {room_id}')
 
     async def stop_task(self, room_id: int, force: bool = False) -> None:
+        logger.debug(f'Stopping task {room_id}...')
         task = self._get_task(room_id, check_ready=True)
         await task.disable_recorder(force)
         await task.disable_monitor()
+        logger.debug(f'Stopped task {room_id}')
 
     async def start_all_tasks(self) -> None:
-        await self.update_all_task_infos()
-        await self.enable_all_task_monitors()
-        await self.enable_all_task_recorders()
+        logger.debug('Starting all tasks...')
+        for room_id, task in self._tasks.items():
+            if not task.ready:
+                continue
+            await self.start_task(room_id)
+        logger.debug('Started all tasks')
 
     async def stop_all_tasks(self, force: bool = False) -> None:
-        await self.disable_all_task_recorders(force)
-        await self.disable_all_task_monitors()
+        logger.debug('Stopping all tasks...')
+        for room_id, task in self._tasks.items():
+            if not task.ready:
+                continue
+            await self.stop_task(room_id, force=force)
+        logger.debug('Stopped all tasks')
 
     async def enable_task_monitor(self, room_id: int) -> None:
+        logger.debug(f'Enabling live monitor for task {room_id}...')
         task = self._get_task(room_id, check_ready=True)
         await task.enable_monitor()
+        logger.debug(f'Enabled live monitor for task {room_id}')
 
     async def disable_task_monitor(self, room_id: int) -> None:
+        logger.debug(f'Disabling live monitor for task {room_id}...')
         task = self._get_task(room_id, check_ready=True)
         await task.disable_monitor()
+        logger.debug(f'Disabled live monitor for task {room_id}')
 
     async def enable_all_task_monitors(self) -> None:
-        coros = [t.enable_monitor() for t in self._tasks.values() if t.ready]
-        if coros:
-            await asyncio.wait(coros)
+        logger.debug('Enabling live monitor for all tasks...')
+        for room_id, task in self._tasks.items():
+            if not task.ready:
+                continue
+            await self.enable_task_monitor(room_id)
+        logger.debug('Enabled live monitor for all tasks')
 
     async def disable_all_task_monitors(self) -> None:
-        coros = [t.disable_monitor() for t in self._tasks.values() if t.ready]
-        if coros:
-            await asyncio.wait(coros)
+        logger.debug('Disabling live monitor for all tasks...')
+        for room_id, task in self._tasks.items():
+            if not task.ready:
+                continue
+            await self.disable_task_monitor(room_id)
+        logger.debug('Disabled live monitor for all tasks')
 
     async def enable_task_recorder(self, room_id: int) -> None:
+        logger.debug(f'Enabling recorder for task {room_id}...')
         task = self._get_task(room_id, check_ready=True)
         await task.enable_recorder()
+        logger.debug(f'Enabled recorder for task {room_id}')
 
     async def disable_task_recorder(self, room_id: int, force: bool = False) -> None:
+        logger.debug(f'Disabling recorder for task {room_id}...')
         task = self._get_task(room_id, check_ready=True)
         await task.disable_recorder(force)
+        logger.debug(f'Disabled recorder for task {room_id}')
 
     async def enable_all_task_recorders(self) -> None:
-        coros = [t.enable_recorder() for t in self._tasks.values() if t.ready]
-        if coros:
-            await asyncio.wait(coros)
+        logger.debug('Enabling recorder for all tasks...')
+        for room_id, task in self._tasks.items():
+            if not task.ready:
+                continue
+            await self.enable_task_recorder(room_id)
+        logger.debug('Enabled recorder for all tasks')
 
     async def disable_all_task_recorders(self, force: bool = False) -> None:
-        coros = [t.disable_recorder(force) for t in self._tasks.values() if t.ready]
-        if coros:
-            await asyncio.wait(coros)
+        logger.debug('Disabling recorder for all tasks...')
+        for room_id, task in self._tasks.items():
+            if not task.ready:
+                continue
+            await self.disable_task_recorder(room_id, force=force)
+        logger.debug('Disabled recorder for all tasks')
 
     def get_task_data(self, room_id: int) -> TaskData:
         task = self._get_task(room_id, check_ready=True)
@@ -221,15 +258,18 @@ class RecordTaskManager:
         return task.cut_stream()
 
     async def update_task_info(self, room_id: int) -> None:
+        logger.debug(f'Updating info for task {room_id}...')
         task = self._get_task(room_id, check_ready=True)
         await task.update_info(raise_exception=True)
+        logger.debug(f'Updated info for task {room_id}')
 
     async def update_all_task_infos(self) -> None:
-        coros = [
-            t.update_info(raise_exception=True) for t in self._tasks.values() if t.ready
-        ]
-        if coros:
-            await asyncio.wait(coros)
+        logger.debug('Updating info for all tasks...')
+        for room_id, task in self._tasks.items():
+            if not task.ready:
+                continue
+            await self.update_task_info(room_id)
+        logger.debug('Updated info for all tasks')
 
     def apply_task_bili_api_settings(
         self, room_id: int, settings: BiliApiSettings
