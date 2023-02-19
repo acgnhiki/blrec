@@ -1,5 +1,12 @@
 # 更新日志
 
+## 1.13.0
+
+- 支持 Python 3.11
+- 改进直播监控 
+- 优化在 Linux 下的内存占用
+- docker 时区设置为默认 `Asia/Shanghai`
+
 ## 1.12.0
 
 - 支持自定义 Telegram bot api 地址 
