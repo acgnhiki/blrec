@@ -23,7 +23,7 @@
 - 支持按文件大小或时长分割文件
 - 支持转换 `flv` 为 `mp4` 格式（需要安装 `ffmpeg`）
 - 硬盘空间检测并支持空间不足自动删除旧录播文件。
-- 事件通知（支持邮箱、`ServerChan`、`pushplus`）
+- 事件通知（支持邮箱、`ServerChan`、`PushDeer`、`pushplus`、`Telegram`、`Bark` ）
 - `Webhook`（可配合 `REST API` 实现录制控制，录制完成后压制、上传等自定义需求）
 
 ## 前提条件
@@ -82,6 +82,7 @@
 - 默认设置文件位置: `ENV DEFAULT_SETTINGS_FILE=/cfg/settings.toml`
 - 默认日志存放目录: `ENV DEFAULT_LOG_DIR=/log`
 - 默认录播存放目录: `ENV DEFAULT_OUT_DIR=/rec`
+- 默认时区: `ENV TZ="Asia/Shanghai"`
 
 ### 默认参数运行
 
@@ -239,11 +240,6 @@ api key 可以使用数字和字母，长度限制为最短 8 最长 80。
 [CHANGELOG](CHANGELOG.md)
 
 ---
-
-## Thanks
-
-[![JetBrains Logo (Main) logo](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://jb.gg/OpenSource)
-
 
 ## 其它相关工具或项目
 
