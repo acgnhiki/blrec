@@ -183,7 +183,7 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
     async def _check_if_stream_available(self) -> None:
         while not self._stream_available:
             try:
-                self._live.get_live_stream_url()
+                await self._live.get_live_stream_url()
             except Exception:
                 await asyncio.sleep(1)
             else:
