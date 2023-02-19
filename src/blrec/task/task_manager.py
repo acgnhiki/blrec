@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Dict, Iterator, Optional
 import aiohttp
 from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
+from blrec.utils.libc import malloc_trim
+
 from ..bili.exceptions import ApiRequestError
 from ..exception import NotFoundError, submit_exception
 from ..flv.operators import MetaData, StreamProfile
@@ -17,8 +19,8 @@ if TYPE_CHECKING:
     from ..setting import SettingsManager
 
 from ..setting import (
-    DanmakuSettings,
     BiliApiSettings,
+    DanmakuSettings,
     HeaderSettings,
     OutputSettings,
     PostprocessingSettings,
@@ -57,6 +59,7 @@ class RecordTaskManager:
             return
         await asyncio.wait([t.destroy() for t in self._tasks.values() if t.ready])
         self._tasks.clear()
+        malloc_trim(0)
         logger.info('Successfully destroyed all task')
 
     def has_task(self, room_id: int) -> bool:
@@ -115,11 +118,13 @@ class RecordTaskManager:
         await task.disable_monitor()
         await task.destroy()
         del self._tasks[room_id]
+        malloc_trim(0)
 
     async def remove_all_tasks(self) -> None:
         coros = [self.remove_task(i) for i, t in self._tasks.items() if t.ready]
         if coros:
             await asyncio.wait(coros)
+        malloc_trim(0)
 
     async def start_task(self, room_id: int) -> None:
         task = self._get_task(room_id, check_ready=True)

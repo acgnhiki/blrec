@@ -8,6 +8,7 @@ from blrec.bili.typing import QualityNumber, StreamFormat
 from blrec.event.event_emitter import EventEmitter
 from blrec.flv.operators import MetaData, StreamProfile
 from blrec.setting.typing import RecordingMode
+from blrec.utils.libc import malloc_trim
 from blrec.utils.mixins import AsyncStoppableMixin
 
 from .flv_stream_recorder_impl import FLVStreamRecorderImpl
@@ -255,6 +256,7 @@ class StreamRecorder(
 
     async def _do_stop(self) -> None:
         await self._impl.stop()
+        malloc_trim(0)
 
     async def on_video_file_created(self, path: str, record_start_time: int) -> None:
         await self._emit('video_file_created', path, record_start_time)
