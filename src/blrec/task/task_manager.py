@@ -125,7 +125,7 @@ class RecordTaskManager:
 
     async def remove_all_tasks(self) -> None:
         logger.debug('Removing all tasks...')
-        for room_id, task in self._tasks.items():
+        for room_id, task in self._tasks.copy().items():
             if not task.ready:
                 continue
             await self.remove_task(room_id)
