@@ -2,10 +2,8 @@ import { Injectable } from '@angular/core';
 
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 
-import { environment } from 'src/environments/environment';
 import { Event } from '../models/event.model';
-
-const webSocketUrl = environment.webSocketUrl;
+import { UrlService } from './url.service';
 
 @Injectable({
   providedIn: 'root',
@@ -13,11 +11,11 @@ const webSocketUrl = environment.webSocketUrl;
 export class EventService {
   private eventSubject?: WebSocketSubject<Event>;
 
-  constructor() {}
+  constructor(private url: UrlService) {}
 
   get events() {
     if (!this.eventSubject) {
-      this.eventSubject = webSocket(webSocketUrl + '/ws/v1/events');
+      this.eventSubject = webSocket(this.url.makeWebSocketUrl('/ws/v1/events'));
     }
     return this.eventSubject;
   }

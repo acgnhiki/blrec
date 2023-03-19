@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 
 import { Observable } from 'rxjs';
 
-import { environment } from 'src/environments/environment';
+import { UrlService } from 'src/app/core/services/url.service';
 import {
   Settings,
   TaskOptions,
@@ -12,19 +12,17 @@ import {
   SettingsOut,
 } from '../setting.model';
 
-const apiUrl = environment.apiUrl;
-
 @Injectable({
   providedIn: 'root',
 })
 export class SettingService {
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private url: UrlService) {}
 
   getSettings(
     include: Array<keyof Settings> | null = null,
     exclude: Array<keyof Settings> | null = null
   ): Observable<Settings> {
-    const url = apiUrl + `/api/v1/settings`;
+    const url = this.url.makeApiUrl(`/api/v1/settings`);
     return this.http.get<Settings>(url, {
       params: {
         include: include ?? [],
@@ -45,12 +43,12 @@ export class SettingService {
    * @returns settings of the application
    */
   changeSettings(settings: SettingsIn): Observable<SettingsOut> {
-    const url = apiUrl + `/api/v1/settings`;
+    const url = this.url.makeApiUrl(`/api/v1/settings`);
     return this.http.patch<SettingsOut>(url, settings);
   }
 
   getTaskOptions(roomId: number): Observable<TaskOptions> {
-    const url = apiUrl + `/api/v1/settings/tasks/${roomId}`;
+    const url = this.url.makeApiUrl(`/api/v1/settings/tasks/${roomId}`);
     return this.http.get<TaskOptions>(url);
   }
 
@@ -70,7 +68,7 @@ export class SettingService {
     roomId: number,
     options: TaskOptionsIn
   ): Observable<TaskOptions> {
-    const url = apiUrl + `/api/v1/settings/tasks/${roomId}`;
+    const url = this.url.makeApiUrl(`/api/v1/settings/tasks/${roomId}`);
     return this.http.patch<TaskOptions>(url, options);
   }
 }

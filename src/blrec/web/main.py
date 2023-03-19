@@ -1,25 +1,26 @@
-import os
 import logging
+import os
 from typing import Optional, Tuple
 
-from fastapi import FastAPI, status, Request, Depends
-from fastapi.responses import JSONResponse
+from brotli_asgi import BrotliMiddleware
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from starlette.responses import Response
-from pydantic import ValidationError
 from pkg_resources import resource_filename
+from pydantic import ValidationError
+from starlette.responses import Response
 
-from . import security
-from .routers import (
-    tasks, settings, application, validation, websockets, update
-)
-from .schemas import ResponseMessage
-from ..setting import EnvSettings, Settings
+from blrec.exception import ExistsError, ForbiddenError, NotFoundError
+from blrec.path.helpers import create_file, file_exists
+from blrec.setting import EnvSettings, Settings
+from blrec.web.middlewares.base_herf import BaseHrefMiddleware
+from blrec.web.middlewares.route_redirect import RouteRedirectMiddleware
+
 from ..application import Application
-from ..exception import NotFoundError, ExistsError, ForbiddenError
-from ..path.helpers import file_exists, create_file
-
+from . import security
+from .routers import application, settings, tasks, update, validation, websockets
+from .schemas import ResponseMessage
 
 logger = logging.getLogger(__name__)
 
@@ -48,27 +49,23 @@ api = FastAPI(
     dependencies=_dependencies,
 )
 
+api.add_middleware(BaseHrefMiddleware)
+api.add_middleware(BrotliMiddleware)
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        'http://localhost:4200',  # angular development
-    ],
+    allow_origins=['http://localhost:4200'],  # angular development
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
 )
+api.add_middleware(RouteRedirectMiddleware)
 
 
 @api.exception_handler(NotFoundError)
-async def not_found_error_handler(
-    request: Request, exc: NotFoundError
-) -> JSONResponse:
+async def not_found_error_handler(request: Request, exc: NotFoundError) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
-        content=dict(ResponseMessage(
-            code=status.HTTP_404_NOT_FOUND,
-            message=str(exc),
-        )),
+        content=dict(ResponseMessage(code=status.HTTP_404_NOT_FOUND, message=str(exc))),
     )
 
 
@@ -78,23 +75,15 @@ async def forbidden_error_handler(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_403_FORBIDDEN,
-        content=dict(ResponseMessage(
-            code=status.HTTP_403_FORBIDDEN,
-            message=str(exc),
-        )),
+        content=dict(ResponseMessage(code=status.HTTP_403_FORBIDDEN, message=str(exc))),
     )
 
 
 @api.exception_handler(ExistsError)
-async def exists_error_handler(
-    request: Request, exc: ExistsError
-) -> JSONResponse:
+async def exists_error_handler(request: Request, exc: ExistsError) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
-        content=dict(ResponseMessage(
-            code=status.HTTP_409_CONFLICT,
-            message=str(exc),
-        )),
+        content=dict(ResponseMessage(code=status.HTTP_409_CONFLICT, message=str(exc))),
     )
 
 
@@ -104,10 +93,9 @@ async def validation_error_handler(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_406_NOT_ACCEPTABLE,
-        content=dict(ResponseMessage(
-            code=status.HTTP_406_NOT_ACCEPTABLE,
-            message=str(exc),
-        )),
+        content=dict(
+            ResponseMessage(code=status.HTTP_406_NOT_ACCEPTABLE, message=str(exc))
+        ),
     )
 
 
@@ -137,9 +125,7 @@ api.include_router(update.router)
 
 
 class WebAppFiles(StaticFiles):
-    def lookup_path(
-        self, path: str
-    ) -> Tuple[str, Optional[os.stat_result]]:
+    def lookup_path(self, path: str) -> Tuple[str, Optional[os.stat_result]]:
         if path == '404.html':
             path = 'index.html'
         return super().lookup_path(path)

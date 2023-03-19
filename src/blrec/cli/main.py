@@ -1,15 +1,14 @@
-import os
 import logging
+import os
 from copy import deepcopy
 from typing import Optional
 
+import typer
 import uvicorn
 from uvicorn.config import LOGGING_CONFIG
-import typer
 
 from .. import __prog__, __version__
 from ..logging import TqdmOutputStream
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,25 +31,23 @@ def cli_main(
         help=f"show {__prog__}'s version and exit",
     ),
     config: str = typer.Option(
-        None,
-        '--config',
-        '-c',
-        help='path of settings.toml file',
+        None, '--config', '-c', help='path of settings.toml file'
     ),
     out_dir: Optional[str] = typer.Option(
         None,
         '--out-dir',
         '-o',
-        help='path of directory to store record files (overwrite setting)'
+        help='path of directory to store record files (overwrite setting)',
     ),
     log_dir: Optional[str] = typer.Option(
         None,
         '--log-dir',
-        help='path of directory to store log files (overwrite setting)'
+        help='path of directory to store log files (overwrite setting)',
     ),
     host: str = typer.Option('localhost', help='webapp host bind'),
     port: int = typer.Option(2233, help='webapp port bind'),
     open: bool = typer.Option(False, help='open webapp in default browser'),
+    root_path: str = typer.Option('', help='ASGI root path'),
     key_file: Optional[str] = typer.Option(None, help='SSL key file'),
     cert_file: Optional[str] = typer.Option(None, help='SSL certificate file'),
     api_key: Optional[str] = typer.Option(None, help='web api key'),
@@ -65,6 +62,12 @@ def cli_main(
     if log_dir is not None:
         os.environ['log_dir'] = log_dir
 
+    if root_path:
+        if not root_path.startswith('/'):
+            root_path = '/' + root_path
+        if not root_path.endswith('/'):
+            root_path += '/'
+
     if open:
         typer.launch(f'http://localhost:{port}')
 
@@ -76,6 +79,9 @@ def cli_main(
         'blrec.web:app',
         host=host,
         port=port,
+        root_path=root_path,
+        proxy_headers=True,
+        forwarded_allow_ips='*',
         ssl_keyfile=key_file,
         ssl_certfile=cert_file,
         log_config=logging_config,

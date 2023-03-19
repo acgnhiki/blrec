@@ -2,8 +2,8 @@ import { NgxLoggerLevel } from 'ngx-logger';
 
 export const environment = {
   production: true,
-  apiUrl: '',
-  webSocketUrl: '',
+  apiBaseUrl: '',
+  webSocketBaseUrl: '',
   ngxLoggerLevel: NgxLoggerLevel.DEBUG,
   traceRouterScrolling: false,
 } as const;

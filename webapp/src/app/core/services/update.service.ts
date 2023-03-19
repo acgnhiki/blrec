@@ -3,18 +3,16 @@ import { HttpClient } from '@angular/common/http';
 
 import { Observable } from 'rxjs';
 
-import { environment } from 'src/environments/environment';
-
-const apiUrl = environment.apiUrl;
+import { UrlService } from './url.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UpdateService {
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private url: UrlService) {}
 
   getLatestVerisonString(): Observable<string> {
-    const url = apiUrl + `/api/v1/update/version/latest`;
+    const url = this.url.makeApiUrl(`/api/v1/update/version/latest`);
     return this.http.get<string>(url);
   }
 }
