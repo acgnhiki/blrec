@@ -2,7 +2,7 @@
 import { ActivatedRoute, NavigationEnd, NavigationStart, Router } from "@angular/router";
 import { Injectable, OnDestroy } from "@angular/core";
 import { ViewportScroller } from "@angular/common";
-import { filter, observeOn, scan } from "rxjs/operators";
+import { filter, observeOn, scan, map } from "rxjs/operators";
 import { asyncScheduler, Subscription } from "rxjs";
 import {
   IRouterScrollService,
@@ -64,9 +64,10 @@ export class RouterScrollService implements IRouterScrollService, OnDestroy {
     }
 
     const scrollPositionRestore$ = this.router.events.pipe(
-      filter((event: any) => event instanceof NavigationStart || event instanceof NavigationEnd),
+      filter((event) => event instanceof NavigationStart || event instanceof NavigationEnd),
+      map((event) => event as NavigationStart | NavigationEnd),
       // Accumulate the scroll positions
-      scan<NavigationEnd | NavigationStart, ScrollPositionRestore>((acc, event) => {
+      scan((acc, event) => {
         if (environment.traceRouterScrolling) {
           this.logger.trace(`${componentName}:: Updating the known scroll positions`);
         }
@@ -99,8 +100,12 @@ export class RouterScrollService implements IRouterScrollService, OnDestroy {
         };
 
         return retVal;
-      }),
-      filter((scrollPositionRestore: ScrollPositionRestore) => !!scrollPositionRestore.trigger),
+      }, {
+        event: {} as NavigationStart,
+        positions: {},
+        idToRestore: -1,
+      } as ScrollPositionRestore),
+      filter((scrollPositionRestore) => !!scrollPositionRestore.trigger),
       observeOn(asyncScheduler),
     );
 

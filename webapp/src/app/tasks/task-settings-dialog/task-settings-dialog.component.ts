@@ -51,7 +51,7 @@ export class TaskSettingsDialogComponent implements OnChanges {
   @Output() afterClose = new EventEmitter<undefined>();
 
   @ViewChild(NgForm)
-  ngForm!: NgForm;
+  ngForm?: NgForm;
 
   readonly warningTip =
     '需要重启弹幕客户端才能生效，如果任务正在录制可能会丢失弹幕！';

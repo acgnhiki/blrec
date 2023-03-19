@@ -16,13 +16,13 @@
       <span class="label">视频信息</span>
       <span class="value">
         <span>
-          {{ profile.streams[0]?.codec_name }}
+          {{ profile.streams[0].codec_name }}
           <!-- <ng-container *ngIf="profile.streams[0]?.profile">
             ({{ profile.streams[0]?.profile }})
           </ng-container> -->
         </span>
         <span>
-          {{ profile.streams[0]?.width }}x{{ profile.streams[0]?.height }}
+          {{ profile.streams[0].width }}x{{ profile.streams[0].height }}
         </span>
         <span> {{ fps }} fps</span>
         <!-- <span
@@ -33,7 +33,7 @@
           {{ profile.streams[0]?.bit_rate! | datarate: { bitrate: true } }}
         </span> -->
         <span>
-          {{ metadata.videodatarate * 1000 | datarate: { bitrate: true } }}
+          {{ metadata.videodatarate * 1000 | datarate : { bitrate: true } }}
         </span>
       </span>
     </li>
@@ -41,20 +41,20 @@
       <span class="label">音频信息</span>
       <span class="value">
         <span>
-          {{ profile.streams[1]?.codec_name }}
+          {{ profile.streams[1].codec_name }}
           <!-- <ng-container *ngIf="profile.streams[1]?.profile">
             ({{ profile.streams[1]?.profile }})
           </ng-container> -->
         </span>
-        <span> {{ profile.streams[1]?.sample_rate }} HZ</span>
+        <span> {{ profile.streams[1].sample_rate }} HZ</span>
         <span>
-          {{ profile.streams[1]?.channel_layout }}
+          {{ profile.streams[1].channel_layout }}
         </span>
         <!-- <span *ngIf="profile.streams[1]?.bit_rate">
           {{ profile.streams[1]?.bit_rate! | datarate: { bitrate: true } }}
         </span> -->
         <span>
-          {{ metadata.audiodatarate * 1000 | datarate: { bitrate: true } }}
+          {{ metadata.audiodatarate * 1000 | datarate : { bitrate: true } }}
         </span>
       </span>
     </li>
@@ -82,7 +82,7 @@
     </li>
     <li class="info-item" *ngIf="profile.streams[0]?.tags?.encoder">
       <span class="label">流编码器</span>
-      <span class="value">{{ profile.streams[0]?.tags?.encoder }}</span>
+      <span class="value">{{ profile.streams[0].tags?.encoder }}</span>
     </li>
     <li class="info-item">
       <span class="label">流主机名</span
@@ -94,7 +94,7 @@
       <span class="label">下载速度</span>
       <app-wave-graph [value]="data.task_status.dl_rate"></app-wave-graph>
       <span class="value">
-        {{ data.task_status.dl_rate * 8 | datarate: { bitrate: true } }}
+        {{ data.task_status.dl_rate * 8 | datarate : { bitrate: true } }}
       </span>
     </li>
     <li class="info-item">

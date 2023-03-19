@@ -1,5 +1,5 @@
 import { transform, isEqual, isObject } from 'lodash-es';
-import * as filesize from 'filesize';
+import { filesize } from 'filesize';
 
 // ref: https://gist.github.com/Yimiprod/7ee176597fef230d1451
 export function difference(
@@ -131,7 +131,11 @@ export function parseDuration(str: string): number | null {
 }
 
 export function formatFilesize(size: number): string {
-  return filesize(size);
+  return filesize(size, {
+    base: 2,
+    standard: 'jedec',
+    output: 'string',
+  }) as string;
 }
 
 export function parseFilesize(str: string): number | null {
