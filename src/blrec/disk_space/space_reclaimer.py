@@ -36,7 +36,7 @@ class SpaceReclaimer(SpaceEventListener, SwitchableMixin):
         super().__init__()
         self._space_monitor = space_monitor
         self.path = path
-        if value := os.environ.get('REC_TTL'):
+        if value := os.environ.get('BLREC_REC_TTL'):
             try:
                 rec_ttl = int(value)
             except Exception as exc:

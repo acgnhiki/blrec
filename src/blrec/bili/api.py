@@ -18,7 +18,7 @@ __all__ = 'AppApi', 'WebApi'
 
 logger = logging.getLogger(__name__)
 
-TRACE_API_REQ = bool(os.environ.get('TRACE_API_REQ'))
+TRACE_API_REQ = bool(os.environ.get('BLREC_TRACE_API_REQ'))
 
 
 class BaseApi(ABC):

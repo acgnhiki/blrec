@@ -79,9 +79,9 @@
 
 ### 环境变量
 
-- 默认设置文件位置: `ENV DEFAULT_SETTINGS_FILE=/cfg/settings.toml`
-- 默认日志存放目录: `ENV DEFAULT_LOG_DIR=/log`
-- 默认录播存放目录: `ENV DEFAULT_OUT_DIR=/rec`
+- 默认设置文件位置: `ENV BLREC_DEFAULT_SETTINGS_FILE=/cfg/settings.toml`
+- 默认日志存放目录: `ENV BLREC_DEFAULT_LOG_DIR=/log`
+- 默认录播存放目录: `ENV BLREC_DEFAULT_OUT_DIR=/rec`
 - 默认时区: `ENV TZ="Asia/Shanghai"`
 
 ### 默认参数运行
@@ -164,18 +164,18 @@ api key 可以使用数字和字母，长度限制为最短 8 最长 80。
 
 作为 ASGI 应用运行，参数通过环境变量指定。
 
-- `config` 指定设置文件
-- `out_dir` 指定录播存放位置
-- `log_dir` 指定日志存放位置
-- `api_key` 指定 `api key`
+- `BLREC_CONFIG` 指定设置文件
+- `BLREC_OUT_DIR` 指定录播存放位置
+- `BLREC_LOG_DIR` 指定日志存放位置
+- `BLREC_API_KEY` 指定 `api key`
 
 ### bash
 
-    config=path/to/settings.toml out_dir=path/to/dir api_key=******** uvicorn blrec.web:app --host 0.0.0.0 --port 8000
+    BLREC_CONFIG=path/to/settings.toml BLREC_OUT_DIR=path/to/dir BLREC_API_KEY=******** uvicorn blrec.web:app --host 0.0.0.0 --port 8000
 
 ### cmd
 
-    set config=D:\\path\\to\\config.toml & set out_dir=D:\\path\\to\\dir & set api_key=******** uvicorn blrec.web:app --host 0.0.0.0 --port 8000
+    set BLREC_CONFIG=D:\\path\\to\\config.toml & set BLREC_OUT_DIR=D:\\path\\to\\dir & set BLREC_API_KEY=******** uvicorn blrec.web:app --host 0.0.0.0 --port 8000
 
 ## Webhook
 

@@ -54,13 +54,13 @@ def cli_main(
 ) -> None:
     """Bilibili live streaming recorder"""
     if config is not None:
-        os.environ['config'] = config
+        os.environ['BLREC_CONFIG'] = config
     if api_key is not None:
-        os.environ['api_key'] = api_key
+        os.environ['BLREC_API_KEY'] = api_key
     if out_dir is not None:
-        os.environ['out_dir'] = out_dir
+        os.environ['BLREC_OUT_DIR'] = out_dir
     if log_dir is not None:
-        os.environ['log_dir'] = log_dir
+        os.environ['BLREC_LOG_DIR'] = log_dir
 
     if root_path:
         if not root_path.startswith('/'):

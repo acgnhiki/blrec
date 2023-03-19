@@ -22,7 +22,7 @@ __all__ = ('sort',)
 
 logger = logging.getLogger(__name__)
 
-TRACE_OP_SORT = bool(os.environ.get('TRACE_OP_SORT'))
+TRACE_OP_SORT = bool(os.environ.get('BLREC_TRACE_OP_SORT'))
 
 
 def sort() -> Callable[[FLVStream], FLVStream]:

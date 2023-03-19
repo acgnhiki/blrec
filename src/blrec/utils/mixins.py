@@ -146,7 +146,7 @@ class SupportDebugMixin(ABC):
         super().__init__()
 
     def _init_for_debug(self, room_id: int) -> None:
-        if (value := os.environ.get('DEBUG')) and (
+        if (value := os.environ.get('BLREC_DEBUG')) and (
             value == '*' or room_id in value.split(',')
         ):
             self._debug = True

@@ -18,8 +18,8 @@ __all__ = ('SegmentRemuxer',)
 
 logger = logging.getLogger(__name__)
 
-TRACE_REMUX_SEGMENT = bool(os.environ.get('TRACE_REMUX_SEGMENT'))
-TRACE_LIBAV = bool(os.environ.get('TRACE_LIBAV'))
+TRACE_REMUX_SEGMENT = bool(os.environ.get('BLREC_TRACE_REMUX_SEGMENT'))
+TRACE_LIBAV = bool(os.environ.get('BLREC_TRACE_LIBAV'))
 if TRACE_LIBAV:
     logging.getLogger('libav').setLevel(5)
 else:

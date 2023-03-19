@@ -55,7 +55,7 @@ __all__ = (
     'PushdeerSettings',
     'PushplusSettings',
     'TelegramSettings',
-    'BarkSettings'
+    'BarkSettings',
     'NotifierSettings',
     'NotificationSettings',
     'EmailMessageTemplateSettings',
@@ -74,19 +74,25 @@ __all__ = (
 )
 
 
-DEFAULT_OUT_DIR: Final[str] = os.environ.get('DEFAULT_OUT_DIR', '.')
-DEFAULT_LOG_DIR: Final[str] = os.environ.get('DEFAULT_LOG_DIR', '~/.blrec/logs/')
+DEFAULT_OUT_DIR: Final[str] = os.environ.get('BLREC_DEFAULT_OUT_DIR', '.')
+DEFAULT_LOG_DIR: Final[str] = os.environ.get('BLREC_DEFAULT_LOG_DIR', '~/.blrec/logs/')
 DEFAULT_SETTINGS_FILE: Final[str] = os.environ.get(
-    'DEFAULT_SETTINGS_FILE', '~/.blrec/settings.toml'
+    'BLREC_DEFAULT_SETTINGS_FILE', '~/.blrec/settings.toml'
 )
 
 
 class EnvSettings(BaseSettings):
-    settings_file: Annotated[str, Field(env='config')] = DEFAULT_SETTINGS_FILE
-    out_dir: Optional[str] = None
-    log_dir: Optional[str] = None
+    settings_file: Annotated[str, Field(env='BLREC_CONFIG')] = DEFAULT_SETTINGS_FILE
+    out_dir: Annotated[Optional[str], Field(env='BLREC_OUT_DIR')] = None
+    log_dir: Annotated[Optional[str], Field(env='BLREC_LOG_DIR')] = None
     api_key: Annotated[
-        Optional[str], Field(min_length=8, max_length=80, regex=r'[a-zA-Z\d\-]{8,80}'),
+        Optional[str],
+        Field(
+            env='BLREC_API_KEY',
+            min_length=8,
+            max_length=80,
+            regex=r'[a-zA-Z\d\-]{8,80}',
+        ),
     ] = None
 
     class Config:
@@ -420,9 +426,12 @@ class TelegramSettings(BaseModel):
 
     @validator('server')
     def _validate_server(cls, value: str) -> str:
-        if value != '' and not re.fullmatch(r'^https?:\/\/[a-zA-Z0-9-_.]+(:[0-9]+)?', value):
+        if value != '' and not re.fullmatch(
+            r'^https?:\/\/[a-zA-Z0-9-_.]+(:[0-9]+)?', value
+        ):
             raise ValueError('server is invalid')
         return value
+
 
 class BarkSettings(BaseModel):
     server: str = ''
@@ -600,10 +609,7 @@ class TelegramNotificationSettings(
 
 
 class BarkNotificationSettings(
-    BarkSettings,
-    NotifierSettings,
-    NotificationSettings,
-    BarkMessageTemplateSettings,
+    BarkSettings, NotifierSettings, NotificationSettings, BarkMessageTemplateSettings
 ):
     pass
 

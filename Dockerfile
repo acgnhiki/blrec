@@ -15,9 +15,9 @@ RUN apt-get update && \
     apt-get purge -y --auto-remove build-essential python3-dev
 # ref: https://github.com/docker-library/python/issues/60#issuecomment-134322383
 
-ENV DEFAULT_SETTINGS_FILE=/cfg/settings.toml
-ENV DEFAULT_LOG_DIR=/log
-ENV DEFAULT_OUT_DIR=/rec
+ENV BLREC_DEFAULT_SETTINGS_FILE=/cfg/settings.toml
+ENV BLREC_DEFAULT_LOG_DIR=/log
+ENV BLREC_DEFAULT_OUT_DIR=/rec
 ENV TZ="Asia/Shanghai"
 
 EXPOSE 2233
