@@ -16,6 +16,9 @@ from .typing import LOG_LEVEL
 __all__ = 'configure_logger', 'ConsoleHandler', 'TqdmOutputStream'
 
 
+DISPLAY_PROGRESS = bool(os.environ.get('BLREC_PROGRESS'))
+
+
 class TqdmOutputStream:
     def write(self, string: str = '') -> None:
         tqdm.write(string, end='')
@@ -95,7 +98,10 @@ def configure_logger(
     )
 
     # logging to console
-    console_handler = ConsoleHandler(TqdmOutputStream())
+    if DISPLAY_PROGRESS:
+        console_handler = ConsoleHandler(TqdmOutputStream())
+    else:
+        console_handler = ConsoleHandler()
     console_handler.setLevel(logging.getLevelName(console_log_level))
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)

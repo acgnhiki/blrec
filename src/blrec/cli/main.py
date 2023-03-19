@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from copy import deepcopy
 from typing import Optional
 
@@ -44,6 +45,7 @@ def cli_main(
         '--log-dir',
         help='path of directory to store log files (overwrite setting)',
     ),
+    progress: bool = typer.Option(True, help='display progress'),
     host: str = typer.Option('localhost', help='webapp host bind'),
     port: int = typer.Option(2233, help='webapp port bind'),
     open: bool = typer.Option(False, help='open webapp in default browser'),
@@ -62,6 +64,13 @@ def cli_main(
     if log_dir is not None:
         os.environ['BLREC_LOG_DIR'] = log_dir
 
+    if not sys.stderr.isatty():
+        progress = False
+    if progress:
+        os.environ['BLREC_PROGRESS'] = '1'
+    else:
+        os.environ['BLREC_PROGRESS'] = ''
+
     if root_path:
         if not root_path.startswith('/'):
             root_path = '/' + root_path
@@ -71,9 +80,11 @@ def cli_main(
     if open:
         typer.launch(f'http://localhost:{port}')
 
-    logging_config = deepcopy(LOGGING_CONFIG)
-    logging_config['handlers']['default']['stream'] = TqdmOutputStream
-    logging_config['handlers']['access']['stream'] = TqdmOutputStream
+    if not progress:
+        logging_config = LOGGING_CONFIG
+    else:
+        logging_config = deepcopy(LOGGING_CONFIG)
+        logging_config['handlers']['default']['stream'] = TqdmOutputStream()
 
     uvicorn.run(
         'blrec.web:app',

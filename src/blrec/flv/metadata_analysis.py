@@ -23,7 +23,7 @@ class AnalysingProgress:
 
 
 def analyse_metadata(
-    path: str, *, show_progress: bool = False
+    path: str, *, display_progress: bool = False
 ) -> Observable[AnalysingProgress]:
     filesize = os.path.getsize(path)
     filename = os.path.basename(path)
@@ -47,7 +47,7 @@ def analyse_metadata(
             desc='Analysing',
             postfix=filename,
             total=filesize,
-            disable=not show_progress,
+            disable=not display_progress,
         ),
         ops.map(lambda i: len(i)),  # type: ignore
         ops.scan(lambda acc, x: acc + x, 0),  # type: ignore

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Optional
 
 from reactivex import Observable, abc
@@ -12,6 +13,8 @@ from blrec.flv.operators.typing import FLVStream, FLVStreamItem
 
 __all__ = ('ProgressBar',)
 
+
+DISPLAY_PROGRESS = bool(os.environ.get('BLREC_PROGRESS'))
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +44,7 @@ class ProgressBar:
                 unit_scale=True,
                 unit_divisor=1024,
                 postfix=self._make_pbar_postfix(),
+                disable=not DISPLAY_PROGRESS,
             )
 
             def on_next(item: FLVStreamItem) -> None:

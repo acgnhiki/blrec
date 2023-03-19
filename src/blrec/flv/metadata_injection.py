@@ -26,7 +26,7 @@ class InjectingProgress:
 
 
 def inject_metadata(
-    path: str, metadata: Dict[str, Any], *, show_progress: bool = False
+    path: str, metadata: Dict[str, Any], *, display_progress: bool = False
 ) -> Observable[InjectingProgress]:
     filesize = os.path.getsize(path)
 
@@ -51,7 +51,7 @@ def inject_metadata(
             desc='Injecting',
             postfix=filename,
             total=filesize,
-            disable=not show_progress,
+            disable=not display_progress,
         ),
         ops.map(lambda i: len(i)),  # type: ignore
         ops.scan(lambda acc, x: acc + x, 0),  # type: ignore

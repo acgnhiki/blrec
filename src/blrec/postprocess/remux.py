@@ -58,7 +58,7 @@ def remux_video(
     out_path: str,
     metadata_path: Optional[str] = None,
     *,
-    show_progress: bool = False,
+    display_progress: bool = False,
     remove_filler_data: bool = False,
 ) -> Observable[Union[RemuxingProgress, RemuxingResult]]:
     SIZE_PATTERN: Final = re.compile(r'size=\s*(?P<number>\d+)(?P<unit>[a-zA-Z]?B)')
@@ -125,7 +125,7 @@ def remux_video(
                 unit_scale=True,
                 unit_divisor=1024,
                 postfix=postfix,
-                disable=not show_progress,
+                disable=not display_progress,
             ) as pbar:
                 cmd = f'ffmpeg -i "{in_path}"'
                 if metadata_path is not None:

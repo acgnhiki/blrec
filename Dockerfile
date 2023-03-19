@@ -21,5 +21,5 @@ ENV BLREC_DEFAULT_OUT_DIR=/rec
 ENV TZ="Asia/Shanghai"
 
 EXPOSE 2233
-ENTRYPOINT ["blrec", "--host", "0.0.0.0"]
+ENTRYPOINT ["blrec", "--host", "0.0.0.0", "--no-progress"]
 CMD []

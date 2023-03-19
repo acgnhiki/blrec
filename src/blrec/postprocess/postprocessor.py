@@ -33,6 +33,8 @@ __all__ = (
 )
 
 
+DISPLAY_PROGRESS = bool(os.environ.get('BLREC_PROGRESS'))
+
 logger = logging.getLogger(__name__)
 
 
@@ -259,7 +261,9 @@ class Postprocessor(
         future: asyncio.Future[None] = asyncio.Future()
         self._postprocessing_path = path
 
-        subscription = analyse_metadata(path, show_progress=True).subscribe(
+        subscription = analyse_metadata(
+            path, display_progress=DISPLAY_PROGRESS
+        ).subscribe(
             on_error=lambda e: future.set_exception(e),
             on_completed=lambda: future.set_result(None),
             scheduler=self._scheduler,
@@ -275,7 +279,9 @@ class Postprocessor(
         def on_next(value: InjectingProgress) -> None:
             self._postprocessing_progress = value
 
-        subscription = inject_metadata(path, metadata, show_progress=True).subscribe(
+        subscription = inject_metadata(
+            path, metadata, display_progress=DISPLAY_PROGRESS
+        ).subscribe(
             on_next=on_next,
             on_error=lambda e: future.set_exception(e),
             on_completed=lambda: future.set_result(None),
@@ -301,7 +307,7 @@ class Postprocessor(
             in_path,
             out_path,
             metadata_path,
-            show_progress=True,
+            display_progress=DISPLAY_PROGRESS,
             remove_filler_data=True,
         ).subscribe(
             on_next=on_next,
