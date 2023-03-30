@@ -1,16 +1,17 @@
 from __future__ import annotations
-from abc import ABC
+
 import uuid
+from abc import ABC
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Generic, TYPE_CHECKING, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, Type, TypeVar
 
 import attr
 
 if TYPE_CHECKING:
     from ..bili.models import UserInfo, RoomInfo
     from ..disk_space.space_monitor import DiskUsage
-from ..exception import format_exception
 
+from ..exception import format_exception
 
 _D = TypeVar('_D', bound='BaseEventData')
 _E = TypeVar('_E')
@@ -32,9 +33,7 @@ class BaseEvent(Generic[_D]):
     @classmethod
     def from_data(cls: Type[_E], data: _D) -> _E:
         return cls(  # type: ignore
-            id=uuid.uuid1(),
-            date=datetime.now(timezone(timedelta(hours=8))),
-            data=data,
+            id=uuid.uuid1(), date=datetime.now(timezone(timedelta(hours=8))), data=data
         )
 
     def asdict(self) -> Dict[str, Any]:
@@ -181,11 +180,21 @@ class RawDanmakuFileCompletedEventData(BaseEventData):
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True, kw_only=True)
-class RawDanmakuFileCompletedEvent(
-    BaseEvent[RawDanmakuFileCompletedEventData]
-):
+class RawDanmakuFileCompletedEvent(BaseEvent[RawDanmakuFileCompletedEventData]):
     type: str = 'RawDanmakuFileCompletedEvent'
     data: RawDanmakuFileCompletedEventData
+
+
+@attr.s(auto_attribs=True, slots=True, frozen=True)
+class CoverImageDownloadedEventData(BaseEventData):
+    room_id: int
+    path: str
+
+
+@attr.s(auto_attribs=True, slots=True, frozen=True, kw_only=True)
+class CoverImageDownloadedEvent(BaseEvent[CoverImageDownloadedEventData]):
+    type: str = 'CoverImageDownloadedEvent'
+    data: CoverImageDownloadedEventData
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
@@ -200,6 +209,18 @@ class VideoPostprocessingCompletedEvent(
 ):
     type: str = 'VideoPostprocessingCompletedEvent'
     data: VideoPostprocessingCompletedEventData
+
+
+@attr.s(auto_attribs=True, slots=True, frozen=True)
+class PostprocessingCompletedEventData(BaseEventData):
+    room_id: int
+    files: List[str]
+
+
+@attr.s(auto_attribs=True, slots=True, frozen=True, kw_only=True)
+class PostprocessingCompletedEvent(BaseEvent[PostprocessingCompletedEventData]):
+    type: str = 'PostprocessingCompletedEvent'
+    data: PostprocessingCompletedEventData
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
@@ -222,9 +243,7 @@ class ErrorData(BaseEventData):
 
     @classmethod
     def from_exc(cls, exc: BaseException) -> ErrorData:
-        return cls(
-            name=type(exc).__name__, detail=format_exception(exc),
-        )
+        return cls(name=type(exc).__name__, detail=format_exception(exc))
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True, kw_only=True)

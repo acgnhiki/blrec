@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from .event_center import EventCenter
 from .models import (
@@ -27,8 +27,12 @@ from .models import (
     RawDanmakuFileCreatedEventData,
     RawDanmakuFileCompletedEvent,
     RawDanmakuFileCompletedEventData,
+    CoverImageDownloadedEvent,
+    CoverImageDownloadedEventData,
     VideoPostprocessingCompletedEvent,
     VideoPostprocessingCompletedEventData,
+    PostprocessingCompletedEvent,
+    PostprocessingCompletedEventData,
     SpaceNoEnoughEvent,
     SpaceNoEnoughEventData,
 )
@@ -38,6 +42,7 @@ from ..bili.live_monitor import LiveEventListener
 from ..core.recorder import RecorderEventListener
 from ..disk_space import SpaceEventListener
 from ..postprocess import PostprocessorEventListener
+
 if TYPE_CHECKING:
     from ..bili.live_monitor import LiveMonitor
     from ..core.recorder import Recorder
@@ -45,11 +50,7 @@ if TYPE_CHECKING:
     from ..postprocess import Postprocessor
 
 
-__all__ = (
-    'LiveEventSubmitter',
-    'SpaceEventSubmitter',
-    'PostprocessorEventSubmitter',
-)
+__all__ = ('LiveEventSubmitter', 'SpaceEventSubmitter', 'PostprocessorEventSubmitter')
 
 event_center = EventCenter.get_instance()
 
@@ -89,33 +90,23 @@ class RecorderEventSubmitter(RecorderEventListener):
         data = RecordingCancelledEventData(recorder.live.room_info)
         event_center.submit(RecordingCancelledEvent.from_data(data))
 
-    async def on_video_file_created(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_video_file_created(self, recorder: Recorder, path: str) -> None:
         data = VideoFileCreatedEventData(recorder.live.room_id, path)
         event_center.submit(VideoFileCreatedEvent.from_data(data))
 
-    async def on_video_file_completed(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_video_file_completed(self, recorder: Recorder, path: str) -> None:
         data = VideoFileCompletedEventData(recorder.live.room_id, path)
         event_center.submit(VideoFileCompletedEvent.from_data(data))
 
-    async def on_danmaku_file_created(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_danmaku_file_created(self, recorder: Recorder, path: str) -> None:
         data = DanmakuFileCreatedEventData(recorder.live.room_id, path)
         event_center.submit(DanmakuFileCreatedEvent.from_data(data))
 
-    async def on_danmaku_file_completed(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_danmaku_file_completed(self, recorder: Recorder, path: str) -> None:
         data = DanmakuFileCompletedEventData(recorder.live.room_id, path)
         event_center.submit(DanmakuFileCompletedEvent.from_data(data))
 
-    async def on_raw_danmaku_file_created(
-        self, recorder: Recorder, path: str
-    ) -> None:
+    async def on_raw_danmaku_file_created(self, recorder: Recorder, path: str) -> None:
         data = RawDanmakuFileCreatedEventData(recorder.live.room_id, path)
         event_center.submit(RawDanmakuFileCreatedEvent.from_data(data))
 
@@ -124,6 +115,10 @@ class RecorderEventSubmitter(RecorderEventListener):
     ) -> None:
         data = RawDanmakuFileCompletedEventData(recorder.live.room_id, path)
         event_center.submit(RawDanmakuFileCompletedEvent.from_data(data))
+
+    async def on_cover_image_downloaded(self, recorder: Recorder, path: str) -> None:
+        data = CoverImageDownloadedEventData(recorder.live.room_id, path)
+        event_center.submit(CoverImageDownloadedEvent.from_data(data))
 
 
 class PostprocessorEventSubmitter(PostprocessorEventListener):
@@ -138,6 +133,14 @@ class PostprocessorEventSubmitter(PostprocessorEventListener):
             postprocessor.recorder.live.room_id, path
         )
         event_center.submit(VideoPostprocessingCompletedEvent.from_data(data))
+
+    async def on_postprocessing_completed(
+        self, postprocessor: Postprocessor, files: List[str]
+    ) -> None:
+        data = PostprocessingCompletedEventData(
+            postprocessor.recorder.live.room_id, files
+        )
+        event_center.submit(PostprocessingCompletedEvent.from_data(data))
 
 
 class SpaceEventSubmitter(SpaceEventListener):

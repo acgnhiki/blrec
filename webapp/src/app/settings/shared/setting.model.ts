@@ -377,7 +377,9 @@ export interface WebhookEventSettings {
   danmakuFileCompleted: boolean;
   rawDanmakuFileCreated: boolean;
   rawDanmakuFileCompleted: boolean;
+  coverImageDownloaded: boolean;
   videoPostprocessingCompleted: boolean;
+  postprocessingCompleted: boolean;
   spaceNoEnough: boolean;
   errorOccurred: boolean;
 }

@@ -627,7 +627,9 @@ class WebHookEventSettings(BaseModel):
     danmaku_file_completed: bool = True
     raw_danmaku_file_created: bool = True
     raw_danmaku_file_completed: bool = True
+    cover_image_downloaded: bool = True
     video_postprocessing_completed: bool = True
+    postprocessing_completed: bool = True
     space_no_enough: bool = True
     error_occurred: bool = True
 

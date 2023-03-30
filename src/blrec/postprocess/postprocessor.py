@@ -20,7 +20,13 @@ from ..logging.room_id import aio_task_with_room_id
 from ..path import danmaku_path, extra_metadata_path, record_metadata_path
 from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin, SupportDebugMixin
 from .ffmpeg_metadata import make_metadata_file
-from .helpers import copy_files_related, discard_dir, discard_file, get_extra_metadata
+from .helpers import (
+    copy_files_related,
+    discard_dir,
+    discard_file,
+    files_related,
+    get_extra_metadata,
+)
 from .models import DeleteStrategy, PostprocessorStatus
 from .remux import RemuxingProgress, RemuxingResult, remux_video
 from .typing import Progress
@@ -41,6 +47,11 @@ logger = logging.getLogger(__name__)
 class PostprocessorEventListener(EventListener):
     async def on_video_postprocessing_completed(
         self, postprocessor: Postprocessor, path: str
+    ) -> None:
+        ...
+
+    async def on_postprocessing_completed(
+        self, postprocessor: Postprocessor, files: List[str]
     ) -> None:
         ...
 
@@ -195,6 +206,9 @@ class Postprocessor(
                     await self._emit(
                         'video_postprocessing_completed', self, result_path
                     )
+
+                    files = [result_path, *files_related(result_path)]
+                    await self._emit('postprocessing_completed', self, files)
                 except Exception as exc:
                     submit_exception(exc)
                 finally:

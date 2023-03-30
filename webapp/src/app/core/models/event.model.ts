@@ -13,8 +13,10 @@ export type Event =
   | DanmakuFileCompletedEvent
   | RawDanmakuFileCreatedEvent
   | RawDanmakuFileCompletedEvent
+  | CoverImageDownloadedEvent
   | SpaceNoEnoughEvent
-  | VideoPostprocessingCompletedEvent;
+  | VideoPostprocessingCompletedEvent
+  | PostprocessingCompletedEvent;
 
 export interface LiveBeganEvent {
   readonly type: 'LiveBeganEvent';
@@ -100,11 +102,27 @@ export interface RawDanmakuFileCompletedEvent {
   };
 }
 
+export interface CoverImageDownloadedEvent {
+  readonly type: 'CoverImageDownloadedEvent';
+  readonly data: {
+    room_id: number;
+    path: string;
+  };
+}
+
 export interface VideoPostprocessingCompletedEvent {
   readonly type: 'VideoPostprocessingCompletedEvent';
   readonly data: {
     room_id: number;
     path: string;
+  };
+}
+
+export interface PostprocessingCompletedEvent {
+  readonly type: 'PostprocessingCompletedEvent';
+  readonly data: {
+    room_id: number;
+    files: string[];
   };
 }
 

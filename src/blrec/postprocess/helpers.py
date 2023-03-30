@@ -44,18 +44,22 @@ async def discard_dir(path: str, log_level: Literal['INFO', 'DEBUG'] = 'INFO') -
         logger.log(logging.getLevelName(log_level), f'Deleted {path!r}')
 
 
-async def copy_files_related(video_path: str) -> None:
-    loop = asyncio.get_running_loop()
-    dirname = os.path.dirname(video_path)
-
-    for src_path in [
+def files_related(video_path: str) -> Iterable[str]:
+    for path in [
         danmaku_path(video_path),
         raw_danmaku_path(video_path),
         cover_path(video_path, ext='jpg'),
         cover_path(video_path, ext='png'),
     ]:
-        if not os.path.isfile(src_path):
-            continue
+        if os.path.isfile(path):
+            yield path
+
+
+async def copy_files_related(video_path: str) -> None:
+    loop = asyncio.get_running_loop()
+    dirname = os.path.dirname(video_path)
+
+    for src_path in files_related(video_path):
         root, ext = os.path.splitext(src_path)
         dst_path = PurePath(dirname).with_suffix(ext)
         try:

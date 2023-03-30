@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from enum import Enum
 from threading import Lock
@@ -9,7 +8,8 @@ import aiohttp
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from blrec.bili.live import Live
-from blrec.exception import exception_callback
+from blrec.event.event_emitter import EventEmitter, EventListener
+from blrec.exception import submit_exception
 from blrec.logging.room_id import aio_task_with_room_id
 from blrec.path import cover_path
 from blrec.utils.hash import sha1sum
@@ -17,10 +17,15 @@ from blrec.utils.mixins import SwitchableMixin
 
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 
-__all__ = ('CoverDownloader',)
+__all__ = 'CoverDownloader', 'CoverDownloaderEventListener'
 
 
 logger = logging.getLogger(__name__)
+
+
+class CoverDownloaderEventListener(EventListener):
+    async def on_cover_image_downloaded(self, path: str) -> None:
+        ...
 
 
 class CoverSaveStrategy(Enum):
@@ -35,7 +40,11 @@ class CoverSaveStrategy(Enum):
         return str(self)
 
 
-class CoverDownloader(StreamRecorderEventListener, SwitchableMixin):
+class CoverDownloader(
+    EventEmitter[CoverDownloaderEventListener],
+    StreamRecorderEventListener,
+    SwitchableMixin,
+):
     def __init__(
         self,
         live: Live,
@@ -65,8 +74,7 @@ class CoverDownloader(StreamRecorderEventListener, SwitchableMixin):
         with self._lock:
             if not self.save_cover:
                 return
-            task = asyncio.create_task(self._save_cover(video_path))
-            task.add_done_callback(exception_callback)
+            await self._save_cover(video_path)
 
     @aio_task_with_room_id
     async def _save_cover(self, video_path: str) -> None:
@@ -85,8 +93,10 @@ class CoverDownloader(StreamRecorderEventListener, SwitchableMixin):
             self._sha1_set.add(sha1)
         except Exception as e:
             logger.error(f'Failed to save cover image: {repr(e)}')
+            submit_exception(e)
         else:
             logger.info(f'Saved cover image: {path}')
+            await self._emit('cover_image_downloaded', path)
 
     @retry(reraise=True, wait=wait_fixed(1), stop=stop_after_attempt(3))
     async def _fetch_cover(self, url: str) -> bytes:

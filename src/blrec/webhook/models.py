@@ -18,8 +18,10 @@ from ..event import (
     DanmakuFileCompletedEvent,
     RawDanmakuFileCreatedEvent,
     RawDanmakuFileCompletedEvent,
+    CoverImageDownloadedEvent,
     SpaceNoEnoughEvent,
     VideoPostprocessingCompletedEvent,
+    PostprocessingCompletedEvent,
 )
 from ..event.typing import Event
 
@@ -64,8 +66,12 @@ class WebHook:
             types.add(RawDanmakuFileCreatedEvent)
         if settings.raw_danmaku_file_completed:
             types.add(RawDanmakuFileCompletedEvent)
+        if settings.cover_image_downloaded:
+            types.add(CoverImageDownloadedEvent)
         if settings.video_postprocessing_completed:
             types.add(VideoPostprocessingCompletedEvent)
+        if settings.postprocessing_completed:
+            types.add(PostprocessingCompletedEvent)
         if settings.space_no_enough:
             types.add(SpaceNoEnoughEvent)
 

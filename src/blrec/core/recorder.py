@@ -17,7 +17,11 @@ from blrec.flv.operators import MetaData, StreamProfile
 from blrec.setting.typing import RecordingMode
 from blrec.utils.mixins import AsyncStoppableMixin
 
-from .cover_downloader import CoverDownloader, CoverSaveStrategy
+from .cover_downloader import (
+    CoverDownloader,
+    CoverDownloaderEventListener,
+    CoverSaveStrategy,
+)
 from .danmaku_dumper import DanmakuDumper, DanmakuDumperEventListener
 from .danmaku_receiver import DanmakuReceiver
 from .raw_danmaku_dumper import RawDanmakuDumper, RawDanmakuDumperEventListener
@@ -60,6 +64,9 @@ class RecorderEventListener(EventListener):
     ) -> None:
         ...
 
+    async def on_cover_image_downloaded(self, recorder: Recorder, path: str) -> None:
+        ...
+
 
 class Recorder(
     EventEmitter[RecorderEventListener],
@@ -67,6 +74,7 @@ class Recorder(
     AsyncStoppableMixin,
     DanmakuDumperEventListener,
     RawDanmakuDumperEventListener,
+    CoverDownloaderEventListener,
     StreamRecorderEventListener,
 ):
     def __init__(
@@ -415,6 +423,9 @@ class Recorder(
     async def on_raw_danmaku_file_completed(self, path: str) -> None:
         await self._emit('raw_danmaku_file_completed', self, path)
 
+    async def on_cover_image_downloaded(self, path: str) -> None:
+        await self._emit('cover_image_downloaded', self, path)
+
     async def on_stream_recording_completed(self) -> None:
         logger.debug('Stream recording completed')
         await self._stop_recording()
@@ -423,7 +434,7 @@ class Recorder(
         self._live_monitor.add_listener(self)
         self._danmaku_dumper.add_listener(self)
         self._raw_danmaku_dumper.add_listener(self)
-        self._stream_recorder.add_listener(self)
+        self._cover_downloader.add_listener(self)
         logger.debug('Started recorder')
 
         self._print_live_info()
@@ -438,7 +449,7 @@ class Recorder(
         self._live_monitor.remove_listener(self)
         self._danmaku_dumper.remove_listener(self)
         self._raw_danmaku_dumper.remove_listener(self)
-        self._stream_recorder.remove_listener(self)
+        self._cover_downloader.remove_listener(self)
         logger.debug('Stopped recorder')
 
     async def _start_recording(self) -> None:
@@ -452,6 +463,7 @@ class Recorder(
         self._danmaku_dumper.enable()
         self._danmaku_receiver.start()
         self._cover_downloader.enable()
+        self._stream_recorder.add_listener(self)
 
         await self._prepare()
         if self._stream_available:
@@ -472,6 +484,7 @@ class Recorder(
         self._danmaku_dumper.disable()
         self._danmaku_receiver.stop()
         self._cover_downloader.disable()
+        self._stream_recorder.remove_listener(self)
 
         if self._stopped:
             logger.info('Recording Cancelled')

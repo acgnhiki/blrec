@@ -30,7 +30,9 @@ const DEFAULT_SETTINGS = {
   danmakuFileCompleted: true,
   rawDanmakuFileCreated: true,
   rawDanmakuFileCompleted: true,
+  coverImageDownloaded: true,
   videoPostprocessingCompleted: true,
+  postprocessingCompleted: true,
   spaceNoEnough: true,
   errorOccurred: true,
 } as const;
@@ -75,7 +77,9 @@ export class WebhookEditDialogComponent implements OnChanges {
       danmakuFileCompleted: [''],
       rawDanmakuFileCreated: [''],
       rawDanmakuFileCompleted: [''],
+      coverImageDownloaded: [''],
       videoPostprocessingCompleted: [''],
+      postprocessingCompleted: [''],
       spaceNoEnough: [''],
       errorOccurred: [''],
     });
