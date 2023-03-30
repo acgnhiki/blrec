@@ -100,7 +100,7 @@ class Application:
     async def launch(self) -> None:
         logger.info('Launching Application...')
         self._setup()
-        logger.debug(f'Default umask {os.umask(000)}')
+        logger.debug(f'Default umask {os.umask(0o000)}')
         logger.info(f'Launched Application v{__version__}')
         task = asyncio.create_task(self._task_manager.load_all_tasks())
         task.add_done_callback(exception_callback)

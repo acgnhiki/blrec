@@ -27,8 +27,8 @@ set port=2233
 @REM 请自行修改 api key，不要使用默认的 api key。
 set api_key=bili2233
 
-set DEFAULT_LOG_DIR=日志文件
-set DEFAULT_OUT_DIR=录播文件
+set BLREC_DEFAULT_LOG_DIR=日志文件
+set BLREC_DEFAULT_OUT_DIR=录播文件
 
 python -m blrec -c settings.toml --open --host %host% --port %port% --api-key %api_key%
 

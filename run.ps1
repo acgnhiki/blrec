@@ -19,8 +19,8 @@ $env:port = 2233
 # 请自行修改 api key，不要使用默认的 api key。
 $env:api_key = "bili2233"
 
-$env:DEFAULT_LOG_DIR = "日志文件"
-$env:DEFAULT_OUT_DIR = "录播文件"
+$env:BLREC_DEFAULT_LOG_DIR = "日志文件"
+$env:BLREC_DEFAULT_OUT_DIR = "录播文件"
 
 python -m blrec -c settings.toml --open --host $env:host --port $env:port --api-key $env:api_key
 
