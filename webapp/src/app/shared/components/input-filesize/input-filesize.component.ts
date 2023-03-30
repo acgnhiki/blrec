@@ -63,8 +63,10 @@ export class InputFilesizeComponent implements OnInit, ControlValueAccessor {
   }
 
   writeValue(value: number): void {
-    this.value = value;
-    this.updateDisplayValue(value);
+    if (typeof value === 'number' && value >= 0) {
+      this.value = value;
+      this.updateDisplayValue(value);
+    }
   }
 
   registerOnChange(fn: OnChangeType): void {
