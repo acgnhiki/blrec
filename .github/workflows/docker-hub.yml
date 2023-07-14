@@ -38,6 +38,7 @@ jobs:
           context: ./
           file: ./Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/blrec:latest,${{ secrets.DOCKER_HUB_USERNAME }}/blrec:${{ github.ref_name }}
           cache-from: type=local,src=/tmp/.buildx-cache
