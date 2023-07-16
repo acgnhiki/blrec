@@ -61,7 +61,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         self.appapi = appapi
         self.webapi = webapi
         self._room_id = room_id
-        self.uid = uid
+        self._uid = uid
         self.headers = headers or {}
 
         self._api_platform: ApiPlatform = 'web'
@@ -147,7 +147,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
     async def _send_auth(self) -> None:
         auth_msg = json.dumps(
             {
-                'uid': self.uid,
+                'uid': self._uid,
                 'roomid': self._room_id,  # must not be the short id!
                 'protover': WS.BODY_PROTOCOL_VERSION_BROTLI,
                 'platform': 'web',

@@ -109,6 +109,7 @@ export interface TaskParam {
   readonly user_agent: string;
   readonly cookie: string;
 
+  readonly danmu_uid: number;
   readonly danmu_uname: boolean;
   readonly record_gift_send: boolean;
   readonly record_free_gifts: boolean;

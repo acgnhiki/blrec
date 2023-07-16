@@ -43,11 +43,12 @@ class RecordTaskManager:
         logger.info('Loading all tasks...')
 
         settings_list = self._settings_manager.get_settings({'tasks'}).tasks
+        danmu_uid = self._settings_manager.get_settings({'danmaku'}).danmaku.danmu_uid
         assert settings_list is not None
 
         for settings in settings_list:
             try:
-                await self.add_task(settings)
+                await self.add_task(settings, danmu_uid)
             except Exception as e:
                 submit_exception(e)
 
@@ -74,10 +75,10 @@ class RecordTaskManager:
         wait=wait_exponential(max=10),
         stop=stop_after_delay(60),
     )
-    async def add_task(self, settings: TaskSettings) -> None:
+    async def add_task(self, settings: TaskSettings, danmu_uid: int) -> None:
         logger.info(f'Adding task {settings.room_id}...')
 
-        task = RecordTask(settings.room_id,uid=settings.danmaku.danmu_uid)
+        task = RecordTask(settings.room_id, uid=danmu_uid)
         self._tasks[settings.room_id] = task
 
         try:
