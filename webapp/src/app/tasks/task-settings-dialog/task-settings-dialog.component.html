@@ -481,6 +481,28 @@
         <nz-form-item class="setting-item">
           <nz-form-label
             class="setting-label"
+            nzFor="danmuUid"
+            nzNoColon
+            nzTooltipTitle="danmuUidTip"
+            >UID</nz-form-label
+          >
+          <nz-form-control class="setting-control switch">
+            <input type="number" nz-input formControlName="danmuUid" id="danmuUid" [(ngModel)]="model.danmaku.danmuUid" [disabled]="options.danmaku.danmuUid === null"/>
+          </nz-form-control>
+          <label
+            nz-checkbox
+            [nzChecked]="options.danmaku.danmuUid !== null"
+            (nzCheckedChange)="
+              options.danmaku.danmuUid = $event
+                ? globalSettings.danmaku.danmuUid
+                : null
+            "
+            >覆盖全局设置</label
+          >
+        </nz-form-item>
+        <nz-form-item class="setting-item">
+          <nz-form-label
+            class="setting-label"
             nzFor="recordGiftSend"
             nzNoColon
             nzTooltipTitle="记录礼物信息到弹幕文件里"

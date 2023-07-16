@@ -38,6 +38,7 @@ export class DanmakuSettingsComponent implements OnInit, OnChanges {
     private settingsSyncService: SettingsSyncService
   ) {
     this.settingsForm = formBuilder.group({
+      danmuUid: [''],
       danmuUname: [''],
       recordGiftSend: [''],
       recordFreeGifts: [''],
@@ -45,6 +46,10 @@ export class DanmakuSettingsComponent implements OnInit, OnChanges {
       recordSuperChat: [''],
       saveRawDanmaku: [''],
     });
+  }
+
+  get danmuUidControl() {
+    return this.settingsForm.get('danmuUid') as FormControl;
   }
 
   get danmuUnameControl() {

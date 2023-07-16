@@ -77,7 +77,7 @@ class RecordTaskManager:
     async def add_task(self, settings: TaskSettings) -> None:
         logger.info(f'Adding task {settings.room_id}...')
 
-        task = RecordTask(settings.room_id)
+        task = RecordTask(settings.room_id,uid=settings.danmaku.danmu_uid)
         self._tasks[settings.room_id] = task
 
         try:

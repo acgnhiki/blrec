@@ -142,6 +142,7 @@ class HeaderSettings(HeaderOptions):
 
 
 class DanmakuOptions(BaseModel):
+    danmu_uid: Optional[int]
     danmu_uname: Optional[bool]
     record_gift_send: Optional[bool]
     record_free_gifts: Optional[bool]
@@ -151,6 +152,7 @@ class DanmakuOptions(BaseModel):
 
 
 class DanmakuSettings(DanmakuOptions):
+    danmu_uid: int = 0
     danmu_uname: bool = False
     record_gift_send: bool = True
     record_free_gifts: bool = True

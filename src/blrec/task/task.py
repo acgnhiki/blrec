@@ -42,6 +42,7 @@ class RecordTask:
         self,
         room_id: int,
         *,
+        uid: int = 0,
         out_dir: str = '',
         path_template: str = '',
         cookie: str = '',
@@ -54,6 +55,7 @@ class RecordTask:
 
         self._live = Live(room_id, user_agent, cookie)
 
+        self._uid = uid
         self._room_id = room_id
         self._out_dir = out_dir
         self._path_template = path_template
@@ -516,6 +518,7 @@ class RecordTask:
             self._live.appapi,
             self._live.webapi,
             self._live.room_id,
+            uid=self._uid,
             headers=self._live.headers,
         )
 

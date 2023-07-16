@@ -16,6 +16,7 @@ export interface HeaderSettings {
 export type HeaderOptions = Nullable<HeaderSettings>;
 
 export interface DanmakuSettings {
+  danmuUid: number;
   danmuUname: boolean;
   recordGiftSend: boolean;
   recordFreeGifts: boolean;

@@ -1,4 +1,19 @@
 <form nz-form [formGroup]="settingsForm">
+  <nz-form-item class="setting-item">
+    <nz-form-label
+      class="setting-label"
+      nzNoColon
+      nzTooltipTitle="danmuUidTip"
+      >UID</nz-form-label
+    >
+    <nz-form-control
+      class="setting-control switch"
+      [nzWarningTip]="syncFailedWarningTip"
+      [nzValidateStatus]="syncStatus.danmuUid ? danmuUidControl : 'warning'"
+    >
+      <input type="number" nz-input formControlName="danmuUid" />
+    </nz-form-control>
+  </nz-form-item>
   <nz-form-item class="setting-item" appSwitchActionable>
     <nz-form-label
       class="setting-label"
