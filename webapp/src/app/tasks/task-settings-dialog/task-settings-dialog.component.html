@@ -483,11 +483,18 @@
             class="setting-label"
             nzFor="danmuUid"
             nzNoColon
-            nzTooltipTitle="danmuUidTip"
+            nzTooltipTitle="通过设置非零UID，避免录制弹幕时用户名被替换为星号"
             >UID</nz-form-label
           >
           <nz-form-control class="setting-control switch">
-            <input type="number" nz-input formControlName="danmuUid" id="danmuUid" [(ngModel)]="model.danmaku.danmuUid" [disabled]="options.danmaku.danmuUid === null"/>
+            <input
+              nz-input
+              type="number"
+              id="danmuUid"
+              name="danmuUid"
+              [(ngModel)]="model.danmaku.danmuUid"
+              [disabled]="options.danmaku.danmuUid === null"
+            />
           </nz-form-control>
           <label
             nz-checkbox
