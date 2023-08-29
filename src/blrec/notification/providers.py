@@ -266,12 +266,13 @@ class BarkResponse(TypedDict):
 
 
 class Bark(MessagingProvider):
-    _server: Final = 'https://api.day.app'
-    _endpoint: Final = '/push'
+    _server: Final = 'https://api.day.app/'
+    _endpoint: Final = 'push'
 
     def __init__(self, server: str = '', pushkey: str = '') -> None:
         super().__init__()
-        self.server = server
+        self.server = server if len(server) > 0 else self._server
+        self.server = self.server if self.server[-1] == "/" else (self.server+'/')
         self.pushkey = pushkey
 
     async def send_message(
@@ -287,7 +288,7 @@ class Bark(MessagingProvider):
     async def _post_message(
         self, title: str, content: str, msg_type: BarkMessageType
     ) -> None:
-        url = urljoin(self.server or self._server, self._endpoint)
+        url = urljoin(self.server, self._endpoint)
         # content size is limited to a maximum size of 4 KB (4096 bytes)
         if len(content.encode()) >= 4096:
             content = content.encode()[:4090].decode(errors='ignore') + ' ...'
