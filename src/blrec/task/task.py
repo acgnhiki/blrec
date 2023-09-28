@@ -230,6 +230,8 @@ class RecordTask:
     @user_agent.setter
     def user_agent(self, value: str) -> None:
         self._live.user_agent = value
+        if hasattr(self, '_danmaku_client'):
+            self._danmaku_client.headers = self._live.headers
 
     @property
     def cookie(self) -> str:
@@ -238,6 +240,8 @@ class RecordTask:
     @cookie.setter
     def cookie(self, value: str) -> None:
         self._live.cookie = value
+        if hasattr(self, '_danmaku_client'):
+            self._danmaku_client.headers = self._live.headers
 
     @property
     def danmu_uname(self) -> bool:

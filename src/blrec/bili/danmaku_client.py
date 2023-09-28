@@ -15,6 +15,7 @@ from ..event.event_emitter import EventEmitter, EventListener
 from ..exception import exception_callback
 from ..logging.room_id import aio_task_with_room_id
 from ..utils.mixins import AsyncStoppableMixin
+from ..utils.string import extract_uid_from_cookie, extract_buvid_from_cookie
 from .api import AppApi, WebApi
 from .exceptions import DanmakuClientAuthError
 from .typing import ApiPlatform, Danmaku
@@ -59,6 +60,8 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         self.session = session
         self.appapi = appapi
         self.webapi = webapi
+        self._uid = 0
+        self._buvid = ''
         self._room_id = room_id
         self.headers = headers or {}
 
@@ -75,6 +78,9 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
     @headers.setter
     def headers(self, value: Dict[str, str]) -> None:
         self._headers = {**value, 'Connection': 'Upgrade'}
+        cookie = self._headers.get('Cookie', '')
+        self._uid = extract_uid_from_cookie(cookie) or 0
+        self._buvid = extract_buvid_from_cookie(cookie) or ''
 
     async def _do_start(self) -> None:
         await self._update_danmu_info()
@@ -119,7 +125,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             self._host_index += 1
             if self._host_index >= len(self._danmu_info['host_list']):
                 self._host_index = 0
-                self._rotate_api_platform()
+                # self._rotate_api_platform()  # XXX: use web api only
                 await self._update_danmu_info()
             raise
         else:
@@ -145,9 +151,10 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
     async def _send_auth(self) -> None:
         auth_msg = json.dumps(
             {
-                'uid': 0,
+                "uid": self._uid,
                 'roomid': self._room_id,  # must not be the short id!
                 'protover': WS.BODY_PROTOCOL_VERSION_BROTLI,
+                "buvid": self._buvid,
                 'platform': 'web',
                 'type': 2,
                 'key': self._danmu_info['token'],
