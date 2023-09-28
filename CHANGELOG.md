@@ -1,5 +1,16 @@
 # 更新日志
 
+## 1.14.0
+
+- 修复删除全部任务失败
+- 支持反代到子目录
+- 环境变量全部添加 `BLREC_` 前缀
+- 支持在终端隐藏进度条，`Docker` 默认隐藏。
+- 修复 _时长限制_ 和 _大小限制_ 设置显示异常
+- 添加 `CoverImageDownloadedEvent` 和 `PostprocessingCompletedEvent` 两个事件
+- `Docker` 添加对 `Linux/ARM64` 平台的支持
+- 修复添加 `cookie` 后弹幕 `uid` 和用户名仍被屏蔽
+
 ## 1.13.0
 
 - 支持 Python 3.11
