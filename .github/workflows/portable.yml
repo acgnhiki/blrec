@@ -8,7 +8,7 @@ on:
 env:
   FFMPEG_ARCHIVE_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl-shared.zip
   FFMPEG_ARCHIVE_NAME: ffmpeg-master-latest-win64-lgpl-shared.zip
-  PYTHON_ARCHIVE_URL: https://www.python.org/ftp/python/3.11.1/python-3.11.1-embed-amd64.zip
+  PYTHON_ARCHIVE_URL: https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip
 
 jobs:
 
@@ -23,7 +23,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v3
         with:
-          python-version: "3.11.1"
+          python-version: "3.11.5"
 
       - name: Download ffmpeg archive
         run: Invoke-WebRequest -Uri $($env:FFMPEG_ARCHIVE_URL) -OutFile ffmpeg.zip
@@ -92,7 +92,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist\*
+          file: dist/*
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
