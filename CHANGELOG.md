@@ -1,5 +1,9 @@
 # 更新日志
 
+## 1.14.1
+
+修复 `ModuleNotFoundError: No module named 'blrec.web.middlewares'`
+
 ## 1.14.0
 
 - 修复删除全部任务失败
