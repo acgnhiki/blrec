@@ -266,7 +266,7 @@ class BarkResponse(TypedDict):
 
 
 class Bark(MessagingProvider):
-    _server: Final = 'https://api.day.app/'
+    _server: Final = 'https://api.day.app'
     _endpoint: Final = 'push'
 
     def __init__(self, server: str = '', pushkey: str = '') -> None:
