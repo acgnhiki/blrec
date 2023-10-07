@@ -238,19 +238,32 @@ class StreamRecorder(
     async def _do_start(self) -> None:
         self.hls_stream_available_time = None
         stream_format = self.stream_format
-        if stream_format == 'fmp4':
-            logger.info('Waiting for the fmp4 stream becomes available...')
-            available = await self._wait_fmp4_stream()
-            if available:
-                if self.stream_available_time is not None:
-                    self.hls_stream_available_time = await self._live.get_timestamp()
-            else:
+
+        if self._live.has_no_flv_streams():
+            if stream_format == 'flv':
                 logger.warning(
-                    'The specified stream format (fmp4) is not available '
-                    f'in {self.fmp4_stream_timeout} seconcds, '
-                    'falling back to stream format (flv).'
+                    'The specified stream format (flv) is not available, '
+                    'falling back to stream format (fmp4).'
                 )
-                stream_format = 'flv'
+                stream_format = 'fmp4'
+            self.hls_stream_available_time = self.stream_available_time
+        else:
+            if stream_format == 'fmp4':
+                logger.info('Waiting for the fmp4 stream becomes available...')
+                available = await self._wait_fmp4_stream()
+                if available:
+                    if self.stream_available_time is not None:
+                        self.hls_stream_available_time = (
+                            await self._live.get_timestamp()
+                        )
+                else:
+                    logger.warning(
+                        'The specified stream format (fmp4) is not available '
+                        f'in {self.fmp4_stream_timeout} seconcds, '
+                        'falling back to stream format (flv).'
+                    )
+                    stream_format = 'flv'
+
         self._change_impl(stream_format)
         await self._impl.start()
 

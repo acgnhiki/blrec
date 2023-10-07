@@ -20,6 +20,7 @@ from .exceptions import (
     NoStreamFormatAvailable,
     NoStreamQualityAvailable,
 )
+from .helpers import extract_codecs, extract_formats, extract_streams
 from .models import LiveStatus, RoomInfo, UserInfo
 from .typing import ApiPlatform, QualityNumber, ResponseData, StreamCodec, StreamFormat
 
@@ -50,6 +51,7 @@ class Live:
 
         self._room_info: RoomInfo
         self._user_info: UserInfo
+        self._no_flv_stream: bool
 
     @property
     def base_api_urls(self) -> List[str]:
@@ -144,8 +146,18 @@ class Live:
         self._room_info = await self.get_room_info()
         self._user_info = await self.get_user_info(self._room_info.uid)
 
+        self._no_flv_stream = False
+        if self.is_living():
+            streams = await self.get_live_streams()
+            if streams:
+                flv_formats = extract_formats(streams, 'flv')
+                self._no_flv_stream = not flv_formats
+
     async def deinit(self) -> None:
         await self._session.close()
+
+    def has_no_flv_streams(self) -> bool:
+        return self._no_flv_stream
 
     async def get_live_status(self) -> LiveStatus:
         try:
@@ -239,20 +251,25 @@ class Live:
         # the timestamp on the server at the moment in seconds
         return await self._webapi.get_timestamp()
 
-    async def get_live_streams(
+    async def get_play_infos(
         self, qn: QualityNumber = 10000, api_platform: ApiPlatform = 'web'
     ) -> List[Any]:
         if api_platform == 'web':
-            paly_infos = await self._webapi.get_room_play_infos(self._room_id, qn)
+            play_infos = await self._webapi.get_room_play_infos(self._room_id, qn)
         else:
-            paly_infos = await self._appapi.get_room_play_infos(self._room_id, qn)
+            play_infos = await self._appapi.get_room_play_infos(self._room_id, qn)
 
-        for info in paly_infos:
+        return play_infos
+
+    async def get_live_streams(
+        self, qn: QualityNumber = 10000, api_platform: ApiPlatform = 'web'
+    ) -> List[Any]:
+        play_infos = await self.get_play_infos(qn, api_platform)
+
+        for info in play_infos:
             self._check_room_play_info(info)
 
-        streams = jsonpath(paly_infos, '$[*].playurl_info.playurl.stream[*]')
-
-        return streams
+        return extract_streams(play_infos)
 
     async def get_live_stream_url(
         self,
@@ -267,13 +284,11 @@ class Live:
         if not streams:
             raise NoStreamAvailable(stream_format, stream_codec, qn)
 
-        formats = jsonpath(
-            streams, f'$[*].format[?(@.format_name == "{stream_format}")]'
-        )
+        formats = extract_formats(streams, stream_format)
         if not formats:
             raise NoStreamFormatAvailable(stream_format, stream_codec, qn)
 
-        codecs = jsonpath(formats, f'$[*].codec[?(@.codec_name == "{stream_codec}")]')
+        codecs = extract_codecs(formats, stream_codec)
         if not codecs:
             raise NoStreamCodecAvailable(stream_format, stream_codec, qn)
 
