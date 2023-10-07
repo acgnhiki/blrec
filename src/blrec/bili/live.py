@@ -239,15 +239,9 @@ class Live:
         # the timestamp on the server at the moment in seconds
         return await self._webapi.get_timestamp()
 
-    async def get_live_stream_url(
-        self,
-        qn: QualityNumber = 10000,
-        *,
-        api_platform: ApiPlatform = 'web',
-        stream_format: StreamFormat = 'flv',
-        stream_codec: StreamCodec = 'avc',
-        select_alternative: bool = False,
-    ) -> str:
+    async def get_live_streams(
+        self, qn: QualityNumber = 10000, api_platform: ApiPlatform = 'web'
+    ) -> List[Any]:
         if api_platform == 'web':
             paly_infos = await self._webapi.get_room_play_infos(self._room_id, qn)
         else:
@@ -257,13 +251,28 @@ class Live:
             self._check_room_play_info(info)
 
         streams = jsonpath(paly_infos, '$[*].playurl_info.playurl.stream[*]')
+
+        return streams
+
+    async def get_live_stream_url(
+        self,
+        qn: QualityNumber = 10000,
+        *,
+        api_platform: ApiPlatform = 'web',
+        stream_format: StreamFormat = 'flv',
+        stream_codec: StreamCodec = 'avc',
+        select_alternative: bool = False,
+    ) -> str:
+        streams = await self.get_live_streams(qn, api_platform=api_platform)
         if not streams:
             raise NoStreamAvailable(stream_format, stream_codec, qn)
+
         formats = jsonpath(
             streams, f'$[*].format[?(@.format_name == "{stream_format}")]'
         )
         if not formats:
             raise NoStreamFormatAvailable(stream_format, stream_codec, qn)
+
         codecs = jsonpath(formats, f'$[*].codec[?(@.codec_name == "{stream_codec}")]')
         if not codecs:
             raise NoStreamCodecAvailable(stream_format, stream_codec, qn)

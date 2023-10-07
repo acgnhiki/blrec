@@ -83,6 +83,9 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
     def _start_checking(self) -> None:
         self._checking_task = asyncio.create_task(self._check_if_stream_available())
         self._checking_task.add_done_callback(exception_callback)
+        asyncio.get_running_loop().call_later(
+            1800, lambda: asyncio.create_task(self._stop_checking())
+        )
         logger.debug('Started checking if stream available')
 
     async def _stop_checking(self) -> None:
@@ -147,19 +150,16 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
             self._status_count = 0
             self._stream_available = False
             await self._emit('live_ended', self._live)
+            await self._stop_checking()
         else:
             self._status_count += 1
 
             if self._status_count == 1:
                 assert self._previous_status != LiveStatus.LIVE
-                self._start_checking()
                 await self._emit('live_began', self._live)
+                self._start_checking()
             elif self._status_count == 2:
                 assert self._previous_status == LiveStatus.LIVE
-                if not self._stream_available:
-                    self._stream_available = True
-                    await self._stop_checking()
-                    await self._emit('live_stream_available', self._live)
             elif self._status_count > 2:
                 assert self._previous_status == LiveStatus.LIVE
                 await self._emit('live_stream_reset', self._live)
@@ -181,11 +181,15 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
 
     @aio_task_with_room_id
     async def _check_if_stream_available(self) -> None:
-        while not self._stream_available:
+        while True:
             try:
-                await self._live.get_live_stream_url()
-            except Exception:
-                await asyncio.sleep(1)
-            else:
-                self._stream_available = True
-                await self._emit('live_stream_available', self._live)
+                streams = await self._live.get_live_streams()
+                if streams:
+                    logger.debug('live stream available')
+                    self._stream_available = True
+                    await self._emit('live_stream_available', self._live)
+                    break
+            except Exception as e:
+                logger.warning(f'Failed to get live streams: {repr(e)}')
+
+            await asyncio.sleep(1)
