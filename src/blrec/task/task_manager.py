@@ -106,8 +106,9 @@ class RecordTaskManager:
                 await task.enable_monitor()
             if settings.enable_recorder:
                 await task.enable_recorder()
-        except Exception as e:
+        except BaseException as e:
             logger.error(f'Failed to add task {settings.room_id} due to: {repr(e)}')
+            await task.destroy()
             del self._tasks[settings.room_id]
             raise
 

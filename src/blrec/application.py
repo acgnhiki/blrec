@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from contextlib import suppress
 from typing import Iterator, List, Optional
 
 import attr
@@ -102,8 +103,13 @@ class Application:
         self._setup()
         logger.debug(f'Default umask {os.umask(0o000)}')
         logger.info(f'Launched Application v{__version__}')
-        task = asyncio.create_task(self._task_manager.load_all_tasks())
-        task.add_done_callback(exception_callback)
+        self._loading_task = asyncio.create_task(self._task_manager.load_all_tasks())
+
+        def callback(future: asyncio.Future) -> None:  # type: ignore
+            del self._loading_task
+
+        self._loading_task.add_done_callback(exception_callback)
+        self._loading_task.add_done_callback(callback)
 
     async def exit(self) -> None:
         logger.info('Exiting Application...')
@@ -116,6 +122,10 @@ class Application:
         logger.info('Aborted Application')
 
     async def _exit(self, force: bool = False) -> None:
+        if hasattr(self, '_loading_task'):
+            self._loading_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await self._loading_task
         await self._task_manager.stop_all_tasks(force=force)
         await self._task_manager.destroy_all_tasks()
         self._destroy()
