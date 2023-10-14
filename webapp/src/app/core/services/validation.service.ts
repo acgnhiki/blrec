@@ -16,4 +16,9 @@ export class ValidationService {
     const url = this.url.makeApiUrl(`/api/v1/validation/dir`);
     return this.http.post<ResponseMessage>(url, { path });
   }
+
+  validateCookie(cookie: string): Observable<ResponseMessage> {
+    const url = this.url.makeApiUrl(`/api/v1/validation/cookie`);
+    return this.http.post<ResponseMessage>(url, { cookie });
+  }
 }

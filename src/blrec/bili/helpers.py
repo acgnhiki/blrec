@@ -30,6 +30,17 @@ async def ensure_room_id(room_id: int) -> int:
         return result['room_id']
 
 
+async def get_nav(cookie: str) -> ResponseData:
+    async with aiohttp.ClientSession(raise_for_status=True) as session:
+        headers = {
+            'Origin': 'https://passport.bilibili.com',
+            'Referer': 'https://passport.bilibili.com/account/security',
+            'Cookie': cookie,
+        }
+        api = WebApi(session, headers)
+        return await api.get_nav()
+
+
 def get_quality_name(qn: QualityNumber) -> str:
     QUALITY_MAPPING = {
         20000: '4K',

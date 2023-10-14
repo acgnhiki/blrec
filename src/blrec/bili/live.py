@@ -9,7 +9,7 @@ import aiohttp
 from jsonpath import jsonpath
 from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
-from .api import AppApi, WebApi
+from .api import BASE_HEADERS, AppApi, WebApi
 from .exceptions import (
     LiveRoomEncrypted,
     LiveRoomHidden,
@@ -103,19 +103,10 @@ class Live:
     @property
     def headers(self) -> Dict[str, str]:
         return {
-            'Accept': '*/*',
-            'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en;q=0.3,en-US;q=0.2',  # noqa
+            **BASE_HEADERS,
             'Referer': f'https://live.bilibili.com/{self._room_id}',
-            'Origin': 'https://live.bilibili.com',
-            'Connection': 'keep-alive',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-site',
-            'Pragma': 'no-cache',
-            'Cache-Control': 'no-cache',
             'User-Agent': self._user_agent,
             'Cookie': self._cookie,
-            'Accept-Encoding': 'gzip',
         }
 
     @property
