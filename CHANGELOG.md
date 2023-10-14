@@ -1,5 +1,13 @@
 # 更新日志
 
+## 1.15.0
+
+- 修复部分只有 `HLS` 流的直播不能自动录制 (issue #183)
+- 没有 `flv` 流切换录制 `fmp4` 流 （issue #169）
+- 修复 `RuntimeError: cannot join current thread`（issue #161）
+- 修复 `Unclosed client session` (issue #176)
+- 添加测试 `cookie` 的功能 (issue #181)
+
 ## 1.14.1
 
 修复 `ModuleNotFoundError: No module named 'blrec.web.middlewares'`
