@@ -272,7 +272,6 @@ class Bark(MessagingProvider):
     def __init__(self, server: str = '', pushkey: str = '') -> None:
         super().__init__()
         self.server = server if len(server) > 0 else self._server
-        self.server = self.server if self.server[-1] == "/" else (self.server+'/')
         self.pushkey = pushkey
 
     async def send_message(
