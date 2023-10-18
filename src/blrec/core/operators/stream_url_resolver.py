@@ -148,7 +148,7 @@ class StreamURLResolver(AsyncCooperationMixin):
                 'will using the primary stream url instead.'
             )
             self._stream_param_holder.use_alternative_stream = False
-            self._stream_param_holder.rotate_api_platform()
+            # self._stream_param_holder.rotate_api_platform()  # XXX: use web api only
         except LiveRoomHidden:
             pass
         except LiveRoomLocked:

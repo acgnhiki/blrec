@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import suppress
 from pathlib import PurePath
 from typing import Iterator, List, Optional
 
@@ -230,6 +231,8 @@ class RecordTask:
     @user_agent.setter
     def user_agent(self, value: str) -> None:
         self._live.user_agent = value
+        if hasattr(self, '_danmaku_client'):
+            self._danmaku_client.headers = self._live.headers
 
     @property
     def cookie(self) -> str:
@@ -238,6 +241,8 @@ class RecordTask:
     @cookie.setter
     def cookie(self, value: str) -> None:
         self._live.cookie = value
+        if hasattr(self, '_danmaku_client'):
+            self._danmaku_client.headers = self._live.headers
 
     @property
     def danmu_uname(self) -> bool:
@@ -561,22 +566,29 @@ class RecordTask:
         self._destroy_danmaku_client()
 
     def _destroy_danmaku_client(self) -> None:
-        del self._danmaku_client
+        with suppress(AttributeError):
+            del self._danmaku_client
 
     def _destroy_live_monitor(self) -> None:
-        del self._live_monitor
+        with suppress(AttributeError):
+            del self._live_monitor
 
     def _destroy_live_event_submitter(self) -> None:
-        del self._live_event_submitter
+        with suppress(AttributeError):
+            del self._live_event_submitter
 
     def _destroy_recorder(self) -> None:
-        del self._recorder
+        with suppress(AttributeError):
+            del self._recorder
 
     def _destroy_recorder_event_submitter(self) -> None:
-        del self._recorder_event_submitter
+        with suppress(AttributeError):
+            del self._recorder_event_submitter
 
     def _destroy_postprocessor(self) -> None:
-        del self._postprocessor
+        with suppress(AttributeError):
+            del self._postprocessor
 
     def _destroy_postprocessor_event_submitter(self) -> None:
-        del self._postprocessor_event_submitter
+        with suppress(AttributeError):
+            del self._postprocessor_event_submitter

@@ -1,13 +1,17 @@
 import {
-  Component,
   ChangeDetectionStrategy,
-  Input,
-  Output,
   ChangeDetectorRef,
+  Component,
   EventEmitter,
+  Input,
   OnChanges,
+  Output,
 } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+
+import { NzMessageService } from 'ng-zorro-antd/message';
+
+import { ValidationService } from 'src/app/core/services/validation.service';
 
 @Component({
   selector: 'app-cookie-edit-dialog',
@@ -28,7 +32,9 @@ export class CookieEditDialogComponent implements OnChanges {
 
   constructor(
     formBuilder: FormBuilder,
-    private changeDetector: ChangeDetectorRef
+    private changeDetector: ChangeDetectorRef,
+    private validationService: ValidationService,
+    private message: NzMessageService
   ) {
     this.settingsForm = formBuilder.group({
       cookie: [''],
@@ -71,5 +77,19 @@ export class CookieEditDialogComponent implements OnChanges {
   handleConfirm(): void {
     this.confirm.emit(this.control.value.trim());
     this.close();
+  }
+
+  testCookie(): void {
+    this.validationService
+      .validateCookie(this.control.value)
+      .subscribe((result) => {
+        if (result.code === 0) {
+          this.message.success(
+            `uid: ${result.data?.mid}, uname: ${result.data?.uname}`
+          );
+        } else {
+          this.message.error(`${result.code}: ${result.message}`);
+        }
+      });
   }
 }

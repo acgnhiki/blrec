@@ -9,7 +9,7 @@ import aiohttp
 from jsonpath import jsonpath
 from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
 
-from .api import AppApi, WebApi
+from .api import BASE_HEADERS, AppApi, WebApi
 from .exceptions import (
     LiveRoomEncrypted,
     LiveRoomHidden,
@@ -20,6 +20,7 @@ from .exceptions import (
     NoStreamFormatAvailable,
     NoStreamQualityAvailable,
 )
+from .helpers import extract_codecs, extract_formats, extract_streams
 from .models import LiveStatus, RoomInfo, UserInfo
 from .typing import ApiPlatform, QualityNumber, ResponseData, StreamCodec, StreamFormat
 
@@ -50,6 +51,7 @@ class Live:
 
         self._room_info: RoomInfo
         self._user_info: UserInfo
+        self._no_flv_stream: bool
 
     @property
     def base_api_urls(self) -> List[str]:
@@ -101,19 +103,10 @@ class Live:
     @property
     def headers(self) -> Dict[str, str]:
         return {
-            'Accept': '*/*',
-            'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en;q=0.3,en-US;q=0.2',  # noqa
+            **BASE_HEADERS,
             'Referer': f'https://live.bilibili.com/{self._room_id}',
-            'Origin': 'https://live.bilibili.com',
-            'Connection': 'keep-alive',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-site',
-            'Pragma': 'no-cache',
-            'Cache-Control': 'no-cache',
             'User-Agent': self._user_agent,
             'Cookie': self._cookie,
-            'Accept-Encoding': 'gzip',
         }
 
     @property
@@ -144,8 +137,18 @@ class Live:
         self._room_info = await self.get_room_info()
         self._user_info = await self.get_user_info(self._room_info.uid)
 
+        self._no_flv_stream = False
+        if self.is_living():
+            streams = await self.get_live_streams()
+            if streams:
+                flv_formats = extract_formats(streams, 'flv')
+                self._no_flv_stream = not flv_formats
+
     async def deinit(self) -> None:
         await self._session.close()
+
+    def has_no_flv_streams(self) -> bool:
+        return self._no_flv_stream
 
     async def get_live_status(self) -> LiveStatus:
         try:
@@ -239,6 +242,26 @@ class Live:
         # the timestamp on the server at the moment in seconds
         return await self._webapi.get_timestamp()
 
+    async def get_play_infos(
+        self, qn: QualityNumber = 10000, api_platform: ApiPlatform = 'web'
+    ) -> List[Any]:
+        if api_platform == 'web':
+            play_infos = await self._webapi.get_room_play_infos(self._room_id, qn)
+        else:
+            play_infos = await self._appapi.get_room_play_infos(self._room_id, qn)
+
+        return play_infos
+
+    async def get_live_streams(
+        self, qn: QualityNumber = 10000, api_platform: ApiPlatform = 'web'
+    ) -> List[Any]:
+        play_infos = await self.get_play_infos(qn, api_platform)
+
+        for info in play_infos:
+            self._check_room_play_info(info)
+
+        return extract_streams(play_infos)
+
     async def get_live_stream_url(
         self,
         qn: QualityNumber = 10000,
@@ -248,23 +271,15 @@ class Live:
         stream_codec: StreamCodec = 'avc',
         select_alternative: bool = False,
     ) -> str:
-        if api_platform == 'web':
-            paly_infos = await self._webapi.get_room_play_infos(self._room_id, qn)
-        else:
-            paly_infos = await self._appapi.get_room_play_infos(self._room_id, qn)
-
-        for info in paly_infos:
-            self._check_room_play_info(info)
-
-        streams = jsonpath(paly_infos, '$[*].playurl_info.playurl.stream[*]')
+        streams = await self.get_live_streams(qn, api_platform=api_platform)
         if not streams:
             raise NoStreamAvailable(stream_format, stream_codec, qn)
-        formats = jsonpath(
-            streams, f'$[*].format[?(@.format_name == "{stream_format}")]'
-        )
+
+        formats = extract_formats(streams, stream_format)
         if not formats:
             raise NoStreamFormatAvailable(stream_format, stream_codec, qn)
-        codecs = jsonpath(formats, f'$[*].codec[?(@.codec_name == "{stream_codec}")]')
+
+        codecs = extract_codecs(formats, stream_codec)
         if not codecs:
             raise NoStreamCodecAvailable(stream_format, stream_codec, qn)
 

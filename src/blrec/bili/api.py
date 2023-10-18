@@ -4,7 +4,7 @@ import logging
 import os
 from abc import ABC
 from datetime import datetime
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, Final
 from urllib.parse import urlencode
 
 import aiohttp
@@ -19,6 +19,17 @@ __all__ = 'AppApi', 'WebApi'
 logger = logging.getLogger(__name__)
 
 TRACE_API_REQ = bool(os.environ.get('BLREC_TRACE_API_REQ'))
+
+BASE_HEADERS: Final = {
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en;q=0.3,en-US;q=0.2',  # noqa
+    'Accept': 'application/json, text/plain, */*',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Origin': 'https://live.bilibili.com',
+    'Pragma': 'no-cache',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',  # noqa
+}
 
 
 class BaseApi(ABC):
@@ -39,7 +50,7 @@ class BaseApi(ABC):
 
     @headers.setter
     def headers(self, value: Dict[str, str]) -> None:
-        self._headers = {**value}
+        self._headers = {**BASE_HEADERS, **value}
 
     @staticmethod
     def _check_response(json_res: JsonResponse) -> None:
@@ -50,6 +61,7 @@ class BaseApi(ABC):
 
     @retry(reraise=True, stop=stop_after_delay(5), wait=wait_exponential(0.1))
     async def _get_json_res(self, *args: Any, **kwds: Any) -> JsonResponse:
+        should_check_response = kwds.pop('check_response', True)
         kwds = {'timeout': self.timeout, 'headers': self.headers, **kwds}
         async with self._session.get(*args, **kwds) as res:
             if TRACE_API_REQ:
@@ -60,7 +72,8 @@ class BaseApi(ABC):
                 text_res = await res.text()
                 logger.debug(f'Response text: {text_res[:200]}')
                 raise
-            self._check_response(json_res)
+            if should_check_response:
+                self._check_response(json_res)
             return json_res
 
     async def _get_json(
@@ -282,3 +295,8 @@ class WebApi(BaseApi):
         params = {'id': room_id}
         json_res = await self._get_json(self.base_live_api_urls, path, params=params)
         return json_res['data']
+
+    async def get_nav(self) -> ResponseData:
+        path = '/x/web-interface/nav'
+        json_res = await self._get_json(self.base_api_urls, path, check_response=False)
+        return json_res

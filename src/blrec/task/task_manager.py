@@ -106,8 +106,9 @@ class RecordTaskManager:
                 await task.enable_monitor()
             if settings.enable_recorder:
                 await task.enable_recorder()
-        except Exception as e:
+        except BaseException as e:
             logger.error(f'Failed to add task {settings.room_id} due to: {repr(e)}')
+            await task.destroy()
             del self._tasks[settings.room_id]
             raise
 
@@ -287,12 +288,14 @@ class RecordTaskManager:
         restart_danmaku_client: bool = True,
     ) -> None:
         task = self._get_task(room_id)
-        # avoid unnecessary updates that will interrupt connections
-        if task.user_agent == settings.user_agent and task.cookie == settings.cookie:
-            return
-        task.user_agent = settings.user_agent
-        task.cookie = settings.cookie
-        if restart_danmaku_client:
+        changed = False
+        if task.user_agent != settings.user_agent:
+            task.user_agent = settings.user_agent
+            changed = True
+        if task.cookie != settings.cookie:
+            task.cookie = settings.cookie
+            changed = True
+        if changed and restart_danmaku_client:
             await task.restart_danmaku_client()
 
     def apply_task_output_settings(

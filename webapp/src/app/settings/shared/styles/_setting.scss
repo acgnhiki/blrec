@@ -118,4 +118,8 @@ a.setting-item {
 .setting-value {
   color: #5f6368;
   font-weight: 400;
+
+  width: 100%;
+  max-height: 3em;
+  overflow: hidden;
 }

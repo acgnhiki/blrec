@@ -1,10 +1,9 @@
 from queue import Queue
-from threading import Thread
+from threading import Thread, current_thread
 from typing import Any, Callable, Optional, TypeVar
 
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
-
 
 _T = TypeVar('_T')
 
@@ -41,7 +40,8 @@ def observe_on_new_thread(
                 nonlocal disposed
                 disposed = True
                 queue.put(lambda: None)
-                thread.join()
+                if thread is not current_thread():
+                    thread.join()
 
             subscription.disposable = source.subscribe(
                 on_next, on_error, on_completed, scheduler=scheduler
