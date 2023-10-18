@@ -5,7 +5,7 @@
       [nzWarningTip]="syncFailedWarningTip" [nzValidateStatus]="
         serverControl.valid && !syncStatus.server ? 'warning' : serverControl
       ">
-      <input id="server" type="url" placeholder="默认为官方服务器 https://api.day.app" nz-input formControlName="server" />
+      <input id="server" type="url" placeholder="默认为官方服务器，如果自定义服务器且url带路径，url末尾请加上/" nz-input formControlName="server" />
       <ng-template #serverErrorTip let-control>
         <ng-container *ngIf="control.hasError('pattern')">
           server 无效
