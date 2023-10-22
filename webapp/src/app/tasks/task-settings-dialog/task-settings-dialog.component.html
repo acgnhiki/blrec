@@ -52,17 +52,7 @@
             >覆盖全局设置</label
           >
         </nz-form-item>
-        <nz-form-item
-          class="setting-item filesize-limit"
-          *ngIf="
-            (options.recorder.streamFormat || model.recorder.streamFormat) ===
-              'flv' ||
-            ((options.recorder.streamFormat || model.recorder.streamFormat) ===
-              'fmp4' &&
-              (options.recorder.recordingMode ||
-                model.recorder.recordingMode) === 'standard')
-          "
-        >
+        <nz-form-item class="setting-item filesize-limit">
           <nz-form-label
             class="setting-label"
             nzNoColon
@@ -97,17 +87,7 @@
             >覆盖全局设置</label
           >
         </nz-form-item>
-        <nz-form-item
-          class="setting-item duration-limit"
-          *ngIf="
-            (options.recorder.streamFormat || model.recorder.streamFormat) ===
-              'flv' ||
-            ((options.recorder.streamFormat || model.recorder.streamFormat) ===
-              'fmp4' &&
-              (options.recorder.recordingMode ||
-                model.recorder.recordingMode) === 'standard')
-          "
-        >
+        <nz-form-item class="setting-item duration-limit">
           <nz-form-label
             class="setting-label"
             nzNoColon
@@ -232,48 +212,6 @@
             (nzCheckedChange)="
               options.recorder.fmp4StreamTimeout = $event
                 ? globalSettings.recorder.fmp4StreamTimeout
-                : null
-            "
-            >覆盖全局设置</label
-          >
-        </nz-form-item>
-        <nz-form-item
-          class="setting-item"
-          *ngIf="
-            (options.recorder.streamFormat || model.recorder.streamFormat) ===
-            'fmp4'
-          "
-        >
-          <nz-form-label
-            class="setting-label"
-            nzNoColon
-            [nzTooltipTitle]="recordingModeTip"
-            >录制模式</nz-form-label
-          >
-          <ng-template #recordingModeTip>
-            <p>
-              标准模式: 对下载的流数据进行解析处理，支持自动分割文件等功能。
-              <br />
-              原始模式:
-              直接下载流数据，没有进行解析处理，不支持自动分割文件等功能。
-              <br />
-            </p>
-          </ng-template>
-          <nz-form-control class="setting-control select">
-            <nz-select
-              name="recordingMode"
-              [(ngModel)]="model.recorder.recordingMode"
-              [disabled]="options.recorder.recordingMode === null"
-              [nzOptions]="recordingModeOptions"
-            >
-            </nz-select>
-          </nz-form-control>
-          <label
-            nz-checkbox
-            [nzChecked]="options.recorder.recordingMode !== null"
-            (nzCheckedChange)="
-              options.recorder.recordingMode = $event
-                ? globalSettings.recorder.recordingMode
                 : null
             "
             >覆盖全局设置</label
@@ -440,11 +378,7 @@
           class="setting-item"
           *ngIf="
             (options.recorder.streamFormat || model.recorder.streamFormat) ===
-              'flv' ||
-            ((options.recorder.streamFormat || model.recorder.streamFormat) ===
-              'fmp4' &&
-              (options.recorder.recordingMode ||
-                model.recorder.recordingMode) === 'standard')
+            'flv'
           "
         >
           <nz-form-label
@@ -644,17 +578,7 @@
 
       <div ngModelGroup="postprocessing" class="form-group postprocessing">
         <h2>文件处理</h2>
-        <nz-form-item
-          class="setting-item"
-          *ngIf="
-            (options.recorder.streamFormat || model.recorder.streamFormat) ===
-              'flv' ||
-            ((options.recorder.streamFormat || model.recorder.streamFormat) ===
-              'fmp4' &&
-              (options.recorder.recordingMode ||
-                model.recorder.recordingMode) === 'standard')
-          "
-        >
+        <nz-form-item class="setting-item">
           <nz-form-label
             class="setting-label"
             nzNoColon

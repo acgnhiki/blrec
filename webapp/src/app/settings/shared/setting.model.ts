@@ -214,7 +214,6 @@ export type PushplusMessageType =
 export type TelegramMessageType = MarkdownMessageType | HtmlMessageType;
 export type BarkMessageType = TextMessageType;
 
-
 export interface MessageTemplateSettings {
   beganMessageType: string;
   beganMessageTitle: string;

@@ -39,6 +39,7 @@ class Live:
         self._room_id = room_id
         self._user_agent = user_agent
         self._cookie = cookie
+        self._update_headers()
         self._html_page_url = f'https://live.bilibili.com/{room_id}'
 
         self._session = aiohttp.ClientSession(
@@ -87,6 +88,7 @@ class Live:
     @user_agent.setter
     def user_agent(self, value: str) -> None:
         self._user_agent = value
+        self._update_headers()
         self._webapi.headers = self.headers
         self._appapi.headers = self.headers
 
@@ -97,12 +99,16 @@ class Live:
     @cookie.setter
     def cookie(self, value: str) -> None:
         self._cookie = value
+        self._update_headers()
         self._webapi.headers = self.headers
         self._appapi.headers = self.headers
 
     @property
     def headers(self) -> Dict[str, str]:
-        return {
+        return self._headers
+
+    def _update_headers(self) -> None:
+        self._headers = {
             **BASE_HEADERS,
             'Referer': f'https://live.bilibili.com/{self._room_id}',
             'User-Agent': self._user_agent,

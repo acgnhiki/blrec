@@ -2,6 +2,7 @@ import asyncio
 import os
 import threading
 from abc import ABC, abstractmethod
+from concurrent.futures import Future
 from typing import Awaitable, TypeVar, final
 
 from blrec.logging.room_id import aio_task_with_room_id
@@ -130,10 +131,13 @@ class AsyncCooperationMixin(ABC):
             # workaround for `RuntimeError: no running event loop`
             submit_exception(exc)
 
-        self._run_coroutine(wrapper())
+        self._call_coroutine(wrapper())
 
-    def _run_coroutine(self, coro: Awaitable[_T]) -> _T:
-        future = asyncio.run_coroutine_threadsafe(self._with_room_id(coro), self._loop)
+    def _run_coroutine(self, coro: Awaitable[_T]) -> Future[_T]:
+        return asyncio.run_coroutine_threadsafe(coro, self._loop)
+
+    def _call_coroutine(self, coro: Awaitable[_T]) -> _T:
+        future = self._run_coroutine(coro)
         return future.result()
 
     @aio_task_with_room_id

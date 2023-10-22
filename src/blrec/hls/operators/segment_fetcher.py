@@ -8,7 +8,6 @@ import attr
 import m3u8
 import requests
 import urllib3
-from m3u8.model import InitializationSection
 from reactivex import Observable, abc
 from reactivex import operators as ops
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
@@ -36,8 +35,9 @@ logger = logging.getLogger(__name__)
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
 class InitSectionData:
-    init_section: InitializationSection
+    segment: m3u8.Segment
     payload: bytes
+    offset: int = 0
 
     def __len__(self) -> int:
         return len(self.payload)
@@ -47,6 +47,7 @@ class InitSectionData:
 class SegmentData:
     segment: m3u8.Segment
     payload: bytes
+    offset: int = 0
 
     def __len__(self) -> int:
         return len(self.payload)
@@ -116,9 +117,7 @@ class SegmentFetcher:
                                     f'init section url: {url}'
                                 )
                                 data = _data
-                        observer.on_next(
-                            InitSectionData(init_section=seg.init_section, payload=data)
-                        )
+                        observer.on_next(InitSectionData(segment=seg, payload=data))
                     last_segment = seg
 
                     url = seg.absolute_uri
@@ -172,8 +171,13 @@ class SegmentFetcher:
         stop=stop_after_delay(60),
     )
     def _fetch_segment(self, url: str) -> bytes:
-        with self._session.get(url, headers=self._live.headers, timeout=10) as response:
+        try:
+            response = self._session.get(url, headers=self._live.headers, timeout=5)
             response.raise_for_status()
+        except Exception as e:
+            logger.debug(f'Failed to fetch segment {url}: {repr(e)}')
+            raise
+        else:
             return response.content
 
     def _should_retry(self, exc: Exception) -> bool:
@@ -189,3 +193,4 @@ class SegmentFetcher:
             'Fetch segments failed continuously, trying to update the stream url.'
         )
         self._stream_url_resolver.reset()
+        self._stream_url_resolver.rotate_routes()

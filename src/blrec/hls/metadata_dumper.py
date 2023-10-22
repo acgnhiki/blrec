@@ -18,17 +18,17 @@ logger = logging.getLogger(__name__)
 class MetadataDumper(SwitchableMixin):
     def __init__(
         self,
-        playlist_dumper: hls_ops.PlaylistDumper,
+        segment_dumper: hls_ops.SegmentDumper,
         metadata_provider: Callable[[Dict[str, Any]], Dict[str, Any]],
     ) -> None:
         super().__init__()
-        self._playlist_dumper = playlist_dumper
+        self._segment_dumper = segment_dumper
         self._metadata_provider = metadata_provider
         self._metadata: Dict[str, Any] = {}
 
     def _do_enable(self) -> None:
-        self._file_opened_subscription = self._playlist_dumper.file_opened.subscribe(
-            self._on_playlist_file_opened
+        self._file_opened_subscription = self._segment_dumper.file_opened.subscribe(
+            self._on_video_file_opened
         )
         logger.debug('Enabled metadata dumper')
 
@@ -39,13 +39,13 @@ class MetadataDumper(SwitchableMixin):
         self._metadata.clear()
         logger.debug('Disabled metadata dumper')
 
-    def _on_playlist_file_opened(self, args: Tuple[str, int]) -> None:
-        playlist_path, _ = args
+    def _on_video_file_opened(self, args: Tuple[str, int]) -> None:
+        video_path, _timestamp = args
         metadata = self._metadata_provider({})
-        self._dump_metadata(playlist_path, metadata)
+        self._dump_metadata(video_path, metadata)
 
-    def _dump_metadata(self, playlist_path: str, metadata: Dict[str, Any]) -> None:
-        path = record_metadata_path(playlist_path)
+    def _dump_metadata(self, video_path: str, metadata: Dict[str, Any]) -> None:
+        path = record_metadata_path(video_path)
         logger.debug(f"Dumping metadata to file: '{path}'")
 
         with open(path, 'wt', encoding='utf8') as file:

@@ -12,8 +12,9 @@ from blrec.bili.live import Live
 from blrec.bili.live_monitor import LiveEventListener, LiveMonitor
 from blrec.bili.models import RoomInfo
 from blrec.bili.typing import QualityNumber, StreamFormat
+from blrec.core.typing import MetaData
 from blrec.event.event_emitter import EventEmitter, EventListener
-from blrec.flv.operators import MetaData, StreamProfile
+from blrec.flv.operators import StreamProfile
 from blrec.setting.typing import RecordingMode
 from blrec.utils.mixins import AsyncStoppableMixin
 
@@ -114,7 +115,8 @@ class Recorder(
         self._stream_available: bool = False
 
         self._stream_recorder = StreamRecorder(
-            self._live,
+            live,
+            live_monitor,
             out_dir=out_dir,
             path_template=path_template,
             stream_format=stream_format,

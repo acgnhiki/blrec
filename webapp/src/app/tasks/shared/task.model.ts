@@ -296,14 +296,14 @@ export enum VideoFileStatus {
   INJECTING = 'injecting',
   COMPLETED = 'completed',
   MISSING = 'missing',
-  BROKEN = 'broken',
+  UNKNOWN = 'unknown',
 }
 
 export enum DanmakuFileStatus {
   RECORDING = 'recording',
   COMPLETED = 'completed',
   MISSING = 'missing',
-  BROKEN = 'broken',
+  UNKNOWN = 'unknown',
 }
 
 export interface VideoFileDetail {

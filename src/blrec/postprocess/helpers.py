@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import shutil
-from pathlib import PurePath
 from typing import Any, Dict, Iterable, Literal
 
 import aiofiles
@@ -11,6 +10,7 @@ import aiofiles
 from blrec.path.helpers import (
     cover_path,
     danmaku_path,
+    playlist_path,
     raw_danmaku_path,
     record_metadata_path,
 )
@@ -45,29 +45,19 @@ async def discard_dir(path: str, log_level: Literal['INFO', 'DEBUG'] = 'INFO') -
 
 
 def files_related(video_path: str) -> Iterable[str]:
-    for path in [
+    file_paths = [
         danmaku_path(video_path),
         raw_danmaku_path(video_path),
         cover_path(video_path, ext='jpg'),
         cover_path(video_path, ext='png'),
-    ]:
+    ]
+
+    if video_path.endswith('.m4s'):
+        file_paths.append(playlist_path(video_path))
+
+    for path in file_paths:
         if os.path.isfile(path):
             yield path
-
-
-async def copy_files_related(video_path: str) -> None:
-    loop = asyncio.get_running_loop()
-    dirname = os.path.dirname(video_path)
-
-    for src_path in files_related(video_path):
-        root, ext = os.path.splitext(src_path)
-        dst_path = PurePath(dirname).with_suffix(ext)
-        try:
-            await loop.run_in_executor(None, shutil.copy, src_path, dst_path)
-        except Exception as e:
-            logger.error(f"Failed to copy '{src_path}' to '{dst_path}': {repr(e)}")
-        else:
-            logger.info(f"Copied '{src_path}' to '{dst_path}'")
 
 
 async def get_metadata(flv_path: str) -> Dict[str, Any]:

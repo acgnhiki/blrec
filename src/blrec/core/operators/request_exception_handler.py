@@ -9,7 +9,9 @@ import aiohttp
 import requests
 import urllib3
 from reactivex import Observable, abc
+from reactivex import operators as ops
 
+from blrec.core import operators as core_ops
 from blrec.utils import operators as utils_ops
 
 __all__ = ('RequestExceptionHandler',)
@@ -21,12 +23,14 @@ _T = TypeVar('_T')
 
 
 class RequestExceptionHandler:
-    def __init__(self) -> None:
+    def __init__(self, stream_url_resolver: core_ops.StreamURLResolver) -> None:
+        self._stream_url_resolver = stream_url_resolver
         self._last_retry_time = time.monotonic()
 
     def __call__(self, source: Observable[_T]) -> Observable[_T]:
         return self._handle(source).pipe(
-            utils_ops.retry(should_retry=self._should_retry)
+            ops.do_action(on_error=self._before_retry),
+            utils_ops.retry(should_retry=self._should_retry),
         )
 
     def _handle(self, source: Observable[_T]) -> Observable[_T]:
@@ -74,3 +78,10 @@ class RequestExceptionHandler:
             return True
         else:
             return False
+
+    def _before_retry(self, exc: Exception) -> None:
+        if isinstance(
+            exc, requests.exceptions.HTTPError
+        ) and exc.response.status_code in (403, 404):
+            self._stream_url_resolver.reset()
+            self._stream_url_resolver.rotate_routes()

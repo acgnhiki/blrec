@@ -9,10 +9,11 @@ import psutil
 
 from . import __prog__, __version__
 from .bili.helpers import ensure_room_id
+from .core.typing import MetaData
 from .disk_space import SpaceMonitor, SpaceReclaimer
 from .event.event_submitters import SpaceEventSubmitter
 from .exception import ExceptionHandler, ExistsError, exception_callback
-from .flv.operators import MetaData, StreamProfile
+from .flv.operators import StreamProfile
 from .notification import (
     BarkNotifier,
     EmailNotifier,

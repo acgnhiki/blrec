@@ -7,7 +7,7 @@ from typing import List, Optional, cast
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
-from ...utils.ffprobe import StreamProfile, ffprobe
+from ...utils.ffprobe import StreamProfile, ffprobe_on
 from ..common import find_aac_header_tag, find_avc_header_tag
 from ..io import FlvWriter
 from ..models import FlvHeader, FlvTag
@@ -99,4 +99,4 @@ class Prober:
         def on_error(e: Exception) -> None:
             logger.warning(f'Failed to probe stream by ffprobe: {repr(e)}')
 
-        ffprobe(bytes_io.getvalue()).subscribe(on_next, on_error)
+        ffprobe_on(bytes_io.getvalue()).subscribe(on_next, on_error)

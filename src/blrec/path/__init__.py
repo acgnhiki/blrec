@@ -4,9 +4,12 @@ from .helpers import (
     danmaku_path,
     escape_path,
     extra_metadata_path,
+    ffmpeg_metadata_path,
     file_exists,
+    playlist_path,
     raw_danmaku_path,
     record_metadata_path,
+    video_path,
 )
 
 __all__ = (
@@ -15,7 +18,10 @@ __all__ = (
     'danmaku_path',
     'escape_path',
     'extra_metadata_path',
+    'ffmpeg_metadata_path',
     'file_exists',
+    'playlist_path',
     'raw_danmaku_path',
     'record_metadata_path',
+    'video_path',
 )

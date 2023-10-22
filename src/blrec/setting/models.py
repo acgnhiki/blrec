@@ -18,13 +18,14 @@ from blrec.postprocess import DeleteStrategy
 from blrec.utils.string import camel_case
 
 from .typing import (
+    BarkMessageType,
     EmailMessageType,
+    MessageType,
     PushdeerMessageType,
     PushplusMessageType,
     RecordingMode,
     ServerchanMessageType,
     TelegramMessageType,
-    BarkMessageType,
 )
 
 logger = logging.getLogger(__name__)
@@ -462,16 +463,16 @@ class NotificationSettings(BaseModel):
 
 
 class MessageTemplateSettings(BaseModel):
-    began_message_type: str
+    began_message_type: MessageType
     began_message_title: str
     began_message_content: str
-    ended_message_type: str
+    ended_message_type: MessageType
     ended_message_title: str
     ended_message_content: str
-    space_message_type: str
+    space_message_type: MessageType
     space_message_title: str
     space_message_content: str
-    error_message_type: str
+    error_message_type: MessageType
     error_message_title: str
     error_message_content: str
 

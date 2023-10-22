@@ -296,7 +296,7 @@ class Bark(MessagingProvider):
             "body": content,
             "device_key": self.pushkey,
             "badge": 1,
-            "icon": "https://raw.githubusercontent.com/acgnhiki/blrec/master/webapp/src/assets/icons/icon-72x72.png",
+            "icon": "https://raw.githubusercontent.com/acgnhiki/blrec/master/webapp/src/assets/icons/icon-72x72.png",  # noqa
             "group": "blrec",
         }
         async with aiohttp.ClientSession(raise_for_status=True) as session:

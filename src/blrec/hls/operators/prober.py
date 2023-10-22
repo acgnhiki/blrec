@@ -7,7 +7,7 @@ from typing import List, Optional, Union
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
-from blrec.utils.ffprobe import StreamProfile, ffprobe
+from blrec.utils.ffprobe import StreamProfile, ffprobe_on
 
 from .segment_fetcher import InitSectionData, SegmentData
 
@@ -88,4 +88,4 @@ class Prober:
         def on_error(e: Exception) -> None:
             logger.warning(f'Failed to probe stream by ffprobe: {repr(e)}')
 
-        ffprobe(bytes_io.getvalue()).subscribe(on_next, on_error)
+        ffprobe_on(bytes_io.getvalue()).subscribe(on_next, on_error)

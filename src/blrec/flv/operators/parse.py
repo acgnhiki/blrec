@@ -36,7 +36,7 @@ def parse(
                 try:
                     try:
                         reader = FlvReader(
-                            stream,
+                            stream,  # type: ignore
                             backup_timestamp=backup_timestamp,
                             restore_timestamp=restore_timestamp,
                         )

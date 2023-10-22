@@ -103,6 +103,7 @@ class MetaDataDict:
 class Analyser:
     def __init__(self) -> None:
         self._metadatas: Subject[Optional[MetaData]] = Subject()
+        self._duration_updated: Subject[float] = Subject()
         self._reset()
 
     def _reset(self) -> None:
@@ -134,6 +135,10 @@ class Analyser:
     @property
     def metadatas(self) -> Observable[Optional[MetaData]]:
         return self._metadatas
+
+    @property
+    def duration_updated(self) -> Observable[float]:
+        return self._duration_updated
 
     def __call__(self, source: FLVStream) -> FLVStream:
         return self._analyse(source)
@@ -307,6 +312,7 @@ class Analyser:
         self._size_of_tags += tag.tag_size
         self._size_of_data += tag.data_size
         self._last_timestamp = tag.timestamp
+        self._duration_updated.on_next(self._last_timestamp / 1000)
 
     def _analyse_audio_tag(self, tag: AudioTag) -> None:
         if not self._audio_analysed:

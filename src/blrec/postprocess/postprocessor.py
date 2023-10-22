@@ -17,16 +17,15 @@ from ..flv.helpers import is_valid_flv_file
 from ..flv.metadata_analysis import analyse_metadata
 from ..flv.metadata_injection import InjectingProgress, inject_metadata
 from ..logging.room_id import aio_task_with_room_id
-from ..path import danmaku_path, extra_metadata_path, record_metadata_path
+from ..path import (
+    extra_metadata_path,
+    ffmpeg_metadata_path,
+    playlist_path,
+    record_metadata_path,
+)
 from ..utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin, SupportDebugMixin
 from .ffmpeg_metadata import make_metadata_file
-from .helpers import (
-    copy_files_related,
-    discard_dir,
-    discard_file,
-    files_related,
-    get_extra_metadata,
-)
+from .helpers import discard_file, files_related, get_extra_metadata
 from .models import DeleteStrategy, PostprocessorStatus
 from .remux import RemuxingProgress, RemuxingResult, remux_video
 from .typing import Progress
@@ -144,75 +143,78 @@ class Postprocessor(
 
     @aio_task_with_room_id
     async def _worker(self) -> None:
-
         while True:
-            self._status = PostprocessorStatus.WAITING
-            self._postprocessing_path = None
-            self._postprocessing_progress = None
+            await self._postprocess()
 
-            video_path = await self._queue.get()
+    async def _postprocess(self) -> None:
+        self._status = PostprocessorStatus.WAITING
+        self._postprocessing_path = None
+        self._postprocessing_progress = None
 
-            async with self._worker_semaphore:
-                logger.debug(f'Postprocessing... {video_path}')
+        video_path = await self._queue.get()
+        self._completed_files.append(video_path)
 
-                await self._wait_for_metadata_file(video_path)
+        async with self._worker_semaphore:
+            logger.debug(f'Postprocessing... {video_path}')
+            await self._wait_for_metadata_file(video_path)
 
-                try:
-                    if video_path.endswith('.flv'):
-                        if not await self._is_vaild_flv_file(video_path):
-                            logger.warning(f'The flv file may be invalid: {video_path}')
-                            if os.path.getsize(video_path) < 1024**2:
-                                continue
-                        if self.remux_to_mp4:
-                            self._status = PostprocessorStatus.REMUXING
-                            (
-                                result_path,
-                                remuxing_result,
-                            ) = await self._remux_video_to_mp4(video_path)
-                            if not self._debug:
-                                if self._should_delete_source_files(remuxing_result):
-                                    await discard_file(video_path)
-                        elif self.inject_extra_metadata:
-                            self._status = PostprocessorStatus.INJECTING
-                            result_path = await self._inject_extra_metadata(video_path)
-                        else:
-                            result_path = video_path
-                        if not self._debug:
-                            await discard_file(extra_metadata_path(video_path), 'DEBUG')
+            try:
+                _, ext = os.path.splitext(video_path)
+                if ext == '.flv':
+                    result_path = await self._process_flv(video_path)
+                elif ext == '.m4s':
+                    result_path = await self._process_m4s(video_path)
+                else:
+                    result_path = video_path
 
-                    elif video_path.endswith('.m3u8'):
-                        if self.remux_to_mp4:
-                            self._status = PostprocessorStatus.REMUXING
-                            (
-                                result_path,
-                                remuxing_result,
-                            ) = await self._remux_video_to_mp4(video_path)
-                            await copy_files_related(video_path)
-                            if result_path != video_path:
-                                self._completed_files.append(danmaku_path(result_path))
-                                with suppress(ValueError):
-                                    self._completed_files.remove(
-                                        danmaku_path(video_path)
-                                    )
-                            if not self._debug:
-                                if self._should_delete_source_files(remuxing_result):
-                                    await discard_dir(os.path.dirname(video_path))
-                        else:
-                            result_path = video_path
-                    else:
-                        result_path = video_path
-
+                if result_path != video_path:
                     self._completed_files.append(result_path)
-                    await self._emit(
-                        'video_postprocessing_completed', self, result_path
-                    )
+                await self._emit('video_postprocessing_completed', self, result_path)
 
-                    files = [result_path, *files_related(result_path)]
-                    await self._emit('postprocessing_completed', self, files)
-                except Exception as exc:
-                    submit_exception(exc)
-                finally:
-                    self._queue.task_done()
+                files = [result_path, *files_related(result_path)]
+                await self._emit('postprocessing_completed', self, files)
+            except Exception as exc:
+                submit_exception(exc)
+            finally:
+                self._queue.task_done()
+
+    async def _process_flv(self, video_path: str) -> str:
+        if not await self._is_vaild_flv_file(video_path):
+            logger.warning(f'The flv file may be invalid: {video_path}')
+            if os.path.getsize(video_path) < 1024**2:
+                return video_path
+
+        if self.remux_to_mp4:
+            self._status = PostprocessorStatus.REMUXING
+            result_path, remuxing_result = await self._remux_video_to_mp4(video_path)
+            if not self._debug:
+                if self._should_delete_source_files(remuxing_result):
+                    await discard_file(video_path)
+        elif self.inject_extra_metadata:
+            self._status = PostprocessorStatus.INJECTING
+            result_path = await self._inject_extra_metadata(video_path)
+        else:
+            result_path = video_path
+
+        if not self._debug:
+            await discard_file(extra_metadata_path(video_path), 'DEBUG')
+
+        return result_path
+
+    async def _process_m4s(self, video_path: str) -> str:
+        if not self.remux_to_mp4:
+            return video_path
+
+        self._status = PostprocessorStatus.REMUXING
+        result_path, remuxing_result = await self._remux_video_to_mp4(video_path)
+
+        if not self._debug and self._should_delete_source_files(remuxing_result):
+            await discard_file(video_path)
+            await discard_file(playlist_path(video_path))
+            await discard_file(record_metadata_path(video_path), 'DEBUG')
+            await discard_file(ffmpeg_metadata_path(video_path), 'DEBUG')
+
+        return result_path
 
     async def _inject_extra_metadata(self, path: str) -> str:
         logger.info(f"Injecting metadata for '{path}' ...")
@@ -240,12 +242,16 @@ class Postprocessor(
         return path
 
     async def _remux_video_to_mp4(self, in_path: str) -> Tuple[str, RemuxingResult]:
-        if in_path.endswith('.flv'):
+        _, ext = os.path.splitext(in_path)
+
+        if ext == '.flv':
             out_path = str(PurePath(in_path).with_suffix('.mp4'))
             metadata_path = await make_metadata_file(in_path)
-        elif in_path.endswith('.m3u8'):
-            out_path = str(PurePath(in_path).parent.with_suffix('.mp4'))
-            metadata_path = await make_metadata_file(in_path)
+        elif ext == '.m4s':
+            _in_path = in_path
+            in_path = playlist_path(in_path)
+            out_path = str(PurePath(in_path).with_suffix('.mp4'))
+            metadata_path = await make_metadata_file(_in_path)
         else:
             raise NotImplementedError(in_path)
 
@@ -254,7 +260,7 @@ class Postprocessor(
 
         if remux_result.is_failed():
             logger.error(f"Failed to remux '{in_path}' to '{out_path}'")
-            result_path = in_path
+            result_path = _in_path if ext == 'm4s' else in_path
         elif remux_result.is_warned():
             logger.warning('Remuxing done, but ran into problems.')
             result_path = out_path
@@ -266,7 +272,7 @@ class Postprocessor(
 
         logger.debug(f'ffmpeg output:\n{remux_result.output}')
 
-        if not self._debug and in_path.endswith('.flv'):
+        if not self._debug and ext == '.flv':
             await discard_file(metadata_path, 'DEBUG')
 
         return result_path, remux_result
@@ -349,14 +355,16 @@ class Postprocessor(
         return False
 
     async def _wait_for_metadata_file(self, video_path: str) -> None:
-        loop = asyncio.get_running_loop()
+        _, ext = os.path.splitext(video_path)
 
-        if video_path.endswith('.flv'):
+        if ext == '.flv':
             path = extra_metadata_path(video_path)
-        elif video_path.endswith('.m3u8'):
+        elif ext == '.m4s':
             path = record_metadata_path(video_path)
         else:
             return
+
+        loop = asyncio.get_running_loop()
 
         for _ in range(10):
             if await loop.run_in_executor(None, os.path.isfile, path):

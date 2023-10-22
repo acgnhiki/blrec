@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from decimal import Decimal
 from typing import Iterable, List, Tuple, cast
 
@@ -12,7 +13,7 @@ import m3u8
 from blrec.flv.helpers import make_comment_for_joinpoints
 from blrec.flv.operators import JoinPoint
 from blrec.flv.utils import format_timestamp
-from blrec.path.helpers import ffmpeg_metadata_path
+from blrec.path.helpers import ffmpeg_metadata_path, playlist_path
 
 from .helpers import get_extra_metadata, get_metadata, get_record_metadata
 
@@ -21,11 +22,13 @@ logger = logging.getLogger(__name__)
 
 async def make_metadata_file(video_path: str) -> str:
     path = ffmpeg_metadata_path(video_path)
+
     async with aiofiles.open(path, 'wb') as file:
-        if video_path.endswith('.flv'):
+        _, ext = os.path.splitext(video_path)
+        if ext == '.flv':
             content = await _make_metadata_content_for_flv(video_path)
-        elif video_path.endswith('.m3u8'):
-            content = await _make_metadata_content_for_m3u8(video_path)
+        elif ext == '.m4s':
+            content = await _make_metadata_content_for_m3u8(playlist_path(video_path))
         else:
             raise NotImplementedError(video_path)
         await file.write(content.encode(encoding='utf8'))

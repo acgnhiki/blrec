@@ -4,17 +4,18 @@ import time
 from typing import Iterator, Optional
 
 from blrec.bili.live import Live
+from blrec.bili.live_monitor import LiveMonitor
 from blrec.bili.typing import QualityNumber, StreamFormat
 from blrec.event.event_emitter import EventEmitter
-from blrec.flv.operators import MetaData, StreamProfile
+from blrec.flv.operators import StreamProfile
 from blrec.setting.typing import RecordingMode
 from blrec.utils.libc import malloc_trim
 from blrec.utils.mixins import AsyncStoppableMixin
 
 from .flv_stream_recorder_impl import FLVStreamRecorderImpl
-from .hls_raw_stream_recorder_impl import HLSRawStreamRecorderImpl
 from .hls_stream_recorder_impl import HLSStreamRecorderImpl
 from .stream_recorder_impl import StreamRecorderEventListener
+from .typing import MetaData
 
 __all__ = 'StreamRecorder', 'StreamRecorderEventListener'
 
@@ -30,6 +31,7 @@ class StreamRecorder(
     def __init__(
         self,
         live: Live,
+        live_monitor: LiveMonitor,
         out_dir: str,
         path_template: str,
         *,
@@ -46,6 +48,7 @@ class StreamRecorder(
         super().__init__()
 
         self._live = live
+        self._live_monitor = live_monitor
         self.stream_format = stream_format
         self.recording_mode = recording_mode
         self.fmp4_stream_timeout = fmp4_stream_timeout
@@ -53,10 +56,7 @@ class StreamRecorder(
         if stream_format == 'flv':
             cls = FLVStreamRecorderImpl
         elif stream_format == 'fmp4':
-            if recording_mode == 'standard':
-                cls = HLSStreamRecorderImpl  # type: ignore
-            else:
-                cls = HLSRawStreamRecorderImpl  # type: ignore
+            cls = HLSStreamRecorderImpl  # type: ignore
         else:
             logger.warning(
                 f'The specified stream format ({stream_format}) is '
@@ -67,6 +67,7 @@ class StreamRecorder(
 
         self._impl = cls(
             live=live,
+            live_monitor=live_monitor,
             out_dir=out_dir,
             path_template=path_template,
             quality_number=quality_number,
@@ -277,10 +278,12 @@ class StreamRecorder(
     async def on_video_file_completed(self, path: str) -> None:
         await self._emit('video_file_completed', path)
 
-    async def on_stream_recording_interrupted(self, duration: float) -> None:
-        await self._emit('stream_recording_interrupted', duration)
+    async def on_stream_recording_interrupted(
+        self, timestamp: float, duration: float
+    ) -> None:
+        await self._emit('stream_recording_interrupted', timestamp, duration)
 
-    async def on_stream_recording_recovered(self, timestamp: int) -> None:
+    async def on_stream_recording_recovered(self, timestamp: float) -> None:
         await self._emit('stream_recording_recovered', timestamp)
 
     async def on_stream_recording_completed(self) -> None:
@@ -307,10 +310,7 @@ class StreamRecorder(
         if stream_format == 'flv':
             cls = FLVStreamRecorderImpl
         elif stream_format == 'fmp4':
-            if self.recording_mode == 'standard':
-                cls = HLSStreamRecorderImpl  # type: ignore
-            else:
-                cls = HLSRawStreamRecorderImpl  # type: ignore
+            cls = HLSStreamRecorderImpl  # type: ignore
         else:
             logger.warning(
                 f'The specified stream format ({stream_format}) is '
@@ -327,6 +327,7 @@ class StreamRecorder(
 
         self._impl = cls(
             live=self._impl._live,
+            live_monitor=self._impl._live_monitor,
             out_dir=self._impl.out_dir,
             path_template=self._impl.path_template,
             quality_number=self._impl.quality_number,

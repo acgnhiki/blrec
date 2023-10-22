@@ -93,14 +93,14 @@ class VideoFileStatus(str, Enum):
     INJECTING = 'injecting'
     COMPLETED = 'completed'
     MISSING = 'missing'
-    BROKEN = 'broken'
+    UNKNOWN = 'unknown'
 
 
 class DanmukuFileStatus(str, Enum):
     RECORDING = 'recording'
     COMPLETED = 'completed'
     MISSING = 'missing'
-    BROKEN = 'broken'
+    UNKNOWN = 'unknown'
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)

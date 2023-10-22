@@ -47,7 +47,7 @@ __all__ = (
     'PushdeerNotifier',
     'PushplusNotifier',
     'TelegramNotifier',
-    'BarkNotifer',
+    'BarkNotifier',
 )
 
 

@@ -11,12 +11,13 @@ from reactivex import abc
 from reactivex.typing import StartableFactory, StartableTarget
 
 from blrec.bili.live import Live
+from blrec.bili.live_monitor import LiveMonitor
 from blrec.bili.typing import QualityNumber, StreamFormat
 from blrec.event.event_emitter import EventEmitter, EventListener
 from blrec.flv import operators as flv_ops
 from blrec.flv.operators import StreamProfile
 from blrec.flv.utils import format_timestamp
-from blrec.logging.room_id import aio_task_with_room_id
+from blrec.hls import operators as hls_ops
 from blrec.setting.typing import RecordingMode
 from blrec.utils.mixins import AsyncCooperationMixin, AsyncStoppableMixin
 
@@ -39,10 +40,15 @@ class StreamRecorderEventListener(EventListener):
     async def on_video_file_completed(self, path: str) -> None:
         ...
 
-    async def on_stream_recording_interrupted(self, duratin: float) -> None:
+    async def on_stream_recording_interrupted(
+        self, timestamp: float, duration: float
+    ) -> None:
         ...
 
-    async def on_stream_recording_recovered(self, timestamp: int) -> None:
+    async def on_stream_recording_recovered(self, timestamp: float) -> None:
+        ...
+
+    async def on_duration_lost(self, duration: float) -> None:
         ...
 
     async def on_stream_recording_completed(self) -> None:
@@ -58,6 +64,7 @@ class StreamRecorderImpl(
     def __init__(
         self,
         live: Live,
+        live_monitor: LiveMonitor,
         out_dir: str,
         path_template: str,
         *,
@@ -73,6 +80,7 @@ class StreamRecorderImpl(
         super().__init__()
 
         self._live = live
+        self._live_monitor = live_monitor
         self._session = requests.Session()
 
         self._recording_mode = recording_mode
@@ -85,7 +93,7 @@ class StreamRecorderImpl(
             stream_format=stream_format, quality_number=quality_number
         )
         self._stream_url_resolver = core_ops.StreamURLResolver(
-            live, self._stream_param_holder
+            live, self._session, live_monitor, self._stream_param_holder
         )
         self._progress_bar = core_ops.ProgressBar(live)
         self._metadata_provider = MetadataProvider(live, self)
@@ -93,7 +101,9 @@ class StreamRecorderImpl(
         self._rec_statistics = core_ops.SizedStatistics()
         self._dl_statistics: Union[core_ops.StreamStatistics, core_ops.SizedStatistics]
 
-        self._request_exception_handler = core_ops.RequestExceptionHandler()
+        self._request_exception_handler = core_ops.RequestExceptionHandler(
+            self._stream_url_resolver
+        )
         self._connection_error_handler = core_ops.ConnectionErrorHandler(
             live, disconnection_timeout=disconnection_timeout
         )
@@ -240,7 +250,7 @@ class StreamRecorderImpl(
         return ''
 
     @property
-    def metadata(self) -> Optional[flv_ops.MetaData]:
+    def metadata(self) -> Optional[Union[flv_ops.MetaData, hls_ops.MetaData]]:
         return None
 
     @property
@@ -337,19 +347,24 @@ class StreamRecorderImpl(
         logger.info(f"Video file completed: '{path}'")
         self._emit_event('video_file_completed', path)
 
-    def _on_recording_interrupted(self, duration: float) -> None:
-        duration_string = format_timestamp(int(duration * 1000))
-        logger.info(f'Recording interrupted, current duration: {duration_string}')
-        self._emit_event('stream_recording_interrupted', duration)
-
-    def _on_recording_recovered(self, timestamp: int) -> None:
+    def _on_recording_interrupted(self, args: Tuple[float, float]) -> None:
+        timestamp, duration = args[0], args[1]
         datetime_string = datetime.fromtimestamp(timestamp).isoformat()
-        logger.info(f'Recording recovered, current date time {(datetime_string)}')
+        duration_string = format_timestamp(int(duration * 1000))
+        logger.info(
+            f'Recording interrupted, datetime: {datetime_string}, '
+            f'duration: {duration_string}'
+        )
+        self._emit_event('stream_recording_interrupted', timestamp, duration)
+
+    def _on_recording_recovered(self, timestamp: float) -> None:
+        datetime_string = datetime.fromtimestamp(timestamp).isoformat()
+        logger.info(f'Recording recovered, datetime: {(datetime_string)}')
         self._emit_event('stream_recording_recovered', timestamp)
 
-    def _emit_event(self, name: str, *args: Any, **kwds: Any) -> None:
-        self._run_coroutine(self._emit(name, *args, **kwds))
+    def _on_duration_lost(self, duration: float) -> None:
+        logger.info(f'Total duration lost: {(duration)}')
+        self._emit_event('duration_lost', duration)
 
-    @aio_task_with_room_id
-    async def _emit(self, *args: Any, **kwds: Any) -> None:  # type: ignore
-        await super()._emit(*args, **kwds)
+    def _emit_event(self, name: str, *args: Any, **kwds: Any) -> None:
+        self._call_coroutine(self._emit(name, *args, **kwds))

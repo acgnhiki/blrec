@@ -74,38 +74,6 @@
       </nz-select>
     </nz-form-control>
   </nz-form-item>
-  <nz-form-item
-    class="setting-item"
-    *ngIf="streamFormatControl.value === 'fmp4'"
-  >
-    <nz-form-label
-      class="setting-label"
-      nzNoColon
-      [nzTooltipTitle]="recordingModeTip"
-      >录制模式</nz-form-label
-    >
-    <ng-template #recordingModeTip>
-      <p>
-        标准模式: 对下载的流数据进行解析处理，支持自动分割文件等功能。
-        <br />
-        原始模式: 直接下载流数据，没有进行解析处理，不支持自动分割文件等功能。
-        <br />
-      </p>
-    </ng-template>
-    <nz-form-control
-      class="setting-control select"
-      [nzWarningTip]="syncFailedWarningTip"
-      [nzValidateStatus]="
-        syncStatus.recordingMode ? recordingModeControl : 'warning'
-      "
-    >
-      <nz-select
-        formControlName="recordingMode"
-        [nzOptions]="recordingModeOptions"
-      >
-      </nz-select>
-    </nz-form-control>
-  </nz-form-item>
   <nz-form-item class="setting-item">
     <nz-form-label
       class="setting-label"
@@ -224,11 +192,7 @@
   </nz-form-item>
   <nz-form-item
     class="setting-item"
-    *ngIf="
-      streamFormatControl.value === 'flv' ||
-      (streamFormatControl.value === 'fmp4' &&
-        recordingModeControl.value === 'standard')
-    "
+    *ngIf="streamFormatControl.value === 'flv'"
   >
     <nz-form-label
       class="setting-label"

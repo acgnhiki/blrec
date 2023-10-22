@@ -11,7 +11,7 @@ const STATUS_MAPPING = new Map([
   [VideoFileStatus.REMUXING, '处理中'],
   [VideoFileStatus.COMPLETED, '已完成'],
   [VideoFileStatus.MISSING, '不存在'],
-  [VideoFileStatus.BROKEN, '录制中断'],
+  [VideoFileStatus.UNKNOWN, '???'],
 ]);
 
 @Pipe({

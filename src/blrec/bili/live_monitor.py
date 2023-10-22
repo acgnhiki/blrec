@@ -168,16 +168,29 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
         self._previous_status = current_status
 
     @aio_task_with_room_id
+    async def check_live_status(self) -> None:
+        logger.debug('Checking live status...')
+        try:
+            await self._check_live_status()
+        except Exception as e:
+            logger.warning(f'Failed to check live status: {repr(e)}')
+        logger.debug('Done checking live status')
+
+    @aio_task_with_room_id
+    async def _check_live_status(self) -> None:
+        await self._live.update_room_info()
+        current_status = self._live.room_info.live_status
+        if current_status != self._previous_status:
+            await self._handle_status_change(current_status)
+
+    @aio_task_with_room_id
     async def _poll_live_status(self) -> None:
         logger.debug('Started polling live status')
 
         while True:
             try:
                 await asyncio.sleep(600 + random.randrange(-60, 60))
-                await self._live.update_room_info()
-                current_status = self._live.room_info.live_status
-                if current_status != self._previous_status:
-                    await self._handle_status_change(current_status)
+                await self._check_live_status()
             except asyncio.CancelledError:
                 logger.debug('Cancelled polling live status')
                 break

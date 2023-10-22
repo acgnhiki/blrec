@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import io
 import logging
-import os
 from copy import deepcopy
 from decimal import Decimal
-from typing import Callable, Optional, Tuple
+from pathlib import PurePath
+from typing import Optional, Tuple, Union
 
 import m3u8
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
+
+from ..helpler import sequence_number_of
+from .segment_fetcher import InitSectionData, SegmentData
+from .segment_dumper import SegmentDumper
 
 __all__ = ('PlaylistDumper',)
 
@@ -17,16 +21,33 @@ logger = logging.getLogger(__name__)
 
 
 class PlaylistDumper:
-    def __init__(self, path_provider: Callable[..., Tuple[str, int]]) -> None:
-        self._path_provider = path_provider
+    def __init__(self, segment_dumper: SegmentDumper) -> None:
+        self._segment_dumper = segment_dumper
+
+        def on_open(args: Tuple[str, int]) -> None:
+            self._open_file(*args)
+
+        def on_close(path: str) -> None:
+            self._close_file()
+            self._reset()
+
+        self._segment_dumper.file_opened.subscribe(on_open)
+        self._segment_dumper.file_closed.subscribe(on_close)
+
         self._file_opened: Subject[Tuple[str, int]] = Subject()
         self._file_closed: Subject[str] = Subject()
+        self._duration_updated: Subject[float] = Subject()
+        self._segments_lost: Subject[int] = Subject()
+
         self._reset()
 
     def _reset(self) -> None:
         self._path: str = ''
         self._file: Optional[io.TextIOWrapper] = None
         self._duration: Decimal = Decimal()
+        self._last_segment: Optional[m3u8.Segment] = None
+        self._last_seq_num: Optional[int] = None
+        self._num_of_segments_lost: int = 0
 
     @property
     def path(self) -> str:
@@ -37,6 +58,10 @@ class PlaylistDumper:
         return float(self._duration)
 
     @property
+    def num_of_segments_lost(self) -> int:
+        return self._num_of_segments_lost
+
+    @property
     def file_opened(self) -> Observable[Tuple[str, int]]:
         return self._file_opened
 
@@ -44,17 +69,27 @@ class PlaylistDumper:
     def file_closed(self) -> Observable[str]:
         return self._file_closed
 
-    def __call__(self, source: Observable[m3u8.M3U8]) -> Observable[m3u8.Segment]:
+    @property
+    def duration_updated(self) -> Observable[float]:
+        return self._duration_updated
+
+    @property
+    def segments_lost(self) -> Observable[int]:
+        return self._segments_lost
+
+    def __call__(
+        self, source: Observable[Union[InitSectionData, SegmentData]]
+    ) -> Observable[Union[InitSectionData, SegmentData]]:
         return self._dump(source)
 
-    def _open_file(self) -> None:
-        path, timestamp = self._path_provider()
-        root, ext = os.path.splitext(path)
-        os.makedirs(root, exist_ok=True)
-        self._path = os.path.join(root, 'index.m3u8')
+    def _open_file(self, video_path: str, timestamp: int) -> None:
+        path = PurePath(video_path)
+        self._video_file_name = path.name
+        self._path = str(path.with_suffix('.m3u8'))
         self._file = open(self._path, 'wt', encoding='utf8')  # type: ignore
         logger.debug(f'Opened file: {self._path}')
         self._file_opened.on_next((self._path, timestamp))
+        self._header_dumped = False
 
     def _close_file(self) -> None:
         if self._file is not None and not self._file.closed:
@@ -63,97 +98,87 @@ class PlaylistDumper:
             logger.debug(f'Closed file: {self._path}')
             self._file_closed.on_next(self._path)
 
-    def _name_of(self, uri: str) -> str:
-        name, ext = os.path.splitext(uri)
-        return name
+    def _dump_header(self, item: InitSectionData) -> None:
+        if self._header_dumped:
+            return
+        playlist: m3u8.M3U8 = deepcopy(item.segment.custom_parser_values['playlist'])
+        playlist.segments.clear()
+        playlist.is_endlist = False
+        assert self._file is not None
+        self._file.write(playlist.dumps())
+        self._file.flush()
+        self._header_dumped = True
 
-    def _sequence_number_of(self, uri: str) -> int:
-        return int(self._name_of(uri))
-
-    def _replace_uri(self, segment: m3u8.Segment) -> m3u8.Segment:
-        copied_seg = deepcopy(segment)
-        if init_section := getattr(copied_seg, 'init_section', None):
-            init_section.uri = f'segments/{init_section.uri}'
-        uri = segment.uri
-        name = self._name_of(uri)
-        copied_seg.uri = 'segments/%s/%s' % (name[:-3], uri)
-        return copied_seg
-
-    def _replace_all_uri(self, playlist: m3u8.M3U8) -> m3u8.M3U8:
-        copied_playlist = deepcopy(playlist)
-        copied_playlist.segments = m3u8.SegmentList(
-            self._replace_uri(s) for s in copied_playlist.segments
+    def _dump_segment(self, init_item: InitSectionData, item: SegmentData) -> None:
+        seg = self._make_segment(
+            item.segment,
+            self._video_file_name,
+            init_section_byterange=f'{len(init_item)}@{init_item.offset}',
+            segment_byterange=f'{len(item)}@{item.offset}',
         )
-        return copied_playlist
+
+        curr_seq_num = sequence_number_of(item.segment.uri)
+        if self._last_seq_num is not None:
+            if self._last_seq_num + 1 != curr_seq_num:
+                seg.discontinuity = True
+            if self._last_seq_num + 1 < curr_seq_num:
+                self._num_of_segments_lost += curr_seq_num - self._last_seq_num - 1
+                self._segments_lost.on_next(self._num_of_segments_lost)
+
+        assert self._file is not None
+        self._file.write(seg.dumps(self._last_segment) + '\n')
+        self._file.flush()
+
+        self._last_segment = seg
+        self._last_seq_num = curr_seq_num
+
+    def _make_segment(
+        self,
+        segment: m3u8.Segment,
+        uri: str,
+        init_section_byterange: str,
+        segment_byterange: str,
+    ) -> m3u8.Segment:
+        seg = deepcopy(segment)
+        if init_section := getattr(seg, 'init_section', None):
+            init_section.uri = uri
+            init_section.byterange = init_section_byterange
+        seg.uri = uri
+        seg.byterange = segment_byterange
+        seg.title += '|' + segment.uri
+        return seg
 
     def _update_duration(self, segment: m3u8.Segment) -> None:
         self._duration += Decimal(str(segment.duration))
+        self._duration_updated.on_next(float(self._duration))
 
-    def _dump(self, source: Observable[m3u8.M3U8]) -> Observable[m3u8.Segment]:
+    def _dump(
+        self, source: Observable[Union[InitSectionData, SegmentData]]
+    ) -> Observable[Union[InitSectionData, SegmentData]]:
         def subscribe(
-            observer: abc.ObserverBase[m3u8.Segment],
+            observer: abc.ObserverBase[Union[InitSectionData, SegmentData]],
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
             disposed = False
             subscription = SerialDisposable()
+            last_init_item: Optional[InitSectionData] = None
 
-            last_segment: Optional[m3u8.Segment] = None
-            last_sequence_number: Optional[int] = None
-            first_playlist_dumped: bool = False
-
-            self._close_file()
-            self._reset()
-
-            def on_next(playlist: m3u8.M3U8) -> None:
-                nonlocal last_sequence_number, last_segment, first_playlist_dumped
-
-                if playlist.is_endlist:
-                    logger.debug('Playlist ended')
-
+            def on_next(item: Union[InitSectionData, SegmentData]) -> None:
+                nonlocal last_init_item
                 try:
-                    if not first_playlist_dumped:
-                        self._close_file()
-                        self._reset()
-                        self._open_file()
-                        assert self._file is not None
-                        playlist.is_endlist = False
-                        self._file.write(self._replace_all_uri(playlist).dumps())
-                        self._file.flush()
-                        for seg in playlist.segments:
-                            observer.on_next(seg)
-                            self._update_duration(seg)
-                            last_segment = seg
-                            last_sequence_number = self._sequence_number_of(seg.uri)
-                        first_playlist_dumped = True
-                        logger.debug('The first playlist has been dumped')
-                        return
-
-                    assert self._file is not None
-                    for seg in playlist.segments:
-                        num = self._sequence_number_of(seg.uri)
-                        discontinuity = False
-                        if last_sequence_number is not None:
-                            if last_sequence_number >= num:
-                                continue
-                            if last_sequence_number + 1 != num:
-                                logger.warning(
-                                    'Segments discontinuous: '
-                                    f'last sequence number: {last_sequence_number}, '
-                                    f'current sequence number: {num}'
-                                )
-                                discontinuity = True
-                        new_seg = self._replace_uri(seg)
-                        new_seg.discontinuity = discontinuity
-                        new_last_seg = self._replace_uri(last_segment)
-                        self._file.write(new_seg.dumps(new_last_seg) + '\n')
-                        observer.on_next(seg)
-                        self._update_duration(seg)
-                        last_segment = seg
-                        last_sequence_number = num
+                    if isinstance(item, InitSectionData):
+                        self._dump_header(item)
+                        last_init_item = item
+                    else:
+                        assert last_init_item is not None
+                        self._dump_segment(last_init_item, item)
+                        self._update_duration(item.segment)
                 except Exception as e:
                     self._close_file()
                     self._reset()
                     observer.on_error(e)
+                else:
+                    observer.on_next(item)
 
             def on_completed() -> None:
                 self._close_file()
@@ -167,10 +192,9 @@ class PlaylistDumper:
 
             def dispose() -> None:
                 nonlocal disposed
-                nonlocal last_segment, last_sequence_number
+                nonlocal last_init_item
                 disposed = True
-                last_segment = None
-                last_sequence_number = None
+                last_init_item = None
                 self._close_file()
                 self._reset()
 

@@ -31,7 +31,7 @@ def from_file(
     path: str, *, backup_timestamp: bool = False, restore_timestamp: bool = False
 ) -> FLVStream:
     return from_stream(
-        open(path, 'rb'),
+        open(path, 'rb'),  # type: ignore
         complete_on_eof=True,
         backup_timestamp=backup_timestamp,
         restore_timestamp=restore_timestamp,

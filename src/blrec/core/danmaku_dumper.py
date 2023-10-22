@@ -2,6 +2,7 @@ import asyncio
 import html
 import logging
 from contextlib import suppress
+from decimal import Decimal
 from threading import Lock
 from typing import Iterator, List, Optional
 
@@ -123,7 +124,6 @@ class DanmakuDumper(
         with self._lock:
             self._delta: float = 0
             self._record_start_time: int = record_start_time
-            self._timebase: int = self._record_start_time * 1000
             self._stream_recording_interrupted: bool = False
             self._path = danmaku_path(video_path)
             self._files.append(self._path)
@@ -135,19 +135,32 @@ class DanmakuDumper(
             await self._stop_dumping()
             self._path = None
 
-    async def on_stream_recording_interrupted(self, duration: float) -> None:
-        logger.debug(f'Stream recording interrupted, {duration}')
+    async def on_stream_recording_interrupted(
+        self, timestamp: float, duration: float
+    ) -> None:
+        self._interrupted_timestamp = timestamp
         self._duration = duration
-        self._stream_recording_recovered = asyncio.Condition()
         self._stream_recording_interrupted = True
+        logger.debug(
+            'Stream recording interrupted, '
+            f'timestamp: {timestamp}, duration: {duration}'
+        )
 
-    async def on_stream_recording_recovered(self, timestamp: int) -> None:
-        logger.debug(f'Stream recording recovered, {timestamp}')
-        self._timebase = timestamp * 1000
-        self._delta = self._duration * 1000
+    async def on_stream_recording_recovered(self, timestamp: float) -> None:
+        self._recovered_timestamp = timestamp
+        self._delta += -float(
+            Decimal(str(self._recovered_timestamp))
+            - Decimal(str(self._interrupted_timestamp))
+        )
         self._stream_recording_interrupted = False
-        async with self._stream_recording_recovered:
-            self._stream_recording_recovered.notify_all()
+        logger.debug(
+            'Stream recording recovered, '
+            f'timestamp: {timestamp}, delta: {self._delta}'
+        )
+
+    async def on_duration_lost(self, duration: float) -> None:
+        logger.debug(f'Total duration lost: {(duration)}')
+        self._delta = -duration
 
     def _start_dumping(self) -> None:
         self._create_dump_task()
@@ -217,14 +230,7 @@ class DanmakuDumper(
                     continue
                 await writer.write_super_chat_record(self._make_super_chat_record(msg))
             else:
-                logger.warning('Unsupported message type:', repr(msg))
-
-            if self._stream_recording_interrupted:
-                logger.debug(
-                    f'Last message before stream recording interrupted: {repr(msg)}'
-                )
-                async with self._stream_recording_recovered:
-                    await self._stream_recording_recovered.wait()
+                logger.warning(f'Unsupported message type: {repr(msg)}')
 
     def _make_metadata(self) -> Metadata:
         return Metadata(
@@ -246,7 +252,7 @@ class DanmakuDumper(
         text = html.escape(text)
 
         return Danmu(
-            stime=self._calc_stime(msg.date),
+            stime=self._calc_stime(msg.date / 1000),
             mode=msg.mode,
             size=msg.size,
             color=msg.color,
@@ -261,7 +267,7 @@ class DanmakuDumper(
 
     def _make_gift_send_record(self, msg: GiftSendMsg) -> GiftSendRecord:
         return GiftSendRecord(
-            ts=self._calc_stime(msg.timestamp * 1000),
+            ts=self._calc_stime(msg.timestamp),
             uid=msg.uid,
             user=msg.uname,
             giftname=msg.gift_name,
@@ -272,7 +278,7 @@ class DanmakuDumper(
 
     def _make_guard_buy_record(self, msg: GuardBuyMsg) -> GuardBuyRecord:
         return GuardBuyRecord(
-            ts=self._calc_stime(msg.timestamp * 1000),
+            ts=self._calc_stime(msg.timestamp),
             uid=msg.uid,
             user=msg.uname,
             giftname=msg.gift_name,
@@ -283,7 +289,7 @@ class DanmakuDumper(
 
     def _make_super_chat_record(self, msg: SuperChatMsg) -> SuperChatRecord:
         return SuperChatRecord(
-            ts=self._calc_stime(msg.timestamp * 1000),
+            ts=self._calc_stime(msg.timestamp),
             uid=msg.uid,
             user=msg.uname,
             price=msg.price * msg.rate,
@@ -293,7 +299,7 @@ class DanmakuDumper(
 
     def _make_user_toast(self, msg: UserToastMsg) -> UserToast:
         return UserToast(
-            ts=self._calc_stime(msg.start_time * 1000),
+            ts=self._calc_stime(msg.start_time),
             uid=msg.uid,
             user=msg.username,
             unit=msg.unit,
@@ -304,5 +310,15 @@ class DanmakuDumper(
             msg=msg.toast_msg,
         )
 
-    def _calc_stime(self, timestamp: int) -> float:
-        return (max(timestamp - self._timebase, 0) + self._delta) / 1000
+    def _calc_stime(self, timestamp: float) -> float:
+        if self._stream_recording_interrupted:
+            return self._duration
+        else:
+            return (
+                max(
+                    timestamp * 1000
+                    - self._record_start_time * 1000
+                    + self._delta * 1000,
+                    0,
+                )
+            ) / 1000

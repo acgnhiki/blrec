@@ -11,13 +11,14 @@ from blrec.bili.models import RoomInfo, UserInfo
 from blrec.bili.typing import QualityNumber, StreamFormat
 from blrec.core import Recorder
 from blrec.core.cover_downloader import CoverSaveStrategy
+from blrec.core.typing import MetaData
 from blrec.event.event_submitters import (
     LiveEventSubmitter,
     PostprocessorEventSubmitter,
     RecorderEventSubmitter,
 )
 from blrec.flv.metadata_injection import InjectingProgress
-from blrec.flv.operators import MetaData, StreamProfile
+from blrec.flv.operators import StreamProfile
 from blrec.logging.room_id import aio_task_with_room_id
 from blrec.postprocess import DeleteStrategy, Postprocessor, PostprocessorStatus
 from blrec.postprocess.remux import RemuxingProgress
@@ -134,10 +135,7 @@ class RecordTask:
                 size = os.path.getsize(path)
                 exists = True
             except FileNotFoundError:
-                if path.endswith('.m3u8'):
-                    mp4_path = str(PurePath(path).parent.with_suffix('.mp4'))
-                else:
-                    mp4_path = str(PurePath(path).with_suffix('.mp4'))
+                mp4_path = str(PurePath(path).with_suffix('.mp4'))
                 try:
                     size = os.path.getsize(mp4_path)
                     exists = True
@@ -165,7 +163,7 @@ class RecordTask:
                         status = VideoFileStatus.INJECTING
             else:
                 # disabling recorder by force or stoping task by force
-                status = VideoFileStatus.BROKEN
+                status = VideoFileStatus.UNKNOWN
 
             yield VideoFileDetail(path=path, size=size, status=status)
 
@@ -196,7 +194,7 @@ class RecordTask:
                 status = DanmukuFileStatus.RECORDING
             else:
                 # disabling recorder by force or stoping task by force
-                status = DanmukuFileStatus.BROKEN
+                status = DanmukuFileStatus.UNKNOWN
 
             yield DanmakuFileDetail(path=path, size=size, status=status)
 

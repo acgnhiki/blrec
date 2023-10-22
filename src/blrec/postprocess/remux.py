@@ -10,6 +10,8 @@ from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposab
 from reactivex.scheduler.currentthreadscheduler import CurrentThreadScheduler
 from tqdm import tqdm
 
+from blrec.path.helpers import video_path
+
 __all__ = 'RemuxingResult', 'remux_video'
 
 
@@ -63,15 +65,9 @@ def remux_video(
 ) -> Observable[Union[RemuxingProgress, RemuxingResult]]:
     SIZE_PATTERN: Final = re.compile(r'size=\s*(?P<number>\d+)(?P<unit>[a-zA-Z]?B)')
     if in_path.endswith('.m3u8'):
-        total = 0
-        for root, dirs, files in os.walk(os.path.dirname(in_path)):
-            for filename in files:
-                if not (filename.endswith('.m4s') or filename.endswith('.ts')):
-                    continue
-                total += os.path.getsize(os.path.join(root, filename))
-        postfix = os.path.join(
-            os.path.basename(os.path.dirname(in_path)), os.path.basename(in_path)
-        )
+        _in_path = video_path(in_path)
+        total = os.path.getsize(_in_path)
+        postfix = os.path.basename(_in_path)
     else:
         total = os.path.getsize(in_path)
         postfix = os.path.basename(in_path)

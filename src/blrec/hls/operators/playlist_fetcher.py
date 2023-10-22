@@ -49,9 +49,14 @@ class PlaylistFetcher(SupportDebugMixin):
 
             def on_next(url: str) -> None:
                 logger.info(f'Fetching playlist... {url}')
+
                 while not disposed:
                     try:
                         content = self._fetch_playlist(url)
+                    except Exception as e:
+                        logger.warning(f'Failed to fetch playlist: {repr(e)}')
+                        observer.on_error(e)
+                    else:
                         if self._debug:
                             playlist_debug_file.write(content + '\n')
                         playlist = m3u8.loads(content, uri=url)
@@ -59,12 +64,9 @@ class PlaylistFetcher(SupportDebugMixin):
                             url = self._get_best_quality_url(playlist)
                             logger.debug('Playlist changed to variant playlist')
                             on_next(url)
-                    except Exception as e:
-                        logger.warning(f'Failed to fetch playlist: {repr(e)}')
-                        observer.on_error(e)
-                    else:
-                        observer.on_next(playlist)
-                        time.sleep(1)
+                        else:
+                            observer.on_next(playlist)
+                            time.sleep(1)
 
             def dispose() -> None:
                 nonlocal disposed
@@ -96,10 +98,15 @@ class PlaylistFetcher(SupportDebugMixin):
             )
         ),
         wait=wait_exponential(multiplier=0.1, max=1),
-        stop=stop_after_delay(10),
+        stop=stop_after_delay(8),
     )
     def _fetch_playlist(self, url: str) -> str:
-        response = self._session.get(url, headers=self._live.headers, timeout=3)
-        response.raise_for_status()
-        response.encoding = 'utf-8'
-        return response.text
+        try:
+            response = self._session.get(url, headers=self._live.headers, timeout=3)
+            response.raise_for_status()
+        except Exception as e:
+            logger.debug(f'Failed to fetch playlist: {repr(e)}')
+            raise
+        else:
+            response.encoding = 'utf-8'
+            return response.text

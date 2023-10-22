@@ -10,8 +10,9 @@ from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_expo
 from blrec.utils.libc import malloc_trim
 
 from ..bili.exceptions import ApiRequestError
+from ..core.typing import MetaData
 from ..exception import NotFoundError, submit_exception
-from ..flv.operators import MetaData, StreamProfile
+from ..flv.operators import StreamProfile
 from .models import DanmakuFileDetail, TaskData, TaskParam, VideoFileDetail
 from .task import RecordTask
 

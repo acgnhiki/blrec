@@ -4,6 +4,7 @@ from typing import Optional
 from reactivex.scheduler import NewThreadScheduler
 
 from blrec.bili.live import Live
+from blrec.bili.live_monitor import LiveMonitor
 from blrec.bili.typing import QualityNumber
 from blrec.flv import operators as flv_ops
 from blrec.flv.metadata_dumper import MetadataDumper
@@ -22,6 +23,7 @@ class FLVStreamRecorderImpl(StreamRecorderImpl, SupportDebugMixin):
     def __init__(
         self,
         live: Live,
+        live_monitor: LiveMonitor,
         out_dir: str,
         path_template: str,
         *,
@@ -34,6 +36,7 @@ class FLVStreamRecorderImpl(StreamRecorderImpl, SupportDebugMixin):
     ) -> None:
         super().__init__(
             live=live,
+            live_monitor=live_monitor,
             out_dir=out_dir,
             path_template=path_template,
             stream_format='flv',
@@ -66,7 +69,7 @@ class FLVStreamRecorderImpl(StreamRecorderImpl, SupportDebugMixin):
         )
 
         self._recording_monitor = core_ops.RecordingMonitor(
-            live, lambda: self._analyser.duration
+            live, lambda: self._analyser.duration, self._analyser.duration_updated
         )
 
         self._prober.profiles.subscribe(self._on_profile_updated)

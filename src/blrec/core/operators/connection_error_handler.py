@@ -77,7 +77,7 @@ class ConnectionErrorHandler(AsyncCooperationMixin):
         timeout = self.disconnection_timeout
         logger.info(f'Waiting {timeout} seconds for connection recovery... ')
         timebase = time.monotonic()
-        while not self._run_coroutine(self._live.check_connectivity()):
+        while not self._call_coroutine(self._live.check_connectivity()):
             if timeout is not None and time.monotonic() - timebase > timeout:
                 logger.error(f'Connection not recovered in {timeout} seconds')
                 return False

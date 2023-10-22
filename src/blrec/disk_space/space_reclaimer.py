@@ -22,7 +22,19 @@ logger = logging.getLogger(__name__)
 
 class SpaceReclaimer(SpaceEventListener, SwitchableMixin):
     _SUFFIX_SET = frozenset(
-        ('.flv', '.mp4', '.ts', '.m4s', '.m3u8' '.xml', '.jsonl', '.jpg')
+        (
+            '.flv',
+            '.mp4',
+            '.ts',
+            '.m4s',
+            '.m3u8',
+            '.xml',
+            '.json',
+            '.meta',
+            '.jsonl',
+            '.jpg',
+            '.png',
+        )
     )
 
     def __init__(

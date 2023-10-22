@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import Optional
 
 import m3u8
@@ -13,6 +12,7 @@ from blrec.core import operators as core_ops
 from blrec.utils import operators as utils_ops
 
 from ..exceptions import NoNewSegments
+from ..helpler import sequence_number_of
 
 __all__ = ('PlaylistResolver',)
 
@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 class PlaylistResolver:
     def __init__(self, stream_url_resolver: core_ops.StreamURLResolver) -> None:
         self._stream_url_resolver = stream_url_resolver
+        self._last_media_sequence: int = 0
+        self._last_sequence_number: Optional[int] = None
 
     def __call__(self, source: Observable[m3u8.M3U8]) -> Observable[m3u8.Segment]:
         return self._solve(source).pipe(
@@ -30,14 +32,10 @@ class PlaylistResolver:
             utils_ops.retry(should_retry=self._should_retry),
         )
 
-    def _name_of(self, uri: str) -> str:
-        name, ext = os.path.splitext(uri)
-        return name
-
-    def _sequence_number_of(self, uri: str) -> int:
-        return int(self._name_of(uri))
-
     def _solve(self, source: Observable[m3u8.M3U8]) -> Observable[m3u8.Segment]:
+        self._last_media_sequence = 0
+        self._last_sequence_number = None
+
         def subscribe(
             observer: abc.ObserverBase[m3u8.Segment],
             scheduler: Optional[abc.SchedulerBase] = None,
@@ -46,29 +44,43 @@ class PlaylistResolver:
             subscription = SerialDisposable()
 
             attempts: int = 0
-            last_sequence_number: Optional[int] = None
 
             def on_next(playlist: m3u8.M3U8) -> None:
-                nonlocal attempts, last_sequence_number
+                nonlocal attempts
+                discontinuity = False
 
                 if playlist.is_endlist:
                     logger.debug('Playlist ended')
 
+                if playlist.media_sequence < self._last_media_sequence:
+                    logger.warning(
+                        'Segments discontinuous: '
+                        f'last media sequence: {self._last_media_sequence}, '
+                        f'current media sequence: {playlist.media_sequence}'
+                    )
+                    discontinuity = True
+                    self._last_sequence_number = None
+                self._last_media_sequence = playlist.media_sequence
+
                 new_segments = []
                 for seg in playlist.segments:
-                    num = self._sequence_number_of(seg.uri)
-                    if last_sequence_number is not None:
-                        if last_sequence_number >= num:
+                    num = sequence_number_of(seg.uri)
+                    if self._last_sequence_number is not None:
+                        if num <= self._last_sequence_number:
                             continue
-                        if last_sequence_number + 1 != num:
+                        if num == self._last_sequence_number + 1:
+                            discontinuity = False
+                        else:
                             logger.warning(
                                 'Segments discontinuous: '
-                                f'last sequence number: {last_sequence_number}, '
+                                f'last sequence number: {self._last_sequence_number}, '
                                 f'current sequence number: {num}'
                             )
-                            seg.discontinuity = True
+                            discontinuity = True
+                    seg.discontinuity = discontinuity
+                    seg.custom_parser_values['playlist'] = playlist
                     new_segments.append(seg)
-                    last_sequence_number = num
+                    self._last_sequence_number = num
 
                 if not new_segments:
                     attempts += 1
@@ -84,9 +96,7 @@ class PlaylistResolver:
 
             def dispose() -> None:
                 nonlocal disposed
-                nonlocal last_sequence_number
                 disposed = True
-                last_sequence_number = None
 
             subscription.disposable = source.subscribe(
                 on_next, observer.on_error, observer.on_completed, scheduler=scheduler

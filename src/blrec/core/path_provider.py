@@ -20,10 +20,11 @@ class PathProvider(AsyncCooperationMixin):
         self.out_dir = out_dir
         self.path_template = path_template
 
-    def __call__(self) -> Tuple[str, int]:
-        ts = self._run_coroutine(self._live.get_timestamp())
-        path = self._make_path(ts)
-        return path, ts
+    def __call__(self, timestamp: int = None) -> Tuple[str, int]:
+        if timestamp is None:
+            timestamp = self._call_coroutine(self._live.get_timestamp())
+        path = self._make_path(timestamp)
+        return path, timestamp
 
     def _make_path(self, timestamp: int) -> str:
         date_time = datetime.fromtimestamp(timestamp)
