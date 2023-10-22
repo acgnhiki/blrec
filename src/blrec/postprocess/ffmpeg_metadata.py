@@ -157,11 +157,13 @@ def _make_comment_for_discontinuities(timestamps: Iterable[int]) -> str:
 
 async def _get_discontinuities(playlist_path: str) -> Tuple[List[int], float]:
     loop = asyncio.get_running_loop()
-    playlist = await loop.run_in_executor(None, m3u8.load, playlist_path)
-    duration = Decimal()
-    timestamps: List[int] = []
-    for seg in playlist.segments:
-        if seg.discontinuity:
-            timestamps.append(int(duration * 1000))
-        duration += Decimal(str(seg.duration))
-    return timestamps, float(duration)
+    async with aiofiles.open(playlist_path) as file:
+        content = await file.read()
+        playlist = await loop.run_in_executor(None, m3u8.loads, content)
+        duration = Decimal()
+        timestamps: List[int] = []
+        for seg in playlist.segments:
+            if seg.discontinuity:
+                timestamps.append(int(duration * 1000))
+            duration += Decimal(str(seg.duration))
+        return timestamps, float(duration)
