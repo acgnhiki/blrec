@@ -1,8 +1,9 @@
 from ctypes import cdll
 from ctypes.util import find_library
+from sys import platform
 
 lib_name = find_library('c')
-if not lib_name:
+if not lib_name or platform != 'linux':
     libc = None
 else:
     libc = cdll.LoadLibrary(lib_name)
