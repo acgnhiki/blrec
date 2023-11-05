@@ -285,7 +285,7 @@ class WebApi(BaseApi):
         return json_res['data']['timestamp']
 
     async def get_user_info(self, uid: int) -> ResponseData:
-        path = '/x/space/acc/info'
+        path = '/x/space/wbi/acc/info'
         params = {'mid': uid}
         json_res = await self._get_json(self.base_api_urls, path, params=params)
         return json_res['data']
