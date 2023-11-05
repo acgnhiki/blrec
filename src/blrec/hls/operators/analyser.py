@@ -1,20 +1,17 @@
 from __future__ import annotations
 
-import logging
 from typing import Optional, Union
 
 import attr
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
-from .prober import Prober, StreamProfile
-from .segment_fetcher import InitSectionData, SegmentData
 from .playlist_dumper import PlaylistDumper
+from .prober import Prober, StreamProfile
 from .segment_dumper import SegmentDumper
+from .segment_fetcher import InitSectionData, SegmentData
 
 __all__ = ('Analyser', 'MetaData')
-
-logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True, kw_only=True)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from typing import Any, Final, Optional
 
 import attr
@@ -11,9 +10,6 @@ from reactivex.scheduler.currentthreadscheduler import CurrentThreadScheduler
 from blrec.bili.typing import ApiPlatform, QualityNumber, StreamFormat
 
 __all__ = ('StreamParamHolder',)
-
-
-logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)

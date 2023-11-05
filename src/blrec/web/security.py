@@ -1,12 +1,8 @@
-import logging
 import secrets
 from typing import Dict, Optional, Set
 
 from fastapi import Header, Request, status
 from fastapi.exceptions import HTTPException
-
-logger = logging.getLogger(__name__)
-
 
 api_key = ''
 

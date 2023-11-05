@@ -1,23 +1,19 @@
-import os
-import glob
-from datetime import datetime
-from pathlib import Path
-import logging
 import asyncio
+import glob
+import os
+from datetime import datetime
 from functools import partial
+from pathlib import Path
 from typing import Iterable, List
 
-from tenacity import retry, wait_none, stop_after_attempt, retry_if_exception_type
+from loguru import logger
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_none
 
-from .helpers import delete_file, is_space_enough
-from .space_monitor import SpaceMonitor, DiskUsage, SpaceEventListener
 from ..utils.mixins import SwitchableMixin
-
+from .helpers import delete_file, is_space_enough
+from .space_monitor import DiskUsage, SpaceEventListener, SpaceMonitor
 
 __all__ = ('SpaceReclaimer',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class SpaceReclaimer(SpaceEventListener, SwitchableMixin):

@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import os
 from contextlib import suppress
 from pathlib import PurePath
 from typing import Any, Awaitable, Dict, Final, Iterator, List, Optional, Tuple, Union
 
+from loguru import logger
 from reactivex.scheduler import ThreadPoolScheduler
+
+from blrec.logging.context import async_task_with_logger_context
 
 from ..bili.live import Live
 from ..core import Recorder, RecorderEventListener
@@ -16,7 +18,6 @@ from ..exception import exception_callback, submit_exception
 from ..flv.helpers import is_valid_flv_file
 from ..flv.metadata_analysis import analyse_metadata
 from ..flv.metadata_injection import InjectingProgress, inject_metadata
-from ..logging.room_id import aio_task_with_room_id
 from ..path import (
     extra_metadata_path,
     ffmpeg_metadata_path,
@@ -39,8 +40,6 @@ __all__ = (
 
 
 DISPLAY_PROGRESS = bool(os.environ.get('BLREC_PROGRESS'))
-
-logger = logging.getLogger(__name__)
 
 
 class PostprocessorEventListener(EventListener):
@@ -75,6 +74,8 @@ class Postprocessor(
     ) -> None:
         super().__init__()
         self._init_for_debug(live.room_id)
+        self._logger_context = {'room_id': live.room_id}
+        self._logger = logger.bind(**self._logger_context)
 
         self._live = live
         self._recorder = recorder
@@ -125,7 +126,7 @@ class Postprocessor(
         self._task = asyncio.create_task(self._worker())
         self._task.add_done_callback(exception_callback)
 
-        logger.debug('Started postprocessor')
+        self._logger.debug('Started postprocessor')
 
     async def _do_stop(self) -> None:
         self._recorder.remove_listener(self)
@@ -139,9 +140,9 @@ class Postprocessor(
         del self._scheduler
         del self._task
 
-        logger.debug('Stopped postprocessor')
+        self._logger.debug('Stopped postprocessor')
 
-    @aio_task_with_room_id
+    @async_task_with_logger_context
     async def _worker(self) -> None:
         while True:
             await self._postprocess()
@@ -155,7 +156,7 @@ class Postprocessor(
         self._completed_files.append(video_path)
 
         async with self._worker_semaphore:
-            logger.debug(f'Postprocessing... {video_path}')
+            self._logger.debug(f'Postprocessing... {video_path}')
             await self._wait_for_metadata_file(video_path)
 
             try:
@@ -180,7 +181,7 @@ class Postprocessor(
 
     async def _process_flv(self, video_path: str) -> str:
         if not await self._is_vaild_flv_file(video_path):
-            logger.warning(f'The flv file may be invalid: {video_path}')
+            self._logger.warning(f'The flv file may be invalid: {video_path}')
             if os.path.getsize(video_path) < 1024**2:
                 return video_path
 
@@ -217,28 +218,28 @@ class Postprocessor(
         return result_path
 
     async def _inject_extra_metadata(self, path: str) -> str:
-        logger.info(f"Injecting metadata for '{path}' ...")
+        self._logger.info(f"Injecting metadata for '{path}' ...")
         try:
             try:
                 metadata = await get_extra_metadata(path)
             except Exception as e:
-                logger.warning(f'Failed to get extra metadata: {repr(e)}')
-                logger.info(f"Analysing metadata for '{path}' ...")
+                self._logger.warning(f'Failed to get extra metadata: {repr(e)}')
+                self._logger.info(f"Analysing metadata for '{path}' ...")
                 await self._analyse_metadata(path)
                 metadata = await get_extra_metadata(path)
             else:
                 if 'keyframes' not in metadata:
-                    logger.warning('The keyframes metadata lost')
-                    logger.info(f"Analysing metadata for '{path}' ...")
+                    self._logger.warning('The keyframes metadata lost')
+                    self._logger.info(f"Analysing metadata for '{path}' ...")
                     await self._analyse_metadata(path)
                     new_metadata = await get_extra_metadata(path)
                     metadata.update(new_metadata)
             await self._inject_metadata(path, metadata)
         except Exception as e:
-            logger.error(f"Failed to inject metadata for '{path}': {repr(e)}")
+            self._logger.error(f"Failed to inject metadata for '{path}': {repr(e)}")
             submit_exception(e)
         else:
-            logger.info(f"Successfully injected metadata for '{path}'")
+            self._logger.info(f"Successfully injected metadata for '{path}'")
         return path
 
     async def _remux_video_to_mp4(self, in_path: str) -> Tuple[str, RemuxingResult]:
@@ -255,22 +256,22 @@ class Postprocessor(
         else:
             raise NotImplementedError(in_path)
 
-        logger.info(f"Remuxing '{in_path}' to '{out_path}' ...")
+        self._logger.info(f"Remuxing '{in_path}' to '{out_path}' ...")
         remux_result = await self._remux_video(in_path, out_path, metadata_path)
 
         if remux_result.is_failed():
-            logger.error(f"Failed to remux '{in_path}' to '{out_path}'")
+            self._logger.error(f"Failed to remux '{in_path}' to '{out_path}'")
             result_path = _in_path if ext == 'm4s' else in_path
         elif remux_result.is_warned():
-            logger.warning('Remuxing done, but ran into problems.')
+            self._logger.warning('Remuxing done, but ran into problems.')
             result_path = out_path
         elif remux_result.is_successful():
-            logger.info(f"Successfully remuxed '{in_path}' to '{out_path}'")
+            self._logger.info(f"Successfully remuxed '{in_path}' to '{out_path}'")
             result_path = out_path
         else:
             pass
 
-        logger.debug(f'ffmpeg output:\n{remux_result.output}')
+        self._logger.debug(f'ffmpeg output:\n{remux_result.output}')
 
         if not self._debug and ext == '.flv':
             await discard_file(metadata_path, 'DEBUG')
@@ -370,7 +371,7 @@ class Postprocessor(
             if await loop.run_in_executor(None, os.path.isfile, path):
                 break
             else:
-                logger.debug(f'Not found metadata file: {path}')
+                self._logger.debug(f'Not found metadata file: {path}')
                 await asyncio.sleep(1)
         else:
-            logger.warning(f'No such metadata file: {path}')
+            self._logger.warning(f'No such metadata file: {path}')

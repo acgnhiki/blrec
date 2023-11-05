@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 import os
 from decimal import Decimal
 from typing import Iterable, List, Tuple, cast
 
 import aiofiles
 import m3u8
+from loguru import logger
 
 from blrec.flv.helpers import make_comment_for_joinpoints
 from blrec.flv.operators import JoinPoint
@@ -16,8 +16,6 @@ from blrec.flv.utils import format_timestamp
 from blrec.path.helpers import ffmpeg_metadata_path, playlist_path
 
 from .helpers import get_extra_metadata, get_metadata, get_record_metadata
-
-logger = logging.getLogger(__name__)
 
 
 async def make_metadata_file(video_path: str) -> str:

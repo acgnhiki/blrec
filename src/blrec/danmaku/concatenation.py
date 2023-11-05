@@ -1,13 +1,7 @@
-import logging
 from typing import Iterable
 
-
-from .io import DanmakuReader, DanmakuWriter
 from .common import copy_damus
-
-
-logger = logging.getLogger(__name__)
-
+from .io import DanmakuReader, DanmakuWriter
 
 __all__ = 'DanmakuConcatenator'
 

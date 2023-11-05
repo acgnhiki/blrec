@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-import logging
 from typing import Optional, Union
 
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
-from .segment_fetcher import InitSectionData, SegmentData
 from .playlist_dumper import PlaylistDumper
 from .segment_dumper import SegmentDumper
+from .segment_fetcher import InitSectionData, SegmentData
 
 __all__ = ('Limiter',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class Limiter:

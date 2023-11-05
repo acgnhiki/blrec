@@ -1,4 +1,3 @@
-import logging
 import os
 import sys
 from copy import deepcopy
@@ -6,12 +5,11 @@ from typing import Optional
 
 import typer
 import uvicorn
+from loguru import logger
 from uvicorn.config import LOGGING_CONFIG
 
 from .. import __prog__, __version__
 from ..logging import TqdmOutputStream
-
-logger = logging.getLogger(__name__)
 
 cli = typer.Typer()
 

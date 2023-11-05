@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from typing import Optional
 
 from reactivex import Observable, abc
@@ -10,9 +9,6 @@ from tqdm import tqdm
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('ProgressBar',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class ProgressBar:

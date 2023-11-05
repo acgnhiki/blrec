@@ -1,28 +1,21 @@
-import logging
 import asyncio
 import json
+import logging
 
-from fastapi import (
-    APIRouter,
-    WebSocket,
-    WebSocketDisconnect,
-)
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from loguru import logger
 from websockets.exceptions import ConnectionClosed
 
+from ...application import Application
 from ...event import EventCenter
 from ...event.typing import Event
 from ...exception import ExceptionCenter, format_exception
-from ...application import Application
 
-
-logger = logging.getLogger(__name__)
 logging.getLogger('websockets').setLevel(logging.WARNING)
 
 app: Application = None  # type: ignore  # bypass flake8 F821
 
-router = APIRouter(
-    tags=['websockets'],
-)
+router = APIRouter(tags=['websockets'])
 
 
 @router.websocket('/ws/v1/events')
@@ -75,7 +68,6 @@ async def receive_exception(websocket: WebSocket) -> None:
     def on_exception(exc: BaseException) -> None:
         asyncio.create_task(send_exception(exc))
 
-    subscription = ExceptionCenter.get_instance().exceptions \
-        .subscribe(on_exception)
+    subscription = ExceptionCenter.get_instance().exceptions.subscribe(on_exception)
 
     await future

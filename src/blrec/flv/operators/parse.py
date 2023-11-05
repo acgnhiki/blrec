@@ -1,9 +1,11 @@
 import io
-import logging
 from typing import Callable, Optional
 
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
+
+from blrec.exception.helpers import format_exception
 
 from ..common import create_avc_end_sequence_tag, is_avc_end_sequence
 from ..io import FlvReader
@@ -11,8 +13,6 @@ from ..models import FlvTag
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('parse',)
-
-logger = logging.getLogger(__name__)
 
 
 def parse(
@@ -60,7 +60,9 @@ def parse(
                             observer.on_error(e)
                 except ValueError as e:
                     logger.debug(
-                        f'Error occurred while parsing stream: {repr(e)}', exc_info=e
+                        'Error occurred while parsing stream: {}\n{}',
+                        repr(e),
+                        format_exception(e),
                     )
                     if not ignore_value_error:
                         observer.on_error(e)

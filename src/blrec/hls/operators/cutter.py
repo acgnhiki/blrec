@@ -1,18 +1,14 @@
 from __future__ import annotations
 
-import logging
 from typing import Optional, Tuple, Union
 
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
-from .segment_fetcher import InitSectionData, SegmentData
 from .playlist_dumper import PlaylistDumper
+from .segment_fetcher import InitSectionData, SegmentData
 
 __all__ = ('Cutter',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class Cutter:

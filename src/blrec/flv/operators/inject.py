@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import logging
 from typing import Any, Callable, Dict, Optional, cast
 
+from loguru import logger
 from reactivex import Observable, abc
 
 from ..common import (
@@ -17,9 +17,6 @@ from .analyse import KeyFramesDict
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('Injector',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class Injector:

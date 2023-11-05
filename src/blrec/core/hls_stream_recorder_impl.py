@@ -1,6 +1,6 @@
-import logging
 from typing import Optional
 
+from loguru import logger
 from reactivex.scheduler import NewThreadScheduler
 
 from blrec.bili.live import Live
@@ -14,9 +14,6 @@ from . import operators as core_ops
 from .stream_recorder_impl import StreamRecorderImpl
 
 __all__ = ('HLSStreamRecorderImpl',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class HLSStreamRecorderImpl(StreamRecorderImpl):
@@ -123,32 +120,37 @@ class HLSStreamRecorderImpl(StreamRecorderImpl):
         self._ff_metadata_dumper.disable()
 
     def _run(self) -> None:
-        self._subscription = (
-            self._stream_param_holder.get_stream_params()  # type: ignore
-            .pipe(
-                self._stream_url_resolver,
-                self._playlist_fetcher,
-                self._recording_monitor,
-                self._connection_error_handler,
-                self._request_exception_handler,
-                self._playlist_resolver,
-                utils_ops.observe_on_new_thread(
-                    queue_size=60, thread_name=f'SegmentFetcher::{self._live.room_id}'
-                ),
-                self._segment_fetcher,
-                self._dl_statistics,
-                self._prober,
-                self._analyser,
-                self._cutter,
-                self._limiter,
-                self._segment_dumper,
-                self._rec_statistics,
-                self._progress_bar,
-                self._playlist_dumper,
-                self._exception_handler,
+        with logger.contextualize(room_id=self._live.room_id):
+            self._subscription = (
+                self._stream_param_holder.get_stream_params()  # type: ignore
+                .pipe(
+                    self._stream_url_resolver,
+                    self._playlist_fetcher,
+                    self._recording_monitor,
+                    self._connection_error_handler,
+                    self._request_exception_handler,
+                    self._playlist_resolver,
+                    utils_ops.observe_on_new_thread(
+                        queue_size=60,
+                        thread_name=f'SegmentFetcher::{self._live.room_id}',
+                        logger_context={'room_id': self._live.room_id},
+                    ),
+                    self._segment_fetcher,
+                    self._dl_statistics,
+                    self._prober,
+                    self._analyser,
+                    self._cutter,
+                    self._limiter,
+                    self._segment_dumper,
+                    self._rec_statistics,
+                    self._progress_bar,
+                    self._playlist_dumper,
+                    self._exception_handler,
+                )
+                .subscribe(
+                    on_completed=self._on_completed,
+                    scheduler=NewThreadScheduler(
+                        self._thread_factory('HLSStreamRecorder')
+                    ),
+                )
             )
-            .subscribe(
-                on_completed=self._on_completed,
-                scheduler=NewThreadScheduler(self._thread_factory('HLSStreamRecorder')),
-            )
-        )

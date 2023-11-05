@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import io
-import logging
 from typing import List, Optional, Union
 
+from loguru import logger
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -12,9 +12,6 @@ from blrec.utils.ffprobe import StreamProfile, ffprobe_on
 from .segment_fetcher import InitSectionData, SegmentData
 
 __all__ = ('Prober', 'StreamProfile')
-
-
-logger = logging.getLogger(__name__)
 
 
 class Prober:

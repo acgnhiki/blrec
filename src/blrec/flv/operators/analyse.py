@@ -4,10 +4,10 @@ ref: https://github.com/ioppermann/yamdi/blob/master/yamdi.c
 """
 from __future__ import annotations
 
-import logging
 from typing import List, Optional, TypedDict
 
 import attr
+from loguru import logger
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -24,8 +24,6 @@ from ..models import (
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = 'Analyser', 'MetaData', 'KeyFrames'
-
-logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True, kw_only=True)

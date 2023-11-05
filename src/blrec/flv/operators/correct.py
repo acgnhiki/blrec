@@ -1,6 +1,6 @@
-import logging
 from typing import Callable, Optional
 
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -9,8 +9,6 @@ from ..models import FlvHeader, FlvTag
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('correct',)
-
-logger = logging.getLogger(__name__)
 
 
 def correct() -> Callable[[FLVStream], FLVStream]:

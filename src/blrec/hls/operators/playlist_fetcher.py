@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import time
 from datetime import datetime
 from typing import Optional
@@ -8,6 +7,7 @@ from typing import Optional
 import m3u8
 import requests
 import urllib3
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 from tenacity import retry, retry_if_exception_type, stop_after_delay, wait_exponential
@@ -16,9 +16,6 @@ from blrec.bili.live import Live
 from blrec.utils.mixins import SupportDebugMixin
 
 __all__ = ('PlaylistFetcher',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class PlaylistFetcher(SupportDebugMixin):

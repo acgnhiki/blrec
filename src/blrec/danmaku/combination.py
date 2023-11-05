@@ -1,16 +1,10 @@
-import logging
 from typing import Iterable
 
-
-from .io import DanmakuReader, DanmakuWriter
 from .common import copy_damus
+from .io import DanmakuReader, DanmakuWriter
 from .typing import TimebaseType
 
-
 __all__ = 'TimebaseType', 'DanmakuCombinator'
-
-
-logger = logging.getLogger(__name__)
 
 
 class DanmakuCombinator:

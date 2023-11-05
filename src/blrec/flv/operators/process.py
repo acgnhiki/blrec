@@ -1,4 +1,3 @@
-import logging
 from typing import Callable
 
 from reactivex import operators as ops
@@ -13,8 +12,6 @@ from .split import split
 from .typing import FLVStream
 
 __all__ = ('process',)
-
-logger = logging.getLogger(__name__)
 
 
 def process(sort_tags: bool = False) -> Callable[[FLVStream], FLVStream]:

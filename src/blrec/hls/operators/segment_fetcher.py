@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import time
 from typing import Optional, Union
 
@@ -8,6 +7,7 @@ import attr
 import m3u8
 import requests
 import urllib3
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex import operators as ops
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
@@ -24,13 +24,11 @@ from blrec.bili.live import Live
 from blrec.core import operators as core_ops
 from blrec.utils import operators as utils_ops
 from blrec.utils.hash import cksum
+from blrec.exception.helpers import format_exception
 
 from ..exceptions import FetchSegmentError
 
 __all__ = ('SegmentFetcher', 'InitSectionData', 'SegmentData')
-
-
-logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
@@ -136,7 +134,9 @@ class SegmentFetcher:
                     else:
                         logger.warning(f'Segment data corrupted: {url}')
                 except Exception as exc:
-                    logger.warning(f'Failed to fetch segment {url}', exc_info=exc)
+                    logger.warning(
+                        'Failed to fetch segment: {}\n{}', url, format_exception(exc)
+                    )
                     attempts += 1
                     if attempts > 3:
                         attempts = 0

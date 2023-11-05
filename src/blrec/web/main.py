@@ -1,4 +1,3 @@
-import logging
 import os
 from typing import Optional, Tuple
 
@@ -21,9 +20,6 @@ from ..application import Application
 from . import security
 from .routers import application, settings, tasks, update, validation, websockets
 from .schemas import ResponseMessage
-
-logger = logging.getLogger(__name__)
-
 
 _env_settings = EnvSettings()
 _path = os.path.abspath(os.path.expanduser(_env_settings.settings_file))

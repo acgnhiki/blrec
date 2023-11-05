@@ -1,11 +1,8 @@
-import logging
 from typing import Literal
 
 import attr
 
 from blrec.bili.typing import Danmaku
-
-logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)

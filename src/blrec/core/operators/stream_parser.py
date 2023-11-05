@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import io
-import logging
 
+from loguru import logger
 from reactivex import Observable
 from reactivex import operators as ops
 
@@ -14,9 +14,6 @@ from blrec.utils import operators as utils_ops
 from ..stream_param_holder import StreamParamHolder
 
 __all__ = ('StreamParser',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class StreamParser:

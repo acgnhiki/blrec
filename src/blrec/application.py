@@ -1,11 +1,11 @@
 import asyncio
-import logging
 import os
 from contextlib import suppress
 from typing import Iterator, List, Optional
 
 import attr
 import psutil
+from loguru import logger
 
 from . import __prog__, __version__
 from .bili.helpers import ensure_room_id
@@ -32,8 +32,6 @@ from .task import (
     VideoFileDetail,
 )
 from .webhook import WebHookEmitter
-
-logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)
@@ -100,6 +98,7 @@ class Application:
             await self.exit()
 
     async def launch(self) -> None:
+        self._setup_logger()
         logger.info('Launching Application...')
         self._setup()
         logger.debug(f'Default umask {os.umask(0o000)}')
@@ -296,7 +295,6 @@ class Application:
         return await self._settings_manager.change_task_options(room_id, options)
 
     def _setup(self) -> None:
-        self._setup_logger()
         self._setup_exception_handler()
         self._setup_space_monitor()
         self._setup_space_event_submitter()

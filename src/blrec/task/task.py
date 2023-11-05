@@ -1,4 +1,3 @@
-import logging
 import os
 from contextlib import suppress
 from pathlib import PurePath
@@ -19,7 +18,6 @@ from blrec.event.event_submitters import (
 )
 from blrec.flv.metadata_injection import InjectingProgress
 from blrec.flv.operators import StreamProfile
-from blrec.logging.room_id import aio_task_with_room_id
 from blrec.postprocess import DeleteStrategy, Postprocessor, PostprocessorStatus
 from blrec.postprocess.remux import RemuxingProgress
 from blrec.setting.typing import RecordingMode
@@ -34,9 +32,6 @@ from .models import (
 )
 
 __all__ = ('RecordTask',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class RecordTask:
@@ -444,19 +439,16 @@ class RecordTask:
     def cut_stream(self) -> bool:
         return self._recorder.cut_stream()
 
-    @aio_task_with_room_id
     async def setup(self) -> None:
         await self._live.init()
         await self._setup()
         self._ready = True
 
-    @aio_task_with_room_id
     async def destroy(self) -> None:
         await self._destroy()
         await self._live.deinit()
         self._ready = False
 
-    @aio_task_with_room_id
     async def enable_monitor(self) -> None:
         if self._monitor_enabled:
             return
@@ -465,7 +457,6 @@ class RecordTask:
         await self._danmaku_client.start()
         self._live_monitor.enable()
 
-    @aio_task_with_room_id
     async def disable_monitor(self) -> None:
         if not self._monitor_enabled:
             return
@@ -474,7 +465,6 @@ class RecordTask:
         self._live_monitor.disable()
         await self._danmaku_client.stop()
 
-    @aio_task_with_room_id
     async def enable_recorder(self) -> None:
         if self._recorder_enabled:
             return
@@ -483,7 +473,6 @@ class RecordTask:
         await self._postprocessor.start()
         await self._recorder.start()
 
-    @aio_task_with_room_id
     async def disable_recorder(self, force: bool = False) -> None:
         if not self._recorder_enabled:
             return
@@ -496,11 +485,9 @@ class RecordTask:
             await self._recorder.stop()
             await self._postprocessor.stop()
 
-    @aio_task_with_room_id
     async def update_info(self, raise_exception: bool = False) -> bool:
         return await self._live.update_info(raise_exception=raise_exception)
 
-    @aio_task_with_room_id
     async def restart_danmaku_client(self) -> None:
         await self._danmaku_client.restart()
 

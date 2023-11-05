@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import html
-import logging
 import unicodedata
 from datetime import datetime, timedelta, timezone
 from typing import Any, AsyncIterator, Final, List
@@ -22,9 +21,6 @@ from .models import (
 from .typing import Element
 
 __all__ = 'DanmakuReader', 'DanmakuWriter'
-
-
-logger = logging.getLogger(__name__)
 
 
 class DanmakuReader:  # TODO rewrite

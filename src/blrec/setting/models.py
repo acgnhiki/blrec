@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 import re
 from typing import ClassVar, Collection, Final, List, Optional, TypeVar
@@ -27,9 +26,6 @@ from .typing import (
     ServerchanMessageType,
     TelegramMessageType,
 )
-
-logger = logging.getLogger(__name__)
-
 
 __all__ = (
     'DEFAULT_SETTINGS_FILE',

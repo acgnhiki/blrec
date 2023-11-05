@@ -1,8 +1,8 @@
 import json
-import logging
 import os
 
 import attr
+from loguru import logger
 from reactivex import Observable
 from reactivex import operators as ops
 
@@ -11,9 +11,6 @@ from . import operators as flv_ops
 from .operators.helpers import from_file
 
 __all__ = 'AnalysingProgress', 'analyse_metadata'
-
-
-logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)

@@ -103,12 +103,13 @@ export interface OutputSettings {
 export type OutputOptions = Nullable<Omit<OutputSettings, 'outDir'>>;
 
 export type LogLevel =
-  | 'CRITICAL'
-  | 'ERROR'
-  | 'WARNING'
-  | 'INFO'
+  | 'TRACE'
   | 'DEBUG'
-  | 'NOTSET';
+  | 'INFO'
+  | 'SUCCESS'
+  | 'WARNING'
+  | 'ERROR'
+  | 'CRITICAL';
 
 export interface LoggingSettings {
   logDir: string;

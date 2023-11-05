@@ -1,10 +1,11 @@
 import asyncio
-import logging
 import random
 from contextlib import suppress
 
+from loguru import logger
+
 from blrec.exception import exception_callback
-from blrec.logging.room_id import aio_task_with_room_id
+from blrec.logging.context import async_task_with_logger_context
 
 from ..event.event_emitter import EventEmitter, EventListener
 from ..utils.mixins import SwitchableMixin
@@ -15,9 +16,6 @@ from .models import LiveStatus, RoomInfo
 from .typing import Danmaku
 
 __all__ = 'LiveMonitor', 'LiveEventListener'
-
-
-logger = logging.getLogger(__name__)
 
 
 class LiveEventListener(EventListener):
@@ -45,6 +43,8 @@ class LiveEventListener(EventListener):
 class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMixin):
     def __init__(self, danmaku_client: DanmakuClient, live: Live) -> None:
         super().__init__()
+        self._logger_context = {'room_id': live.room_id}
+        self._logger = logger.bind(**self._logger_context)
         self._danmaku_client = danmaku_client
         self._live = live
 
@@ -61,13 +61,13 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
         self._init_status()
         self._danmaku_client.add_listener(self)
         self._start_polling()
-        logger.debug('Enabled live monitor')
+        self._logger.debug('Enabled live monitor')
 
     def _do_disable(self) -> None:
         self._danmaku_client.remove_listener(self)
         asyncio.create_task(self._stop_polling())
         asyncio.create_task(self._stop_checking())
-        logger.debug('Disabled live monitor')
+        self._logger.debug('Disabled live monitor')
 
     def _start_polling(self) -> None:
         self._polling_task = asyncio.create_task(self._poll_live_status())
@@ -99,23 +99,23 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
         # events if necessary.
         # make sure the recorder works well continuously after interruptions
         # such as an operating system hibernation.
-        logger.warning('The Danmaku Client Reconnected')
+        self._logger.warning('The Danmaku Client Reconnected')
 
         await self._live.update_room_info()
         current_status = self._live.room_info.live_status
 
         if current_status == self._previous_status:
             if current_status == LiveStatus.LIVE:
-                logger.debug('Simulating stream reset event')
+                self._logger.debug('Simulating stream reset event')
                 await self._handle_status_change(current_status)
         else:
             if current_status == LiveStatus.LIVE:
-                logger.debug('Simulating live began event')
+                self._logger.debug('Simulating live began event')
                 await self._handle_status_change(current_status)
-                logger.debug('Simulating live stream available event')
+                self._logger.debug('Simulating live stream available event')
                 await self._handle_status_change(current_status)
             else:
-                logger.debug('Simulating live ended event')
+                self._logger.debug('Simulating live ended event')
                 await self._handle_status_change(current_status)
 
     async def on_danmaku_received(self, danmu: Danmaku) -> None:
@@ -135,7 +135,7 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
             await self._emit('room_changed', self._live.room_info)
 
     async def _handle_status_change(self, current_status: LiveStatus) -> None:
-        logger.debug(
+        self._logger.debug(
             'Live status changed from {} to {}'.format(
                 self._previous_status.name, current_status.name
             )
@@ -163,62 +163,62 @@ class LiveMonitor(EventEmitter[LiveEventListener], DanmakuListener, SwitchableMi
             else:
                 pass
 
-        logger.debug('Number of sequential LIVE status: {}'.format(self._status_count))
+        self._logger.debug(
+            'Number of sequential LIVE status: {}'.format(self._status_count)
+        )
 
         self._previous_status = current_status
 
-    @aio_task_with_room_id
     async def check_live_status(self) -> None:
-        logger.debug('Checking live status...')
+        self._logger.debug('Checking live status...')
         try:
             await self._check_live_status()
         except Exception as e:
-            logger.warning(f'Failed to check live status: {repr(e)}')
-        logger.debug('Done checking live status')
+            self._logger.warning(f'Failed to check live status: {repr(e)}')
+        self._logger.debug('Done checking live status')
 
-    @aio_task_with_room_id
     async def _check_live_status(self) -> None:
         await self._live.update_room_info()
         current_status = self._live.room_info.live_status
         if current_status != self._previous_status:
             await self._handle_status_change(current_status)
 
-    @aio_task_with_room_id
+    @async_task_with_logger_context
     async def _poll_live_status(self) -> None:
-        logger.debug('Started polling live status')
+        self._logger.debug('Started polling live status')
 
         while True:
             try:
                 await asyncio.sleep(600 + random.randrange(-60, 60))
                 await self._check_live_status()
             except asyncio.CancelledError:
-                logger.debug('Cancelled polling live status')
+                self._logger.debug('Cancelled polling live status')
                 break
             except Exception as e:
-                logger.warning(f'Failed to poll live status: {repr(e)}')
+                self._logger.warning(f'Failed to poll live status: {repr(e)}')
 
-        logger.debug('Stopped polling live status')
+        self._logger.debug('Stopped polling live status')
 
-    @aio_task_with_room_id
+    @async_task_with_logger_context
     async def _check_if_stream_available(self) -> None:
-        logger.debug('Started checking if stream available')
+        self._logger.debug('Started checking if stream available')
 
         while True:
             try:
                 streams = await self._live.get_live_streams()
                 if streams:
-                    logger.debug('live stream available')
+                    self._logger.debug('live stream available')
                     self._stream_available = True
                     flv_formats = extract_formats(streams, 'flv')
                     self._live._no_flv_stream = not flv_formats
                     await self._emit('live_stream_available', self._live)
                     break
             except asyncio.CancelledError:
-                logger.debug('Cancelled checking if stream available')
+                self._logger.debug('Cancelled checking if stream available')
                 break
             except Exception as e:
-                logger.warning(f'Failed to check if stream available: {repr(e)}')
+                self._logger.warning(f'Failed to check if stream available: {repr(e)}')
 
             await asyncio.sleep(1)
 
-        logger.debug('Stopped checking if stream available')
+        self._logger.debug('Stopped checking if stream available')

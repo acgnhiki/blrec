@@ -1,10 +1,10 @@
 import io
-import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import PurePath
 from typing import Callable, Optional, Tuple, Union
 
 import attr
+from loguru import logger
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -14,8 +14,6 @@ from ..helpler import sequence_number_of
 from .segment_fetcher import InitSectionData, SegmentData
 
 __all__ = ('SegmentDumper',)
-
-logger = logging.getLogger(__name__)
 
 
 class SegmentDumper:
@@ -126,7 +124,7 @@ class SegmentDumper:
             prev_audio_profile['codec_name'] != curr_audio_profile['codec_name']
             or prev_audio_profile['channels'] != curr_audio_profile['channels']
             or prev_audio_profile['sample_rate'] != curr_audio_profile['sample_rate']
-            or prev_audio_profile['bit_rate'] != curr_audio_profile['bit_rate']
+            or prev_audio_profile.get('bit_rate') != curr_audio_profile.get('bit_rate')
         ):
             logger.warning('Audio parameters changed')
             return True

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from datetime import datetime
 from typing import Iterator, Optional
 
 import humanize
+from loguru import logger
 
 from blrec.bili.danmaku_client import DanmakuClient
 from blrec.bili.live import Live
@@ -30,9 +30,6 @@ from .raw_danmaku_receiver import RawDanmakuReceiver
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 
 __all__ = 'RecorderEventListener', 'Recorder'
-
-
-logger = logging.getLogger(__name__)
 
 
 class RecorderEventListener(EventListener):
@@ -105,6 +102,8 @@ class Recorder(
         save_raw_danmaku: bool = False,
     ) -> None:
         super().__init__()
+        self._logger_context = {'room_id': live.room_id}
+        self._logger = logger.bind(**self._logger_context)
 
         self._live = live
         self._danmaku_client = danmaku_client
@@ -130,9 +129,9 @@ class Recorder(
             duration_limit=duration_limit,
         )
 
-        self._danmaku_receiver = DanmakuReceiver(danmaku_client)
+        self._danmaku_receiver = DanmakuReceiver(live, danmaku_client)
         self._danmaku_dumper = DanmakuDumper(
-            self._live,
+            live,
             self._stream_recorder,
             self._danmaku_receiver,
             danmu_uname=danmu_uname,
@@ -141,13 +140,13 @@ class Recorder(
             record_guard_buy=record_guard_buy,
             record_super_chat=record_super_chat,
         )
-        self._raw_danmaku_receiver = RawDanmakuReceiver(danmaku_client)
+        self._raw_danmaku_receiver = RawDanmakuReceiver(live, danmaku_client)
         self._raw_danmaku_dumper = RawDanmakuDumper(
-            self._live, self._stream_recorder, self._raw_danmaku_receiver
+            live, self._stream_recorder, self._raw_danmaku_receiver
         )
 
         self._cover_downloader = CoverDownloader(
-            self._live,
+            live,
             self._stream_recorder,
             save_cover=save_cover,
             cover_save_strategy=cover_save_strategy,
@@ -380,12 +379,12 @@ class Recorder(
         return self._stream_recorder.cut_stream()
 
     async def on_live_began(self, live: Live) -> None:
-        logger.info('The live has began')
+        self._logger.info('The live has began')
         self._print_live_info()
         await self._start_recording()
 
     async def on_live_ended(self, live: Live) -> None:
-        logger.info('The live has ended')
+        self._logger.info('The live has ended')
         await asyncio.sleep(3)
         self._stream_available = False
         self._stream_recorder.stream_available_time = None
@@ -393,13 +392,13 @@ class Recorder(
         self._print_waiting_message()
 
     async def on_live_stream_available(self, live: Live) -> None:
-        logger.debug('The live stream becomes available')
+        self._logger.debug('The live stream becomes available')
         self._stream_available = True
         self._stream_recorder.stream_available_time = await live.get_timestamp()
         await self._stream_recorder.start()
 
     async def on_live_stream_reset(self, live: Live) -> None:
-        logger.warning('The live stream has been reset')
+        self._logger.warning('The live stream has been reset')
         if not self._recording:
             await self._start_recording()
 
@@ -429,7 +428,7 @@ class Recorder(
         await self._emit('cover_image_downloaded', self, path)
 
     async def on_stream_recording_completed(self) -> None:
-        logger.debug('Stream recording completed')
+        self._logger.debug('Stream recording completed')
         await self._stop_recording()
 
     async def _do_start(self) -> None:
@@ -437,7 +436,7 @@ class Recorder(
         self._danmaku_dumper.add_listener(self)
         self._raw_danmaku_dumper.add_listener(self)
         self._cover_downloader.add_listener(self)
-        logger.debug('Started recorder')
+        self._logger.debug('Started recorder')
 
         self._print_live_info()
         if self._live.is_living():
@@ -452,7 +451,7 @@ class Recorder(
         self._danmaku_dumper.remove_listener(self)
         self._raw_danmaku_dumper.remove_listener(self)
         self._cover_downloader.remove_listener(self)
-        logger.debug('Stopped recorder')
+        self._logger.debug('Stopped recorder')
 
     async def _start_recording(self) -> None:
         if self._recording:
@@ -471,7 +470,7 @@ class Recorder(
         if self._stream_available:
             await self._stream_recorder.start()
 
-        logger.info('Started recording')
+        self._logger.info('Started recording')
         await self._emit('recording_started', self)
 
     async def _stop_recording(self) -> None:
@@ -489,10 +488,10 @@ class Recorder(
         self._stream_recorder.remove_listener(self)
 
         if self._stopped:
-            logger.info('Recording Cancelled')
+            self._logger.info('Recording Cancelled')
             await self._emit('recording_cancelled', self)
         else:
-            logger.info('Recording Finished')
+            self._logger.info('Recording Finished')
             await self._emit('recording_finished', self)
 
     async def _prepare(self) -> None:
@@ -502,7 +501,7 @@ class Recorder(
         self._stream_recorder.clear_files()
 
     def _print_waiting_message(self) -> None:
-        logger.info('Waiting... until the live starts')
+        self._logger.info('Waiting... until the live starts')
 
     def _print_live_info(self) -> None:
         room_info = self._live.room_info
@@ -537,7 +536,7 @@ description      :
 {room_info.description}
 ===============================================================================
 """
-        logger.info(msg)
+        self._logger.info(msg)
 
     def _print_changed_room_info(self, room_info: RoomInfo) -> None:
         msg = f"""
@@ -549,4 +548,4 @@ parent area id   : {room_info.parent_area_id}
 parent area name : {room_info.parent_area_name}
 ===============================================================================
 """
-        logger.info(msg)
+        self._logger.info(msg)

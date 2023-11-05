@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from typing import Final, Optional
 from urllib.parse import urlparse
 
 import requests
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex import operators as ops
 
@@ -26,9 +26,6 @@ from blrec.utils.mixins import AsyncCooperationMixin
 from ..stream_param_holder import StreamParamHolder, StreamParams
 
 __all__ = ('StreamURLResolver',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class StreamURLResolver(AsyncCooperationMixin):

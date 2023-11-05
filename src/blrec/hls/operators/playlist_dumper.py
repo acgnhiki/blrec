@@ -1,23 +1,21 @@
 from __future__ import annotations
 
 import io
-import logging
 from copy import deepcopy
 from decimal import Decimal
 from pathlib import PurePath
 from typing import Optional, Tuple, Union
 
 import m3u8
+from loguru import logger
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
 from ..helpler import sequence_number_of
-from .segment_fetcher import InitSectionData, SegmentData
 from .segment_dumper import SegmentDumper
+from .segment_fetcher import InitSectionData, SegmentData
 
 __all__ = ('PlaylistDumper',)
-
-logger = logging.getLogger(__name__)
 
 
 class PlaylistDumper:

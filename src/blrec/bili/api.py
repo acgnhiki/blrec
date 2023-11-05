@@ -1,13 +1,12 @@
 import asyncio
 import hashlib
-import logging
-import os
 from abc import ABC
 from datetime import datetime
-from typing import Any, Dict, List, Mapping, Optional, Final
+from typing import Any, Dict, Final, List, Mapping, Optional
 from urllib.parse import urlencode
 
 import aiohttp
+from loguru import logger
 from tenacity import retry, stop_after_delay, wait_exponential
 
 from .exceptions import ApiRequestError
@@ -15,10 +14,6 @@ from .typing import JsonResponse, QualityNumber, ResponseData
 
 __all__ = 'AppApi', 'WebApi'
 
-
-logger = logging.getLogger(__name__)
-
-TRACE_API_REQ = bool(os.environ.get('BLREC_TRACE_API_REQ'))
 
 BASE_HEADERS: Final = {
     'Accept-Encoding': 'gzip, deflate, br',
@@ -34,8 +29,14 @@ BASE_HEADERS: Final = {
 
 class BaseApi(ABC):
     def __init__(
-        self, session: aiohttp.ClientSession, headers: Optional[Dict[str, str]] = None
+        self,
+        session: aiohttp.ClientSession,
+        headers: Optional[Dict[str, str]] = None,
+        *,
+        room_id: Optional[int] = None,
     ):
+        self._logger = logger.bind(room_id=room_id or '')
+
         self.base_api_urls: List[str] = ['https://api.bilibili.com']
         self.base_live_api_urls: List[str] = ['https://api.live.bilibili.com']
         self.base_play_info_api_urls: List[str] = ['https://api.live.bilibili.com']
@@ -64,13 +65,13 @@ class BaseApi(ABC):
         should_check_response = kwds.pop('check_response', True)
         kwds = {'timeout': self.timeout, 'headers': self.headers, **kwds}
         async with self._session.get(*args, **kwds) as res:
-            if TRACE_API_REQ:
-                logger.debug(f'Request info: {res.request_info}')
+            self._logger.trace('Request: {}', res.request_info)
+            self._logger.trace('Response: {}', await res.text())
             try:
                 json_res = await res.json()
             except aiohttp.ContentTypeError:
                 text_res = await res.text()
-                logger.debug(f'Response text: {text_res[:200]}')
+                self._logger.debug(f'Response text: {text_res[:200]}')
                 raise
             if should_check_response:
                 self._check_response(json_res)
@@ -88,8 +89,7 @@ class BaseApi(ABC):
                 return await self._get_json_res(url, *args, **kwds)
             except Exception as exc:
                 exception = exc
-                if TRACE_API_REQ:
-                    logger.debug(f'Failed to get json from {url}', exc_info=exc)
+                self._logger.trace('Failed to get json from {}: {}', url, repr(exc))
         else:
             assert exception is not None
             raise exception
@@ -106,14 +106,14 @@ class BaseApi(ABC):
         json_responses = []
         for idx, item in enumerate(results):
             if isinstance(item, Exception):
-                if TRACE_API_REQ:
-                    logger.debug(f'Failed to get json from {urls[idx]}', exc_info=item)
+                self._logger.trace(
+                    'Failed to get json from {}: {}', urls[idx], repr(item)
+                )
                 exceptions.append(item)
             elif isinstance(item, dict):
                 json_responses.append(item)
             else:
-                if TRACE_API_REQ:
-                    logger.debug(repr(item))
+                self._logger.trace('{}', repr(item))
         if not json_responses:
             raise exceptions[0]
         return json_responses

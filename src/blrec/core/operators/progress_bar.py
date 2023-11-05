@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 from typing import Optional
 
@@ -13,10 +12,7 @@ from blrec.flv.operators.typing import FLVStream, FLVStreamItem
 
 __all__ = ('ProgressBar',)
 
-
 DISPLAY_PROGRESS = bool(os.environ.get('BLREC_PROGRESS'))
-
-logger = logging.getLogger(__name__)
 
 
 class ProgressBar:

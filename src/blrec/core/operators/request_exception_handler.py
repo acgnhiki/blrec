@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import time
 from typing import Optional, TypeVar
 
 import aiohttp
 import requests
 import urllib3
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex import operators as ops
 
@@ -16,8 +16,6 @@ from blrec.utils import operators as utils_ops
 
 __all__ = ('RequestExceptionHandler',)
 
-
-logger = logging.getLogger(__name__)
 
 _T = TypeVar('_T')
 

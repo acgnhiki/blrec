@@ -1,19 +1,16 @@
 import asyncio
-import logging
 import shutil
 from contextlib import suppress
 
+from loguru import logger
+
 from ..event.event_emitter import EventEmitter, EventListener
 from ..exception import exception_callback
-from ..logging.room_id import aio_task_with_room_id
 from ..utils.mixins import AsyncStoppableMixin, SwitchableMixin
 from .helpers import is_space_enough
 from .models import DiskUsage
 
 __all__ = 'SpaceMonitor', 'SpaceEventListener'
-
-
-logger = logging.getLogger(__name__)
 
 
 class SpaceEventListener(EventListener):
@@ -76,7 +73,6 @@ class SpaceMonitor(
         with suppress(asyncio.CancelledError):
             await self._polling_task
 
-    @aio_task_with_room_id
     async def _polling_loop(self) -> None:
         while True:
             if not is_space_enough(self.path, self.space_threshold):

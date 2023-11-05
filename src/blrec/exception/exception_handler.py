@@ -1,14 +1,10 @@
-import logging
+from loguru import logger
 
-
-from .exception_center import ExceptionCenter
 from ..utils.mixins import SwitchableMixin
+from .exception_center import ExceptionCenter
+from .helpers import format_exception
 
-
-logger = logging.getLogger(__name__)
-
-
-__all__ = 'ExceptionHandler',
+__all__ = ('ExceptionHandler',)
 
 
 class ExceptionHandler(SwitchableMixin):
@@ -25,5 +21,4 @@ class ExceptionHandler(SwitchableMixin):
         self._log_exception(exc)
 
     def _log_exception(self, exc: BaseException) -> None:
-        exc_info = (type(exc), exc, exc.__traceback__)
-        logger.critical(type(exc).__name__, exc_info=exc_info)
+        logger.critical('{}\n{}', repr(exc), format_exception(exc))

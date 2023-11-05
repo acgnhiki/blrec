@@ -1,11 +1,10 @@
 from __future__ import annotations
+
 from abc import ABC
 from contextlib import suppress
-from typing import Any, List, Generic, TypeVar
-
+from typing import Any, Generic, List, TypeVar
 
 from ..exception import ExceptionSubmitter
-
 
 __all__ = 'EventListener', 'EventEmitter'
 

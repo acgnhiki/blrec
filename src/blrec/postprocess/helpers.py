@@ -1,11 +1,11 @@
 import asyncio
 import json
-import logging
 import os
 import shutil
 from typing import Any, Dict, Iterable, Literal
 
 import aiofiles
+from loguru import logger
 
 from blrec.path.helpers import (
     cover_path,
@@ -17,8 +17,6 @@ from blrec.path.helpers import (
 
 from ..flv.helpers import get_extra_metadata as _get_extra_metadata
 from ..flv.helpers import get_metadata as _get_metadata
-
-logger = logging.getLogger(__name__)
 
 
 async def discard_files(
@@ -41,7 +39,7 @@ async def discard_dir(path: str, log_level: Literal['INFO', 'DEBUG'] = 'INFO') -
     except Exception as e:
         logger.error(f'Failed to delete {path!r}, due to: {repr(e)}')
     else:
-        logger.log(logging.getLevelName(log_level), f'Deleted {path!r}')
+        logger.log(log_level, f'Deleted {path!r}')
 
 
 def files_related(video_path: str) -> Iterable[str]:

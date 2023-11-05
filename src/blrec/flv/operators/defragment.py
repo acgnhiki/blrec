@@ -1,6 +1,6 @@
-import logging
 from typing import Callable, List, Optional
 
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -8,8 +8,6 @@ from ..models import FlvHeader
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('defragment',)
-
-logger = logging.getLogger(__name__)
 
 
 def defragment(min_tags: int = 10) -> Callable[[FLVStream], FLVStream]:

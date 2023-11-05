@@ -5,8 +5,6 @@ from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from typing import Awaitable, TypeVar, final
 
-from blrec.logging.room_id import aio_task_with_room_id
-
 
 class SwitchableMixin(ABC):
     def __init__(self) -> None:
@@ -139,10 +137,6 @@ class AsyncCooperationMixin(ABC):
     def _call_coroutine(self, coro: Awaitable[_T]) -> _T:
         future = self._run_coroutine(coro)
         return future.result()
-
-    @aio_task_with_room_id
-    async def _with_room_id(self, coro: Awaitable[_T]) -> _T:
-        return await coro
 
 
 class SupportDebugMixin(ABC):

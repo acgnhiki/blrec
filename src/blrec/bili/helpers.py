@@ -13,7 +13,7 @@ __all__ = 'room_init', 'ensure_room_id'
 
 async def room_init(room_id: int) -> ResponseData:
     async with aiohttp.ClientSession(raise_for_status=True) as session:
-        api = WebApi(session)
+        api = WebApi(session, room_id=room_id)
         return await api.room_init(room_id)
 
 

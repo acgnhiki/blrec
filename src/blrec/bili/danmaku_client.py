@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import struct
 from contextlib import suppress
 from enum import Enum, IntEnum
@@ -11,11 +10,12 @@ import brotli
 from aiohttp import ClientSession
 from tenacity import retry, retry_if_exception_type, wait_exponential
 
+from blrec.logging.context import async_task_with_logger_context
+
 from ..event.event_emitter import EventEmitter, EventListener
 from ..exception import exception_callback
-from ..logging.room_id import aio_task_with_room_id
 from ..utils.mixins import AsyncStoppableMixin
-from ..utils.string import extract_uid_from_cookie, extract_buvid_from_cookie
+from ..utils.string import extract_buvid_from_cookie, extract_uid_from_cookie
 from .api import AppApi, WebApi
 from .exceptions import DanmakuClientAuthError
 from .typing import ApiPlatform, Danmaku
@@ -23,7 +23,7 @@ from .typing import ApiPlatform, Danmaku
 __all__ = 'DanmakuClient', 'DanmakuListener', 'Danmaku', 'DanmakuCommand'
 
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class DanmakuListener(EventListener):
@@ -57,6 +57,9 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         headers: Optional[Dict[str, str]] = None,
     ) -> None:
         super().__init__()
+        self._logger_context = {'room_id': room_id}
+        self._logger = logger.bind(**self._logger_context)
+
         self.session = session
         self.appapi = appapi
         self.webapi = webapi
@@ -86,24 +89,25 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         await self._update_danmu_info()
         await self._connect()
         await self._create_message_loop()
-        logger.debug('Started danmaku client')
+        self._logger.debug('Started danmaku client')
 
     async def _do_stop(self) -> None:
         await self._terminate_message_loop()
         await self._disconnect()
-        logger.debug('Stopped danmaku client')
+        self._logger.debug('Stopped danmaku client')
 
+    @async_task_with_logger_context
     async def restart(self) -> None:
-        logger.debug('Restarting danmaku client...')
+        self._logger.debug('Restarting danmaku client...')
         await self.stop()
         await self.start()
-        logger.debug('Restarted danmaku client')
+        self._logger.debug('Restarted danmaku client')
 
     async def reconnect(self) -> None:
         if self.stopped:
             return
 
-        logger.debug('Reconnecting...')
+        self._logger.debug('Reconnecting...')
         await self._disconnect()
         await self._connect()
         await self._emit('client_reconnected')
@@ -115,7 +119,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         ),
     )
     async def _connect(self) -> None:
-        logger.debug('Connecting to server...')
+        self._logger.debug('Connecting to server...')
         try:
             await self._connect_websocket()
             await self._send_auth()
@@ -129,7 +133,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
                 await self._update_danmu_info()
             raise
         else:
-            logger.debug('Connected to server')
+            self._logger.debug('Connected to server')
             await self._emit('client_connected')
 
     async def _connect_websocket(self) -> None:
@@ -137,16 +141,16 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             self._danmu_info['host_list'][self._host_index]['host'],
             self._danmu_info['host_list'][self._host_index]['wss_port'],
         )
-        logger.debug(f'Connecting WebSocket... {url}')
+        self._logger.debug(f'Connecting WebSocket... {url}')
         try:
             self._ws = await self.session.ws_connect(
                 url, timeout=5, headers=self.headers
             )
         except Exception as exc:
-            logger.debug(f'Failed to connect WebSocket: {repr(exc)}')
+            self._logger.debug(f'Failed to connect WebSocket: {repr(exc)}')
             raise
         else:
-            logger.debug('Connected WebSocket')
+            self._logger.debug('Connected WebSocket')
 
     async def _send_auth(self) -> None:
         auth_msg = json.dumps(
@@ -161,26 +165,28 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             }
         )
         data = Frame.encode(WS.OP_USER_AUTHENTICATION, auth_msg)
-        logger.debug('Sending user authentication...')
+        self._logger.debug('Sending user authentication...')
         try:
             await self._ws.send_bytes(data)
         except Exception as exc:
-            logger.debug(f'Failed to sent user authentication: {repr(exc)}')
+            self._logger.debug(f'Failed to sent user authentication: {repr(exc)}')
             raise
         else:
-            logger.debug('Sent user authentication')
+            self._logger.debug('Sent user authentication')
 
     async def _recieve_auth_reply(self) -> aiohttp.WSMessage:
-        logger.debug('Receiving user authentication reply...')
+        self._logger.debug('Receiving user authentication reply...')
         try:
             msg = await self._ws.receive(timeout=5)
             if msg.type != aiohttp.WSMsgType.BINARY:
                 raise aiohttp.ClientError(msg)
         except Exception as exc:
-            logger.debug(f'Failed to receive user authentication reply: {repr(exc)}')
+            self._logger.debug(
+                f'Failed to receive user authentication reply: {repr(exc)}'
+            )
             raise
         else:
-            logger.debug('Recieved user authentication reply')
+            self._logger.debug('Recieved user authentication reply')
             return msg
 
     async def _handle_auth_reply(self, reply: aiohttp.WSMessage) -> None:
@@ -190,7 +196,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         code = cast(int, json.loads(msg)['code'])
 
         if code == WS.AUTH_OK:
-            logger.debug('Auth OK')
+            self._logger.debug('Auth OK')
             self._create_heartbeat_task()
         elif code == WS.AUTH_TOKEN_ERROR:
             raise DanmakuClientAuthError(f'Token expired: {code}')
@@ -204,7 +210,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             self._api_platform = 'android'
 
     async def _update_danmu_info(self) -> None:
-        logger.debug(f'Updating danmu info via {self._api_platform} api...')
+        self._logger.debug(f'Updating danmu info via {self._api_platform} api...')
         api: Union[WebApi, AppApi]
         if self._api_platform == 'web':
             api = self.webapi
@@ -213,15 +219,15 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         try:
             self._danmu_info = await api.get_danmu_info(self._room_id)
         except Exception as exc:
-            logger.warning(f'Failed to update danmu info: {repr(exc)}')
+            self._logger.warning(f'Failed to update danmu info: {repr(exc)}')
             self._danmu_info = COMMON_DANMU_INFO
         else:
-            logger.debug('Danmu info updated')
+            self._logger.debug('Danmu info updated')
 
     async def _disconnect(self) -> None:
         await self._cancel_heartbeat_task()
         await self._close_websocket()
-        logger.debug('Disconnected from server')
+        self._logger.debug('Disconnected from server')
         await self._emit('client_disconnected')
 
     async def _close_websocket(self) -> None:
@@ -237,14 +243,14 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         with suppress(asyncio.CancelledError):
             await self._heartbeat_task
 
-    @aio_task_with_room_id
+    @async_task_with_logger_context
     async def _send_heartbeat(self) -> None:
         data = Frame.encode(WS.OP_HEARTBEAT, '')
         while True:
             try:
                 await self._ws.send_bytes(data)
             except Exception as exc:
-                logger.warning(f'Failed to send heartbeat: {repr(exc)}')
+                self._logger.warning(f'Failed to send heartbeat: {repr(exc)}')
                 await self._emit('error_occurred', exc)
                 task = asyncio.create_task(self.restart())
                 task.add_done_callback(exception_callback)
@@ -254,15 +260,15 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
     async def _create_message_loop(self) -> None:
         self._message_loop_task = asyncio.create_task(self._message_loop())
         self._message_loop_task.add_done_callback(exception_callback)
-        logger.debug('Created message loop')
+        self._logger.debug('Created message loop')
 
     async def _terminate_message_loop(self) -> None:
         self._message_loop_task.cancel()
         with suppress(asyncio.CancelledError):
             await self._message_loop_task
-        logger.debug('Terminated message loop')
+        self._logger.debug('Terminated message loop')
 
-    @aio_task_with_room_id
+    @async_task_with_logger_context
     async def _message_loop(self) -> None:
         while True:
             for msg in await self._receive():
@@ -292,8 +298,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
                 else:
                     await self._handle_receive_error(ValueError(wsmsg))
 
-    @staticmethod
-    async def _handle_data(data: bytes) -> Optional[List[Dict[str, Any]]]:
+    async def _handle_data(self, data: bytes) -> Optional[List[Dict[str, Any]]]:
         loop = asyncio.get_running_loop()
 
         try:
@@ -304,12 +309,14 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             elif op == WS.OP_HEARTBEAT_REPLY:
                 pass
         except Exception as e:
-            logger.warning(f'Failed to handle data: {repr(e)}, data: {repr(data)}')
+            self._logger.warning(
+                f'Failed to handle data: {repr(e)}, data: {repr(data)}'
+            )
 
         return None
 
     async def _handle_receive_error(self, exc: Exception) -> None:
-        logger.warning(f'Failed to receive message: {repr(exc)}')
+        self._logger.warning(f'Failed to receive message: {repr(exc)}')
         await self._emit('error_occurred', exc)
         if isinstance(exc, asyncio.TimeoutError):
             return
@@ -322,7 +329,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
     async def _retry(self) -> None:
         if self._retry_count < self._MAX_RETRIES:
             if self._retry_delay > 0:
-                logger.debug(
+                self._logger.debug(
                     'Retry after {} second{}'.format(
                         self._retry_delay, 's' if self._retry_delay > 1 else ''
                     )

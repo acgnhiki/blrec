@@ -1,8 +1,10 @@
-import logging
 from asyncio import Queue, QueueFull
 from typing import Final
 
+from loguru import logger
+
 from blrec.bili.danmaku_client import DanmakuClient, DanmakuCommand, DanmakuListener
+from blrec.bili.live import Live
 from blrec.bili.typing import Danmaku
 from blrec.utils.mixins import StoppableMixin
 
@@ -12,25 +14,23 @@ from .typing import DanmakuMsg
 __all__ = ('DanmakuReceiver',)
 
 
-logger = logging.getLogger(__name__)
-
-
 class DanmakuReceiver(DanmakuListener, StoppableMixin):
     _MAX_QUEUE_SIZE: Final[int] = 2000
 
-    def __init__(self, danmaku_client: DanmakuClient) -> None:
+    def __init__(self, live: Live, danmaku_client: DanmakuClient) -> None:
         super().__init__()
+        self._logger = logger.bind(room_id=live.room_id)
         self._danmaku_client = danmaku_client
         self._queue: Queue[DanmakuMsg] = Queue(maxsize=self._MAX_QUEUE_SIZE)
 
     def _do_start(self) -> None:
         self._danmaku_client.add_listener(self)
-        logger.debug('Started danmaku receiver')
+        self._logger.debug('Started danmaku receiver')
 
     def _do_stop(self) -> None:
         self._danmaku_client.remove_listener(self)
         self._clear_queue()
-        logger.debug('Stopped danmaku receiver')
+        self._logger.debug('Stopped danmaku receiver')
 
     async def get_message(self) -> DanmakuMsg:
         return await self._queue.get()

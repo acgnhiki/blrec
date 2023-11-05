@@ -1,19 +1,16 @@
 from __future__ import annotations
 
 import io
-import logging
 from typing import Optional
 
 import requests
+from loguru import logger
 from reactivex import Observable, abc
 
 from blrec.bili.live import Live
 from blrec.utils.mixins import AsyncCooperationMixin
 
 __all__ = ('StreamFetcher',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class StreamFetcher(AsyncCooperationMixin):

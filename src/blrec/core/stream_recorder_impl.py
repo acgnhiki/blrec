@@ -7,6 +7,7 @@ from typing import Any, Iterator, List, Optional, Tuple, Union
 
 import requests
 import urllib3
+from loguru import logger
 from reactivex import abc
 from reactivex.typing import StartableFactory, StartableTarget
 
@@ -29,7 +30,6 @@ from .stream_param_holder import StreamParamHolder
 __all__ = ('StreamRecorderImpl',)
 
 
-logger = logging.getLogger(__name__)
 logging.getLogger(urllib3.__name__).setLevel(logging.WARNING)
 
 
@@ -78,6 +78,8 @@ class StreamRecorderImpl(
         duration_limit: int = 0,
     ) -> None:
         super().__init__()
+        self._logger_context = {'room_id': live.room_id}
+        self._logger = logger.bind(**self._logger_context)
 
         self._live = live
         self._live_monitor = live_monitor
@@ -282,14 +284,14 @@ class StreamRecorderImpl(
         self._completed = False
 
     async def _do_start(self) -> None:
-        logger.debug('Starting stream recorder...')
+        self._logger.debug('Starting stream recorder...')
         self._on_start()
         self._reset()
         self._run()
-        logger.debug('Started stream recorder')
+        self._logger.debug('Started stream recorder')
 
     async def _do_stop(self) -> None:
-        logger.debug('Stopping stream recorder...')
+        self._logger.debug('Stopping stream recorder...')
         self._stream_param_holder.cancel()
         thread = self._thread_factory('StreamRecorderDisposer')(self._dispose)
         thread.start()
@@ -297,7 +299,7 @@ class StreamRecorderImpl(
             await self._loop.run_in_executor(None, thread.join, 30)
         self._threads.clear()
         self._on_stop()
-        logger.debug('Stopped stream recorder')
+        self._logger.debug('Stopped stream recorder')
 
     def _on_start(self) -> None:
         pass
@@ -311,10 +313,15 @@ class StreamRecorderImpl(
 
     def _thread_factory(self, name: str) -> StartableFactory:
         def factory(target: StartableTarget) -> Thread:
+            def run() -> None:
+                with logger.contextualize(room_id=self._live.room_id):
+                    target()
+
             thread = Thread(
-                target=target, daemon=True, name=f'{name}::{self._live.room_id}'
+                target=run, daemon=True, name=f'{name}::{self._live.room_id}'
             )
             self._threads.append(thread)
+
             return thread
 
         return factory
@@ -334,24 +341,24 @@ class StreamRecorderImpl(
         self._emit_event('stream_recording_completed')
 
     def _on_profile_updated(self, profile: StreamProfile) -> None:
-        logger.debug(f'Stream profile: {profile}')
+        self._logger.debug(f'Stream profile: {profile}')
         self._stream_profile = profile
 
     def _on_video_file_opened(self, args: Tuple[str, int]) -> None:
-        logger.info(f"Video file created: '{args[0]}'")
+        self._logger.info(f"Video file created: '{args[0]}'")
         self._files.append(args[0])
         self._record_start_time = args[1]
         self._emit_event('video_file_created', *args)
 
     def _on_video_file_closed(self, path: str) -> None:
-        logger.info(f"Video file completed: '{path}'")
+        self._logger.info(f"Video file completed: '{path}'")
         self._emit_event('video_file_completed', path)
 
     def _on_recording_interrupted(self, args: Tuple[float, float]) -> None:
         timestamp, duration = args[0], args[1]
         datetime_string = datetime.fromtimestamp(timestamp).isoformat()
         duration_string = format_timestamp(int(duration * 1000))
-        logger.info(
+        self._logger.warning(
             f'Recording interrupted, datetime: {datetime_string}, '
             f'duration: {duration_string}'
         )
@@ -359,11 +366,11 @@ class StreamRecorderImpl(
 
     def _on_recording_recovered(self, timestamp: float) -> None:
         datetime_string = datetime.fromtimestamp(timestamp).isoformat()
-        logger.info(f'Recording recovered, datetime: {(datetime_string)}')
+        self._logger.warning(f'Recording recovered, datetime: {(datetime_string)}')
         self._emit_event('stream_recording_recovered', timestamp)
 
     def _on_duration_lost(self, duration: float) -> None:
-        logger.info(f'Total duration lost: {(duration)}')
+        self._logger.warning(f'Total duration lost: ≈ {(duration)} s')
         self._emit_event('duration_lost', duration)
 
     def _emit_event(self, name: str, *args: Any, **kwds: Any) -> None:

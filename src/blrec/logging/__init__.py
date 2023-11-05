@@ -1,8 +1,3 @@
-from .configure_logging import configure_logger, TqdmOutputStream, ConsoleHandler
+from .configure_logging import TqdmOutputStream, configure_logger
 
-
-__all__ = (
-    'configure_logger',
-    'TqdmOutputStream',
-    'ConsoleHandler',
-)
+__all__ = ('configure_logger', 'TqdmOutputStream')

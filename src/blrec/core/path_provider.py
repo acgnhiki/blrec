@@ -1,4 +1,3 @@
-import logging
 import os
 import re
 from datetime import datetime
@@ -9,8 +8,6 @@ from blrec.path import escape_path
 from blrec.utils.mixins import AsyncCooperationMixin
 
 __all__ = ('PathProvider',)
-
-logger = logging.getLogger(__name__)
 
 
 class PathProvider(AsyncCooperationMixin):

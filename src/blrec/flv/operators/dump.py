@@ -1,7 +1,7 @@
 import io
-import logging
 from typing import Callable, Optional, Tuple
 
+from loguru import logger
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -10,8 +10,6 @@ from ..models import FlvHeader
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('Dumper',)
-
-logger = logging.getLogger(__name__)
 
 
 class Dumper:

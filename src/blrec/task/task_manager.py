@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import TYPE_CHECKING, Dict, Iterator, Optional
 
 import aiohttp
@@ -19,6 +18,8 @@ from .task import RecordTask
 if TYPE_CHECKING:
     from ..setting import SettingsManager
 
+from loguru import logger
+
 from ..setting import (
     BiliApiSettings,
     DanmakuSettings,
@@ -30,9 +31,6 @@ from ..setting import (
 )
 
 __all__ = ('RecordTaskManager',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class RecordTaskManager:

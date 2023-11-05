@@ -1,35 +1,31 @@
 from __future__ import annotations
-import logging
+
 from typing import Set, Tuple, Type
 
 import attr
 
-from ..setting import WebHookSettings
 from ..event import (
+    CoverImageDownloadedEvent,
+    DanmakuFileCompletedEvent,
+    DanmakuFileCreatedEvent,
     LiveBeganEvent,
     LiveEndedEvent,
-    RoomChangeEvent,
-    RecordingStartedEvent,
-    RecordingFinishedEvent,
-    RecordingCancelledEvent,
-    VideoFileCreatedEvent,
-    VideoFileCompletedEvent,
-    DanmakuFileCreatedEvent,
-    DanmakuFileCompletedEvent,
-    RawDanmakuFileCreatedEvent,
-    RawDanmakuFileCompletedEvent,
-    CoverImageDownloadedEvent,
-    SpaceNoEnoughEvent,
-    VideoPostprocessingCompletedEvent,
     PostprocessingCompletedEvent,
+    RawDanmakuFileCompletedEvent,
+    RawDanmakuFileCreatedEvent,
+    RecordingCancelledEvent,
+    RecordingFinishedEvent,
+    RecordingStartedEvent,
+    RoomChangeEvent,
+    SpaceNoEnoughEvent,
+    VideoFileCompletedEvent,
+    VideoFileCreatedEvent,
+    VideoPostprocessingCompletedEvent,
 )
 from ..event.typing import Event
+from ..setting import WebHookSettings
 
-
-__all__ = 'WebHook',
-
-
-logger = logging.getLogger(__name__)
+__all__ = ('WebHook',)
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)

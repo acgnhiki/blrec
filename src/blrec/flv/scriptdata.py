@@ -1,6 +1,7 @@
-import logging
 from io import BytesIO
 from typing import Any, BinaryIO, Mapping, TypedDict
+
+from loguru import logger
 
 from .amf import AMFReader, AMFWriter
 
@@ -13,8 +14,6 @@ __all__ = (
     'ScriptDataParser',
     'ScriptDataDumper',
 )
-
-logger = logging.getLogger(__name__)
 
 
 class ScriptData(TypedDict):

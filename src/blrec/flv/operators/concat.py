@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from enum import IntEnum, auto
 from typing import Callable, List, Optional, TypedDict, cast
 
 import attr
+from loguru import logger
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 from typing_extensions import TypeGuard
@@ -25,8 +25,6 @@ from ..utils import format_timestamp
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('concat', 'JoinPointExtractor', 'JoinPoint', 'JoinPointData')
-
-logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)

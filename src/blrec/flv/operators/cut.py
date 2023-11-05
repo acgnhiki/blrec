@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import logging
 from typing import Optional
 
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -18,9 +18,6 @@ from .correct import correct
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('Cutter',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class Cutter:

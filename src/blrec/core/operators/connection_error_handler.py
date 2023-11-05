@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import logging
 import time
 from typing import Optional, TypeVar
 
 import aiohttp
 import requests
+from loguru import logger
 from reactivex import Observable, abc
 
 from blrec.bili.live import Live
@@ -14,8 +14,6 @@ from blrec.utils.mixins import AsyncCooperationMixin
 
 __all__ = ('ConnectionErrorHandler',)
 
-
-logger = logging.getLogger(__name__)
 
 _T = TypeVar('_T')
 

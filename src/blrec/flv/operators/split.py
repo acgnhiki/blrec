@@ -1,6 +1,6 @@
-import logging
 from typing import Callable, Optional
 
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -14,8 +14,6 @@ from ..models import AudioTag, FlvHeader, ScriptTag, VideoTag
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('split',)
-
-logger = logging.getLogger(__name__)
 
 
 def split() -> Callable[[FLVStream], FLVStream]:

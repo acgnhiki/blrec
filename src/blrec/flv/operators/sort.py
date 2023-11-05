@@ -1,7 +1,6 @@
-import logging
-import os
 from typing import Callable, List, Optional
 
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -19,10 +18,6 @@ from ..models import AudioTag, FlvHeader, FlvTag, ScriptTag, VideoTag
 from .typing import FLVStream, FLVStreamItem
 
 __all__ = ('sort',)
-
-logger = logging.getLogger(__name__)
-
-TRACE_OP_SORT = bool(os.environ.get('BLREC_TRACE_OP_SORT'))
 
 
 def sort() -> Callable[[FLVStream], FLVStream]:
@@ -46,14 +41,17 @@ def sort() -> Callable[[FLVStream], FLVStream]:
                 if not gop_tags:
                     return
 
-                if TRACE_OP_SORT:
-                    logger.debug(
-                        'Tags in GOP:\n'
-                        f'Number of tags: {len(gop_tags)}\n'
-                        f'Total size of tags: {sum(map(len, gop_tags))}\n'
-                        f'The first tag is {gop_tags[0]}\n'
-                        f'The last tag is {gop_tags[-1]}'
-                    )
+                logger.opt(lazy=True).trace(
+                    'Tags in GOP:\n'
+                    'Number of tags: {}\n'
+                    'Total size of tags: {}\n'
+                    'The first tag is {}\n'
+                    'The last tag is {}',
+                    lambda: len(gop_tags),
+                    lambda: sum(map(len, gop_tags)),
+                    lambda: gop_tags[0],
+                    lambda: gop_tags[-1],
+                )
 
                 if len(gop_tags) < 10:
                     avc_header_tag = find_avc_header_tag(gop_tags)

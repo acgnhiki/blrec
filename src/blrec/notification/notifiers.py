@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -30,13 +29,13 @@ from ..exception import ExceptionCenter, format_exception
 from ..setting.typing import MessageType
 from ..utils.mixins import SwitchableMixin
 from .providers import (
+    Bark,
     EmailService,
     MessagingProvider,
     Pushdeer,
     Pushplus,
     Serverchan,
     Telegram,
-    Bark,
 )
 
 __all__ = (
@@ -51,7 +50,7 @@ __all__ = (
 )
 
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class Notifier(SwitchableMixin, ABC):

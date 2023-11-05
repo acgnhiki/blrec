@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import smtplib
 import ssl
 from abc import ABC, abstractmethod
@@ -11,13 +10,13 @@ from urllib.parse import urljoin
 import aiohttp
 
 from ..setting.typing import (
+    BarkMessageType,
     EmailMessageType,
     MessageType,
     PushdeerMessageType,
     PushplusMessageType,
     ServerchanMessageType,
     TelegramMessageType,
-    BarkMessageType,
 )
 from ..utils.patterns import Singleton
 
@@ -30,9 +29,6 @@ __all__ = (
     'Telegram',
     'Bark',
 )
-
-
-logger = logging.getLogger(__name__)
 
 
 class MessagingProvider(Singleton, ABC):

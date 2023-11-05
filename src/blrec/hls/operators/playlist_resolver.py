@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import logging
 from typing import Optional
 
 import m3u8
+from loguru import logger
 from reactivex import Observable, abc
 from reactivex import operators as ops
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
@@ -15,9 +15,6 @@ from ..exceptions import NoNewSegments
 from ..helpler import sequence_number_of
 
 __all__ = ('PlaylistResolver',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class PlaylistResolver:

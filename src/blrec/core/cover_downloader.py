@@ -1,16 +1,15 @@
-import logging
 from enum import Enum
 from threading import Lock
 from typing import Set
 
 import aiofiles
 import aiohttp
+from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from blrec.bili.live import Live
 from blrec.event.event_emitter import EventEmitter, EventListener
 from blrec.exception import submit_exception
-from blrec.logging.room_id import aio_task_with_room_id
 from blrec.path import cover_path
 from blrec.utils.hash import sha1sum
 from blrec.utils.mixins import SwitchableMixin
@@ -18,9 +17,6 @@ from blrec.utils.mixins import SwitchableMixin
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 
 __all__ = 'CoverDownloader', 'CoverDownloaderEventListener'
-
-
-logger = logging.getLogger(__name__)
 
 
 class CoverDownloaderEventListener(EventListener):
@@ -54,6 +50,8 @@ class CoverDownloader(
         cover_save_strategy: CoverSaveStrategy = CoverSaveStrategy.DEFAULT,
     ) -> None:
         super().__init__()
+        self._logger_context = {'room_id': live.room_id}
+        self._logger = logger.bind(**self._logger_context)
         self._live = live
         self._stream_recorder = stream_recorder
         self._lock: Lock = Lock()
@@ -64,11 +62,11 @@ class CoverDownloader(
     def _do_enable(self) -> None:
         self._sha1_set.clear()
         self._stream_recorder.add_listener(self)
-        logger.debug('Enabled cover downloader')
+        self._logger.debug('Enabled cover downloader')
 
     def _do_disable(self) -> None:
         self._stream_recorder.remove_listener(self)
-        logger.debug('Disabled cover downloader')
+        self._logger.debug('Disabled cover downloader')
 
     async def on_video_file_completed(self, video_path: str) -> None:
         with self._lock:
@@ -76,7 +74,6 @@ class CoverDownloader(
                 return
             await self._save_cover(video_path)
 
-    @aio_task_with_room_id
     async def _save_cover(self, video_path: str) -> None:
         try:
             await self._live.update_room_info()
@@ -92,10 +89,10 @@ class CoverDownloader(
             await self._save_file(path, data)
             self._sha1_set.add(sha1)
         except Exception as e:
-            logger.error(f'Failed to save cover image: {repr(e)}')
+            self._logger.error(f'Failed to save cover image: {repr(e)}')
             submit_exception(e)
         else:
-            logger.info(f'Saved cover image: {path}')
+            self._logger.info(f'Saved cover image: {path}')
             await self._emit('cover_image_downloaded', path)
 
     @retry(reraise=True, wait=wait_fixed(1), stop=stop_after_attempt(3))

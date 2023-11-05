@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 import errno
-import logging
 from typing import Optional, TypeVar
 
+from loguru import logger
 from reactivex import Observable, abc
 
 from blrec.bili.exceptions import LiveRoomEncrypted, LiveRoomHidden, LiveRoomLocked
+from blrec.exception.helpers import format_exception
 from blrec.utils import operators as utils_ops
 from blrec.utils.mixins import AsyncCooperationMixin
 
 __all__ = ('ExceptionHandler',)
 
-
-logger = logging.getLogger(__name__)
 
 _T = TypeVar('_T')
 
@@ -28,12 +27,11 @@ class ExceptionHandler(AsyncCooperationMixin):
             scheduler: Optional[abc.SchedulerBase] = None,
         ) -> abc.DisposableBase:
             def on_error(exc: Exception) -> None:
-                logger.exception(repr(exc))
                 self._submit_exception(exc)
                 try:
                     raise exc
                 except OSError as e:
-                    logger.critical(repr(e), exc_info=e)
+                    logger.critical('{}\n{}', repr(exc), format_exception(exc))
                     if e.errno == errno.ENOSPC:
                         # OSError(28, 'No space left on device')
                         observer.on_completed()

@@ -1,4 +1,3 @@
-import logging
 import os
 from datetime import datetime
 from typing import Any, Dict
@@ -14,9 +13,6 @@ from .operators import JoinPoint
 from .operators.helpers import from_file
 
 __all__ = 'InjectingProgress', 'inject_metadata'
-
-
-logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True, frozen=True)

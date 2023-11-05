@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import re
 import time
 from typing import Any, Dict, List
@@ -26,7 +25,7 @@ from .typing import ApiPlatform, QualityNumber, ResponseData, StreamCodec, Strea
 
 __all__ = ('Live',)
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 _INFO_PATTERN = re.compile(
     rb'<script>\s*window\.__NEPTUNE_IS_MY_WAIFU__\s*=\s*(\{.*?\})\s*</script>'
@@ -36,6 +35,8 @@ _LIVE_STATUS_PATTERN = re.compile(rb'"live_status"\s*:\s*(\d)')
 
 class Live:
     def __init__(self, room_id: int, user_agent: str = '', cookie: str = '') -> None:
+        self._logger = logger.bind(room_id=room_id)
+
         self._room_id = room_id
         self._user_agent = user_agent
         self._cookie = cookie
@@ -47,8 +48,8 @@ class Live:
             raise_for_status=True,
             trust_env=True,
         )
-        self._appapi = AppApi(self._session, self.headers)
-        self._webapi = WebApi(self._session, self.headers)
+        self._appapi = AppApi(self._session, self.headers, room_id=room_id)
+        self._webapi = WebApi(self._session, self.headers, room_id=room_id)
 
         self._room_info: RoomInfo
         self._user_info: UserInfo
@@ -189,7 +190,7 @@ class Live:
         try:
             self._user_info = await self.get_user_info(self._room_info.uid)
         except Exception as e:
-            logger.error(f'Failed to update user info: {repr(e)}')
+            self._logger.error(f'Failed to update user info: {repr(e)}')
             if raise_exception:
                 raise
             return False
@@ -200,7 +201,7 @@ class Live:
         try:
             self._room_info = await self.get_room_info()
         except Exception as e:
-            logger.error(f'Failed to update room info: {repr(e)}')
+            self._logger.error(f'Failed to update room info: {repr(e)}')
             if raise_exception:
                 raise
             return False
@@ -240,7 +241,7 @@ class Live:
         try:
             ts = await self.get_server_timestamp()
         except Exception as e:
-            logger.warning(f'Failed to get timestamp from server: {repr(e)}')
+            self._logger.warning(f'Failed to get timestamp from server: {repr(e)}')
             ts = int(time.time())
         return ts
 

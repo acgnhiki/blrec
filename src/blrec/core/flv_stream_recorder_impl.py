@@ -1,6 +1,6 @@
-import logging
 from typing import Optional
 
+from loguru import logger
 from reactivex.scheduler import NewThreadScheduler
 
 from blrec.bili.live import Live
@@ -14,9 +14,6 @@ from . import operators as core_ops
 from .stream_recorder_impl import StreamRecorderImpl
 
 __all__ = ('FLVStreamRecorderImpl',)
-
-
-logger = logging.getLogger(__name__)
 
 
 class FLVStreamRecorderImpl(StreamRecorderImpl, SupportDebugMixin):
@@ -134,30 +131,33 @@ class FLVStreamRecorderImpl(StreamRecorderImpl, SupportDebugMixin):
         self._metadata_dumper.disable()
 
     def _run(self) -> None:
-        self._subscription = (
-            self._stream_param_holder.get_stream_params()  # type: ignore
-            .pipe(
-                self._stream_url_resolver,
-                self._stream_fetcher,
-                self._recording_monitor,
-                self._dl_statistics,
-                self._stream_parser,
-                self._connection_error_handler,
-                self._request_exception_handler,
-                flv_ops.process(sort_tags=True),
-                self._cutter,
-                self._limiter,
-                self._join_point_extractor,
-                self._prober,
-                self._injector,
-                self._analyser,
-                self._dumper,
-                self._rec_statistics,
-                self._progress_bar,
-                self._exception_handler,
+        with logger.contextualize(room_id=self._live.room_id):
+            self._subscription = (
+                self._stream_param_holder.get_stream_params()  # type: ignore
+                .pipe(
+                    self._stream_url_resolver,
+                    self._stream_fetcher,
+                    self._recording_monitor,
+                    self._dl_statistics,
+                    self._stream_parser,
+                    self._connection_error_handler,
+                    self._request_exception_handler,
+                    flv_ops.process(sort_tags=True),
+                    self._cutter,
+                    self._limiter,
+                    self._join_point_extractor,
+                    self._prober,
+                    self._injector,
+                    self._analyser,
+                    self._dumper,
+                    self._rec_statistics,
+                    self._progress_bar,
+                    self._exception_handler,
+                )
+                .subscribe(
+                    on_completed=self._on_completed,
+                    scheduler=NewThreadScheduler(
+                        self._thread_factory('StreamRecorder')
+                    ),
+                )
             )
-            .subscribe(
-                on_completed=self._on_completed,
-                scheduler=NewThreadScheduler(self._thread_factory('StreamRecorder')),
-            )
-        )

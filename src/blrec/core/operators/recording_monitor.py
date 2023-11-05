@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import time
 from typing import Callable, Final, Optional, Tuple, TypeVar
 
@@ -11,8 +10,6 @@ from blrec.utils.mixins import AsyncCooperationMixin
 
 __all__ = ('RecordingMonitor',)
 
-
-logger = logging.getLogger(__name__)
 
 _T = TypeVar('_T')
 

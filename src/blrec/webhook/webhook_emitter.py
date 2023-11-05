@@ -1,37 +1,25 @@
-import logging
 import asyncio
 from typing import Any, Dict, List
 
 import aiohttp
-from tenacity import (
-    AsyncRetrying,
-    wait_exponential,
-    stop_after_delay,
-)
+from loguru import logger
+from tenacity import AsyncRetrying, stop_after_delay, wait_exponential
 
-from .models import WebHook
-from ..utils.mixins import SwitchableMixin
-from ..exception import ExceptionCenter
-from ..event import EventCenter, Error, ErrorData
-from ..event.typing import Event
 from .. import __prog__, __version__
+from ..event import Error, ErrorData, EventCenter
+from ..event.typing import Event
+from ..exception import ExceptionCenter
+from ..utils.mixins import SwitchableMixin
+from .models import WebHook
 
-
-__all__ = 'WebHookEmitter',
-
-
-logger = logging.getLogger(__name__)
+__all__ = ('WebHookEmitter',)
 
 
 class WebHookEmitter(SwitchableMixin):
-    def __init__(
-        self, webhooks: List[WebHook] = []
-    ) -> None:
+    def __init__(self, webhooks: List[WebHook] = []) -> None:
         super().__init__()
         self.webhooks = webhooks
-        self.headers = {
-            'User-Agent': f'{__prog__}/{__version__}'
-        }
+        self.headers = {'User-Agent': f'{__prog__}/{__version__}'}
 
     def _do_enable(self) -> None:
         events = EventCenter.get_instance().events
@@ -63,25 +51,19 @@ class WebHookEmitter(SwitchableMixin):
     def _send_request(self, url: str, payload: Dict[str, Any]) -> None:
         asyncio.create_task(self._send_request_async(url, payload))
 
-    async def _send_request_async(
-        self, url: str, payload: Dict[str, Any]
-    ) -> None:
+    async def _send_request_async(self, url: str, payload: Dict[str, Any]) -> None:
         try:
             async for attempt in AsyncRetrying(
-                stop=stop_after_delay(180),
-                wait=wait_exponential(max=15),
+                stop=stop_after_delay(180), wait=wait_exponential(max=15)
             ):
                 with attempt:
                     await self._post(url, payload)
         except Exception as e:
-            logger.warning('Failed to send a request to {}: {}'.format(
-                url, repr(e)
-            ))
+            logger.warning('Failed to send a request to {}: {}'.format(url, repr(e)))
 
     async def _post(self, url: str, payload: Dict[str, Any]) -> None:
         async with aiohttp.ClientSession(
-            headers=self.headers,
-            raise_for_status=True,
+            headers=self.headers, raise_for_status=True
         ) as session:
             async with session.post(url, json=payload):
                 pass

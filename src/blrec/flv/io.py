@@ -1,4 +1,3 @@
-import logging
 from io import SEEK_CUR
 from typing import Iterable, Iterator
 
@@ -9,9 +8,6 @@ from .models import BACK_POINTER_SIZE, FlvHeader, FlvTag
 from .utils import AutoRollbacker, OffsetRepositor
 
 __all__ = 'FlvReader', 'FlvWriter'
-
-
-logger = logging.getLogger(__name__)
 
 
 class FlvReader:

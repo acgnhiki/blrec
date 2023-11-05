@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
-import logging
 from contextlib import suppress
 from typing import Any, Callable, Dict, Tuple
+
+from loguru import logger
 
 from blrec.path.helpers import record_metadata_path
 from blrec.utils.mixins import SwitchableMixin
@@ -11,8 +12,6 @@ from blrec.utils.mixins import SwitchableMixin
 from . import operators as hls_ops
 
 __all__ = ('MetadataDumper',)
-
-logger = logging.getLogger(__name__)
 
 
 class MetadataDumper(SwitchableMixin):

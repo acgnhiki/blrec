@@ -1,5 +1,4 @@
 import io
-import logging
 
 from reactivex import of
 
@@ -7,8 +6,6 @@ from .parse import parse
 from .typing import FLVStream
 
 __all__ = ('from_file', 'from_stream')
-
-logger = logging.getLogger(__name__)
 
 
 def from_stream(

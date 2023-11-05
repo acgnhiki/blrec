@@ -34,7 +34,6 @@ export class LoggingSettingsComponent implements OnInit, OnChanges {
   readonly syncFailedWarningTip = SYNC_FAILED_WARNING_TIP;
 
   readonly logLevelOptions = [
-    { label: 'VERBOSE', value: 'NOTSET' },
     { label: 'DEBUG', value: 'DEBUG' },
     { label: 'INFO', value: 'INFO' },
     { label: 'WARNING', value: 'WARNING' },

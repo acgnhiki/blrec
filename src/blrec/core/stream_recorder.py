@@ -1,7 +1,8 @@
 import asyncio
-import logging
 import time
 from typing import Iterator, Optional
+
+from loguru import logger
 
 from blrec.bili.live import Live
 from blrec.bili.live_monitor import LiveMonitor
@@ -18,9 +19,6 @@ from .stream_recorder_impl import StreamRecorderEventListener
 from .typing import MetaData
 
 __all__ = 'StreamRecorder', 'StreamRecorderEventListener'
-
-
-logger = logging.getLogger(__name__)
 
 
 class StreamRecorder(
@@ -46,6 +44,8 @@ class StreamRecorder(
         duration_limit: int = 0,
     ) -> None:
         super().__init__()
+        self._logger_context = {'room_id': live.room_id}
+        self._logger = logger.bind(**self._logger_context)
 
         self._live = live
         self._live_monitor = live_monitor
@@ -58,7 +58,7 @@ class StreamRecorder(
         elif stream_format == 'fmp4':
             cls = HLSStreamRecorderImpl  # type: ignore
         else:
-            logger.warning(
+            self._logger.warning(
                 f'The specified stream format ({stream_format}) is '
                 'unsupported, will using the stream format (flv) instead.'
             )
@@ -242,7 +242,7 @@ class StreamRecorder(
 
         if self._live.has_no_flv_streams():
             if stream_format == 'flv':
-                logger.warning(
+                self._logger.warning(
                     'The specified stream format (flv) is not available, '
                     'falling back to stream format (fmp4).'
                 )
@@ -250,7 +250,7 @@ class StreamRecorder(
             self.hls_stream_available_time = self.stream_available_time
         else:
             if stream_format == 'fmp4':
-                logger.info('Waiting for the fmp4 stream becomes available...')
+                self._logger.info('Waiting for the fmp4 stream becomes available...')
                 available = await self._wait_fmp4_stream()
                 if available:
                     if self.stream_available_time is not None:
@@ -258,7 +258,7 @@ class StreamRecorder(
                             await self._live.get_timestamp()
                         )
                 else:
-                    logger.warning(
+                    self._logger.warning(
                         'The specified stream format (fmp4) is not available '
                         f'in {self.fmp4_stream_timeout} seconcds, '
                         'falling back to stream format (flv).'
@@ -312,7 +312,7 @@ class StreamRecorder(
         elif stream_format == 'fmp4':
             cls = HLSStreamRecorderImpl  # type: ignore
         else:
-            logger.warning(
+            self._logger.warning(
                 f'The specified stream format ({stream_format}) is '
                 'unsupported, will using the stream format (flv) instead.'
             )
@@ -342,4 +342,4 @@ class StreamRecorder(
         self._impl.stream_available_time = stream_available_time
         self._impl.hls_stream_available_time = hls_stream_available_time
 
-        logger.debug(f'Changed stream recorder impl to {cls.__name__}')
+        self._logger.debug(f'Changed stream recorder impl to {cls.__name__}')

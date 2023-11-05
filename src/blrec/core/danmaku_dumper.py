@@ -1,11 +1,11 @@
 import asyncio
 import html
-import logging
 from contextlib import suppress
 from decimal import Decimal
 from threading import Lock
 from typing import Iterator, List, Optional
 
+from loguru import logger
 from tenacity import AsyncRetrying, retry_if_not_exception_type, stop_after_attempt
 
 from blrec import __github__, __prog__, __version__
@@ -22,7 +22,7 @@ from blrec.danmaku.models import (
 )
 from blrec.event.event_emitter import EventEmitter, EventListener
 from blrec.exception import exception_callback, submit_exception
-from blrec.logging.room_id import aio_task_with_room_id
+from blrec.logging.context import async_task_with_logger_context
 from blrec.path import danmaku_path
 from blrec.utils.mixins import SwitchableMixin
 
@@ -31,9 +31,6 @@ from .statistics import Statistics
 from .stream_recorder import StreamRecorder, StreamRecorderEventListener
 
 __all__ = 'DanmakuDumper', 'DanmakuDumperEventListener'
-
-
-logger = logging.getLogger(__name__)
 
 
 class DanmakuDumperEventListener(EventListener):
@@ -62,6 +59,8 @@ class DanmakuDumper(
         record_super_chat: bool = False,
     ) -> None:
         super().__init__()
+        self._logger_context = {'room_id': live.room_id}
+        self._logger = logger.bind(**self._logger_context)
 
         self._live = live
         self._stream_recorder = stream_recorder
@@ -97,13 +96,13 @@ class DanmakuDumper(
     def _do_enable(self) -> None:
         self._stream_recorder.add_listener(self)
         self._statistics.reset()
-        logger.debug('Enabled danmaku dumper')
+        self._logger.debug('Enabled danmaku dumper')
 
     def _do_disable(self) -> None:
         self._stream_recorder.remove_listener(self)
         asyncio.create_task(self._stop_dumping())
         self._statistics.freeze()
-        logger.debug('Disabled danmaku dumper')
+        self._logger.debug('Disabled danmaku dumper')
 
     def set_live_start_time(self, time: int) -> None:
         self._live_start_time = time
@@ -141,7 +140,7 @@ class DanmakuDumper(
         self._interrupted_timestamp = timestamp
         self._duration = duration
         self._stream_recording_interrupted = True
-        logger.debug(
+        self._logger.debug(
             'Stream recording interrupted, '
             f'timestamp: {timestamp}, duration: {duration}'
         )
@@ -153,13 +152,13 @@ class DanmakuDumper(
             - Decimal(str(self._interrupted_timestamp))
         )
         self._stream_recording_interrupted = False
-        logger.debug(
+        self._logger.debug(
             'Stream recording recovered, '
             f'timestamp: {timestamp}, delta: {self._delta}'
         )
 
     async def on_duration_lost(self, duration: float) -> None:
-        logger.debug(f'Total duration lost: {(duration)}')
+        self._logger.debug(f'Total duration lost: ≈ {(duration)} s')
         self._delta = -duration
 
     def _start_dumping(self) -> None:
@@ -179,14 +178,14 @@ class DanmakuDumper(
         with suppress(asyncio.CancelledError):
             await self._dump_task
 
-    @aio_task_with_room_id
+    @async_task_with_logger_context
     async def _do_dump(self) -> None:
         assert self._path is not None
-        logger.debug('Started dumping danmaku')
+        self._logger.debug('Started dumping danmaku')
 
         try:
             async with DanmakuWriter(self._path) as writer:
-                logger.info(f"Danmaku file created: '{self._path}'")
+                self._logger.info(f"Danmaku file created: '{self._path}'")
                 await self._emit('danmaku_file_created', self._path)
                 await writer.write_metadata(self._make_metadata())
 
@@ -201,9 +200,9 @@ class DanmakuDumper(
                             submit_exception(e)
                             raise
         finally:
-            logger.info(f"Danmaku file completed: '{self._path}'")
+            self._logger.info(f"Danmaku file completed: '{self._path}'")
             await self._emit('danmaku_file_completed', self._path)
-            logger.debug('Stopped dumping danmaku')
+            self._logger.debug('Stopped dumping danmaku')
 
     async def _dumping_loop(self, writer: DanmakuWriter) -> None:
         while True:
@@ -230,7 +229,7 @@ class DanmakuDumper(
                     continue
                 await writer.write_super_chat_record(self._make_super_chat_record(msg))
             else:
-                logger.warning(f'Unsupported message type: {repr(msg)}')
+                self._logger.warning(f'Unsupported message type: {repr(msg)}')
 
     def _make_metadata(self) -> Metadata:
         return Metadata(

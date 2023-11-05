@@ -1,17 +1,15 @@
 import json
-import logging
 from contextlib import suppress
 from typing import List, Optional
 
 import attr
+from loguru import logger
 
 from ..flv import operators as flv_ops
 from ..path import extra_metadata_path
 from ..utils.mixins import SwitchableMixin
 
 __all__ = ('MetadataDumper',)
-
-logger = logging.getLogger(__name__)
 
 
 class MetadataDumper(SwitchableMixin):
