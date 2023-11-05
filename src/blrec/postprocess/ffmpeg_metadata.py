@@ -157,7 +157,7 @@ def _make_comment_for_discontinuities(timestamps: Iterable[int]) -> str:
 
 async def _get_discontinuities(playlist_path: str) -> Tuple[List[int], float]:
     loop = asyncio.get_running_loop()
-    async with aiofiles.open(playlist_path) as file:
+    async with aiofiles.open(playlist_path, encoding='utf8') as file:
         content = await file.read()
         playlist = await loop.run_in_executor(None, m3u8.loads, content)
         duration = Decimal()
