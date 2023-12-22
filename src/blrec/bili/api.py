@@ -244,7 +244,7 @@ class AppApi(BaseApi):
 
 
 class WebApi(BaseApi):
-    img_key, sub_key = getWbiKeys() # 获取短时间内可用的 wbi_signkey (时效不确定) (已确认放在userinfo类会触发风控)
+    img_key, sub_key = getWbiKeys()     # 获取短时间内可用的 WBI 鉴权签名 (时效不确定)
     async def room_init(self, room_id: int) -> ResponseData:
         path = '/room/v1/Room/room_init'
         params = {'id': room_id}

@@ -7,7 +7,19 @@ import requests
 # https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/misc/sign/wbi.md
 
 def getWbiKeys() -> tuple[str, str]:
-    resp = requests.get('https://api.bilibili.com/x/web-interface/nav')
+    # https://github.com/SocialSisterYi/bilibili-API-collect/issues/872
+    headers = {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'referer': 'https://www.bilibili.com',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en;q=0.3,en-US;q=0.2',
+        'Accept': 'application/json, text/plain, */*',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Origin': 'https://www.bilibili.com',
+        'Pragma': 'no-cache'
+    }
+    resp = requests.get('https://api.bilibili.com/x/web-interface/nav',headers=headers)
     resp.raise_for_status()
     json_content = resp.json()
     img_url: str = json_content['data']['wbi_img']['img_url']
