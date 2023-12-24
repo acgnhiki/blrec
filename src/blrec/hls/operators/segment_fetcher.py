@@ -26,7 +26,7 @@ from blrec.utils import operators as utils_ops
 from blrec.utils.hash import cksum
 from blrec.exception.helpers import format_exception
 
-from ..exceptions import FetchSegmentError
+from ..exceptions import FetchSegmentError, SegmentDataCorrupted
 
 __all__ = ('SegmentFetcher', 'InitSectionData', 'SegmentData')
 
@@ -119,20 +119,30 @@ class SegmentFetcher:
                     last_segment = seg
 
                     url = seg.absolute_uri
-                    crc32 = seg.title.split('|')[-1]
+                    hex_size, crc32, *_ = seg.title.split('|')
+                    size = int(hex_size, 16)
                     for _ in range(3):
                         data = self._fetch_segment(url)
+                        if len(data) != size:
+                            logger.debug(
+                                'Segment data incomplete: '
+                                f'size expected: {size}, '
+                                f'size fetched: {len(data)}, '
+                                f'segment url: {url}'
+                            )
+                            continue
                         crc32_of_data = cksum(data)
-                        if crc32_of_data == crc32:
-                            break
-                        logger.debug(
-                            'Segment data corrupted: '
-                            f'correct crc32: {crc32}, '
-                            f'crc32 of segment data: {crc32_of_data}, '
-                            f'segment url: {url}'
-                        )
+                        if crc32_of_data != crc32:
+                            logger.debug(
+                                'Segment data corrupted: '
+                                f'correct crc32: {crc32}, '
+                                f'crc32 of segment data: {crc32_of_data}, '
+                                f'segment url: {url}'
+                            )
+                            continue
+                        break
                     else:
-                        logger.warning(f'Segment data corrupted: {url}')
+                        raise SegmentDataCorrupted(url)
                 except Exception as exc:
                     logger.warning(
                         'Failed to fetch segment: {}\n{}', url, format_exception(exc)
