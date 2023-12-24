@@ -1,5 +1,4 @@
 import io
-from datetime import datetime, timedelta, timezone
 from pathlib import PurePath
 from typing import Callable, Optional, Tuple, Union
 
@@ -10,7 +9,6 @@ from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposab
 
 from blrec.utils.ffprobe import ffprobe
 
-from ..helpler import sequence_number_of
 from .segment_fetcher import InitSectionData, SegmentData
 
 __all__ = ('SegmentDumper',)
@@ -29,7 +27,6 @@ class SegmentDumper:
         self._path: str = ''
         self._file: Optional[io.BufferedWriter] = None
         self._filesize: int = 0
-        self._record_start_time: Optional[int] = None
 
     @property
     def path(self) -> str:
@@ -38,10 +35,6 @@ class SegmentDumper:
     @property
     def filesize(self) -> int:
         return self._filesize
-
-    @property
-    def record_start_time(self) -> Optional[int]:
-        return self._record_start_time
 
     @property
     def file_opened(self) -> Observable[Tuple[str, int]]:
@@ -57,8 +50,7 @@ class SegmentDumper:
         return self._dump(source)
 
     def _open_file(self) -> None:
-        assert self._record_start_time is not None
-        path, timestamp = self._path_provider(self._record_start_time)
+        path, timestamp = self._path_provider()
         self._path = str(PurePath(path).with_suffix('.m4s'))
         self._file = open(self._path, 'wb')  # type: ignore
         logger.debug(f'Opened file: {self._path}')
@@ -79,13 +71,6 @@ class SegmentDumper:
 
     def _update_filesize(self, size: int) -> None:
         self._filesize += size
-
-    def _set_record_start_time(self, item: Union[InitSectionData, SegmentData]) -> None:
-        seq = sequence_number_of(item.segment.uri)
-        dt = datetime.utcfromtimestamp(seq)
-        tz = timezone(timedelta(hours=8))
-        ts = dt.replace(year=datetime.today().year, tzinfo=tz).timestamp()
-        self._record_start_time = int(ts)
 
     def _must_split_file(
         self, prev_init_item: Optional[InitSectionData], curr_init_item: InitSectionData
@@ -159,7 +144,6 @@ class SegmentDumper:
                 if split_file:
                     self._close_file()
                     self._reset()
-                    self._set_record_start_time(item)
                     self._open_file()
 
                 try:
