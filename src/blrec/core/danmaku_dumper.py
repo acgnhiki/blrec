@@ -248,7 +248,7 @@ class DanmakuDumper(
             text = f'{msg.uname}: {msg.text}'
         else:
             text = msg.text
-        text = html.escape(text)
+        text = html.escape(text, quote=False)
 
         return Danmu(
             stime=self._calc_stime(msg.date / 1000),
