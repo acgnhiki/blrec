@@ -1,6 +1,8 @@
 import asyncio
 import json
+import os
 import struct
+import zlib
 from contextlib import suppress
 from enum import Enum, IntEnum
 from typing import Any, Dict, Final, List, Optional, Tuple, Union, cast
@@ -8,6 +10,7 @@ from typing import Any, Dict, Final, List, Optional, Tuple, Union, cast
 import aiohttp
 import brotli
 from aiohttp import ClientSession
+from loguru import logger
 from tenacity import retry, retry_if_exception_type, wait_exponential
 
 from blrec.logging.context import async_task_with_logger_context
@@ -21,9 +24,6 @@ from .exceptions import DanmakuClientAuthError
 from .typing import ApiPlatform, Danmaku
 
 __all__ = 'DanmakuClient', 'DanmakuListener', 'Danmaku', 'DanmakuCommand'
-
-
-from loguru import logger
 
 
 class DanmakuListener(EventListener):
@@ -73,6 +73,20 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
         self._host_index: int = 0
         self._retry_delay: int = 0
         self._MAX_RETRIES: Final[int] = max_retries
+
+        self._protover: int = WS.BODY_PROTOCOL_VERSION_BROTLI
+        if ver := os.environ.get('BLREC_DANMAKU_PROTOCOL_VERSION'):
+            if ver in (
+                str(WS.BODY_PROTOCOL_VERSION_NORMAL),
+                str(WS.BODY_PROTOCOL_VERSION_DEFLATE),
+                str(WS.BODY_PROTOCOL_VERSION_BROTLI),
+            ):
+                self._protover = int(ver)
+            else:
+                self._logger.warning(
+                    f'Invalid value of BLREC_DANMAKU_PROTOCOL_VERSION: {ver}'
+                )
+        self._logger.debug(f'protover: {self._protover}')
 
     @property
     def headers(self) -> Dict[str, str]:
@@ -157,7 +171,7 @@ class DanmakuClient(EventEmitter[DanmakuListener], AsyncStoppableMixin):
             {
                 "uid": self._uid,
                 'roomid': self._room_id,  # must not be the short id!
-                'protover': WS.BODY_PROTOCOL_VERSION_BROTLI,
+                'protover': self._protover,
                 "buvid": self._buvid,
                 'platform': 'web',
                 'type': 2,
@@ -372,6 +386,12 @@ class Frame:
         if op == WS.OP_MESSAGE:
             if ver == WS.BODY_PROTOCOL_VERSION_BROTLI:
                 data = brotli.decompress(body)
+            elif ver == WS.BODY_PROTOCOL_VERSION_DEFLATE:
+                data = zlib.decompress(body)
+            elif ver == WS.BODY_PROTOCOL_VERSION_NORMAL:
+                pass
+            else:
+                raise NotImplementedError(f'Unsupported protocol version: {ver}')
 
             msg_list = []
             offset = 0
@@ -408,6 +428,7 @@ class WS(IntEnum):
     OPERATION_OFFSET = 8
     SEQUENCE_OFFSET = 12
     BODY_PROTOCOL_VERSION_NORMAL = 0
+    BODY_PROTOCOL_VERSION_DEFLATE = 2
     BODY_PROTOCOL_VERSION_BROTLI = 3
     HEADER_DEFAULT_VERSION = 1
     HEADER_DEFAULT_OPERATION = 1
