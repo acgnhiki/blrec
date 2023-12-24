@@ -285,6 +285,7 @@ class WebApi(BaseApi):
         return json_res['data']['timestamp']
 
     async def get_user_info(self, uid: int) -> ResponseData:
+        # FIXME: "code": -352, "message": "风控校验失败",
         path = '/x/space/wbi/acc/info'
         params = {'mid': uid}
         json_res = await self._get_json(self.base_api_urls, path, params=params)

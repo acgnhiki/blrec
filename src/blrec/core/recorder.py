@@ -514,11 +514,9 @@ class Recorder(
 
         msg = f"""
 ================================== User Info ==================================
+user id          : {user_info.uid}
 user name        : {user_info.name}
 gender           : {user_info.gender}
-sign             : {user_info.sign}
-uid              : {user_info.uid}
-level            : {user_info.level}
 ---------------------------------- Room Info ----------------------------------
 title            : {room_info.title}
 cover            : {room_info.cover}

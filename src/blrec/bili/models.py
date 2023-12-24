@@ -50,10 +50,10 @@ class RoomInfo:
         else:
             raise ValueError(f'Failed to init live_start_time: {data}')
 
-        if (cover := data.get('cover') or data.get('user_cover', '')):
+        if cover := data.get('cover') or data.get('user_cover', ''):
             cover = ensure_scheme(cover, 'https')
 
-        if (description := data['description']):
+        if description := data['description']:
             description = re.sub(r'<br\s*/?>', '\n', description)
             tree = html.fromstring(description)
             description = clean_html(tree).text_content().strip()
@@ -82,8 +82,6 @@ class UserInfo:
     gender: str
     face: str
     uid: int
-    level: int
-    sign: str
 
     @staticmethod
     def from_web_api_data(data: ResponseData) -> 'UserInfo':
@@ -92,8 +90,6 @@ class UserInfo:
             gender=data['sex'],
             face=ensure_scheme(data['face'], 'https'),
             uid=data['mid'],
-            level=data['level'],
-            sign=data['sign'],
         )
 
     @staticmethod
@@ -101,9 +97,18 @@ class UserInfo:
         card = data['card']
         return UserInfo(
             name=card['name'],
-            gender=card['sex'],
+            gender=card.get('sex', ''),
             face=ensure_scheme(card['face'], 'https'),
             uid=card['mid'],
-            level=card['level_info']['current_level'],
-            sign=card['sign'],
+        )
+
+    @staticmethod
+    def from_info_by_room(data: ResponseData) -> 'UserInfo':
+        room_info = data['room_info']
+        base_info = data['anchor_info']['base_info']
+        return UserInfo(
+            name=base_info['uname'],
+            gender=base_info['gender'],
+            face=ensure_scheme(base_info['face'], 'https'),
+            uid=room_info['uid'],
         )

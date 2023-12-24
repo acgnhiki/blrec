@@ -231,11 +231,9 @@ class Live:
     )
     async def get_user_info(self, uid: int) -> UserInfo:
         try:
-            user_info_data = await self._webapi.get_user_info(uid)
-            return UserInfo.from_web_api_data(user_info_data)
+            return await self._get_user_info_via_api(uid)
         except Exception:
-            user_info_data = await self._appapi.get_user_info(uid)
-            return UserInfo.from_app_api_data(user_info_data)
+            return await self._get_user_info_via_html_page()
 
     async def get_timestamp(self) -> int:
         try:
@@ -343,6 +341,18 @@ class Live:
         room_info_data = await self._get_room_info_via_api()
         return int(room_info_data['live_status'])
 
+    async def _get_user_info_via_api(self, uid: int) -> UserInfo:
+        try:
+            data = await self._webapi.get_info_by_room(self._room_id)
+            return UserInfo.from_info_by_room(data)
+        except Exception:
+            try:
+                data = await self._appapi.get_info_by_room(self._room_id)
+                return UserInfo.from_info_by_room(data)
+            except Exception:
+                data = await self._appapi.get_user_info(uid)
+                return UserInfo.from_app_api_data(data)
+
     async def _get_room_info_via_api(self) -> ResponseData:
         try:
             info_data = await self._webapi.get_info_by_room(self._room_id)
@@ -364,6 +374,10 @@ class Live:
         assert m is not None, data
 
         return int(m.group(1))
+
+    async def _get_user_info_via_html_page(self) -> UserInfo:
+        info_res = await self._get_room_info_res_via_html_page()
+        return UserInfo.from_info_by_room(info_res)
 
     async def _get_room_info_via_html_page(self) -> ResponseData:
         info_res = await self._get_room_info_res_via_html_page()
