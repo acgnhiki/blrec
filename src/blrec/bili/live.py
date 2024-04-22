@@ -175,11 +175,13 @@ class Live:
 
     async def check_connectivity(self) -> bool:
         try:
-            await self._session.head('https://live.bilibili.com/', timeout=3)
-        except (aiohttp.ClientConnectionError, asyncio.TimeoutError):
-            return False
-        else:
+            await self._session.head('https://live.bilibili.com/', timeout=3, headers={
+                'User-Agent': self._user_agent,
+            })
             return True
+        except Exception as e:
+            self._logger.warning(f'Check connectivity failed: {repr(e)}')
+            return False
 
     async def update_info(self, raise_exception: bool = False) -> bool:
         return all(
