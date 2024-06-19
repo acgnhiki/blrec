@@ -22,6 +22,6 @@ $env:api_key = "bili2233"
 $env:BLREC_DEFAULT_LOG_DIR = "日志文件"
 $env:BLREC_DEFAULT_OUT_DIR = "录播文件"
 
-python -m blrec -c settings.toml --open --host $env:host --port $env:port --api-key $env:api_key
+python -m blrec -c settings.toml --open --host $env:host --port $env:port --api-key $env:api_key --ipv4
 
 pause

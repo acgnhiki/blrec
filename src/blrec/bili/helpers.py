@@ -6,13 +6,20 @@ from jsonpath import jsonpath
 from ..exception import NotFoundError
 from .api import WebApi
 from .exceptions import ApiRequestError
+from .net import connector, timeout
 from .typing import QualityNumber, ResponseData, StreamCodec, StreamFormat
 
 __all__ = 'room_init', 'ensure_room_id'
 
 
 async def room_init(room_id: int) -> ResponseData:
-    async with aiohttp.ClientSession(raise_for_status=True) as session:
+    async with aiohttp.ClientSession(
+        connector=connector,
+        connector_owner=False,
+        raise_for_status=True,
+        trust_env=True,
+        timeout=timeout,
+    ) as session:
         api = WebApi(session, room_id=room_id)
         return await api.room_init(room_id)
 
@@ -31,7 +38,13 @@ async def ensure_room_id(room_id: int) -> int:
 
 
 async def get_nav(cookie: str) -> ResponseData:
-    async with aiohttp.ClientSession(raise_for_status=True) as session:
+    async with aiohttp.ClientSession(
+        connector=connector,
+        connector_owner=False,
+        raise_for_status=True,
+        trust_env=True,
+        timeout=timeout,
+    ) as session:
         headers = {
             'Origin': 'https://passport.bilibili.com',
             'Referer': 'https://passport.bilibili.com/account/security',

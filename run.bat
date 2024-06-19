@@ -30,6 +30,6 @@ set api_key=bili2233
 set BLREC_DEFAULT_LOG_DIR=日志文件
 set BLREC_DEFAULT_OUT_DIR=录播文件
 
-python -m blrec -c settings.toml --open --host %host% --port %port% --api-key %api_key%
+python -m blrec -c settings.toml --open --host %host% --port %port% --api-key %api_key% --ipv4
 
 pause

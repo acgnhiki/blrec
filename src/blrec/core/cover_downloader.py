@@ -8,6 +8,7 @@ from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from blrec.bili.live import Live
+from blrec.bili.net import connector, timeout
 from blrec.event.event_emitter import EventEmitter, EventListener
 from blrec.exception import submit_exception
 from blrec.path import cover_path
@@ -20,8 +21,7 @@ __all__ = 'CoverDownloader', 'CoverDownloaderEventListener'
 
 
 class CoverDownloaderEventListener(EventListener):
-    async def on_cover_image_downloaded(self, path: str) -> None:
-        ...
+    async def on_cover_image_downloaded(self, path: str) -> None: ...
 
 
 class CoverSaveStrategy(Enum):
@@ -97,7 +97,13 @@ class CoverDownloader(
 
     @retry(reraise=True, wait=wait_fixed(1), stop=stop_after_attempt(3))
     async def _fetch_cover(self, url: str) -> bytes:
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession(
+            connector=connector,
+            connector_owner=False,
+            raise_for_status=True,
+            trust_env=True,
+            timeout=timeout,
+        ) as session:
             async with session.get(url) as response:
                 return await response.read()
 

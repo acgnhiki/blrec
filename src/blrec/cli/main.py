@@ -47,6 +47,7 @@ def cli_main(
     host: str = typer.Option('localhost', help='webapp host bind'),
     port: int = typer.Option(2233, help='webapp port bind'),
     open: bool = typer.Option(False, help='open webapp in default browser'),
+    ipv4: bool = typer.Option(False, help='use IPv4 only'),
     root_path: str = typer.Option('', help='ASGI root path'),
     key_file: Optional[str] = typer.Option(None, help='SSL key file'),
     cert_file: Optional[str] = typer.Option(None, help='SSL certificate file'),
@@ -61,6 +62,8 @@ def cli_main(
         os.environ['BLREC_OUT_DIR'] = out_dir
     if log_dir is not None:
         os.environ['BLREC_LOG_DIR'] = log_dir
+    if ipv4 is not None:
+        os.environ['BLREC_IPV4'] = '1'
 
     if not sys.stderr.isatty():
         progress = False
