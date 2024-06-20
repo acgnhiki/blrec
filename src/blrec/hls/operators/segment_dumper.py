@@ -85,6 +85,10 @@ class SegmentDumper:
         curr_profile = ffprobe(curr_init_item.payload)
         logger.debug(f'current init section profile: {curr_profile}')
 
+        if prev_init_item.payload == curr_init_item.payload:
+            logger.debug('the current init section is identical to the previous one')
+            return False
+
         prev_video_profile = prev_profile['streams'][0]
         prev_audio_profile = prev_profile['streams'][1]
         assert prev_video_profile['codec_type'] == 'video'
@@ -103,7 +107,6 @@ class SegmentDumper:
             or prev_video_profile['coded_height'] != curr_video_profile['coded_height']
         ):
             logger.warning('Video parameters changed')
-            return True
 
         if (
             prev_audio_profile['codec_name'] != curr_audio_profile['codec_name']
@@ -112,9 +115,12 @@ class SegmentDumper:
             or prev_audio_profile.get('bit_rate') != curr_audio_profile.get('bit_rate')
         ):
             logger.warning('Audio parameters changed')
-            return True
 
-        return False
+        logger.debug(
+            'must split the file '
+            'because the current init section is not identical to the previous one'
+        )
+        return True
 
     def _need_split_file(self, item: Union[InitSectionData, SegmentData]) -> bool:
         return item.segment.custom_parser_values.get('split', False)
