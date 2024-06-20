@@ -1,20 +1,20 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
-  Component,
-  OnInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  Component,
   OnDestroy,
+  OnInit,
 } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 
-import { catchError, concatAll, switchMap } from 'rxjs/operators';
-import { interval, of, Subscription } from 'rxjs';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { Subscription, interval, of } from 'rxjs';
+import { catchError, concatAll, switchMap } from 'rxjs/operators';
 
-import { TaskData, DataSelection } from './shared/task.model';
 import { retry } from 'src/app/shared/rx-operators';
-import { TaskService } from './shared/services/task.service';
 import { StorageService } from '../core/services/storage.service';
+import { TaskService } from './shared/services/task.service';
+import { DataSelection, TaskData } from './shared/task.model';
 
 const SELECTION_STORAGE_KEY = 'app-tasks-selection';
 const REVERSE_STORAGE_KEY = 'app-tasks-reverse';
@@ -42,6 +42,14 @@ export class TasksComponent implements OnInit, OnDestroy {
   ) {
     this.selection = this.retrieveSelection();
     this.reverse = this.retrieveReverse();
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.syncTaskData();
+      } else {
+        this.desyncTaskData();
+      }
+    });
   }
 
   ngOnInit(): void {

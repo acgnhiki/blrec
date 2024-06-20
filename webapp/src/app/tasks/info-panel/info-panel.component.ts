@@ -38,7 +38,15 @@ export class InfoPanelComponent implements OnInit, OnDestroy {
     private changeDetector: ChangeDetectorRef,
     private notification: NzNotificationService,
     private taskService: TaskService
-  ) {}
+  ) {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.syncData();
+      } else {
+        this.desyncData();
+      }
+    });
+  }
 
   get fps(): string {
     const avgFrameRate: string | undefined =

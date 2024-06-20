@@ -41,7 +41,15 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     private changeDetector: ChangeDetectorRef,
     private notification: NzNotificationService,
     private taskService: TaskService
-  ) {}
+  ) {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.syncData();
+      } else {
+        this.desyncData();
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params: ParamMap) => {
