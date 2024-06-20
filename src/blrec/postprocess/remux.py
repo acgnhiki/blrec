@@ -151,8 +151,11 @@ def remux_video(
                                 else:
                                     continue
 
-                            if line.startswith('frame='):
+                            try:
                                 size = parse_size(line)
+                            except Exception:
+                                pass
+                            else:
                                 pbar.update(size - pbar.n)
                                 progress = RemuxingProgress(size, total)
                                 observer.on_next(progress)
