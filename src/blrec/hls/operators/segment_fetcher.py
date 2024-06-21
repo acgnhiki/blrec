@@ -92,7 +92,6 @@ class SegmentFetcher:
                         (
                             last_segment is None
                             or seg.init_section != last_segment.init_section
-                            or seg.discontinuity
                         )
                     ):
                         url = seg.init_section.absolute_uri

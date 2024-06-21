@@ -72,6 +72,14 @@ class SegmentDumper:
     def _update_filesize(self, size: int) -> None:
         self._filesize += size
 
+    def _is_redundant(
+        self, prev_init_item: Optional[InitSectionData], curr_init_item: InitSectionData
+    ) -> bool:
+        return (
+            prev_init_item is not None
+            and curr_init_item.payload == prev_init_item.payload
+        )
+
     def _must_split_file(
         self, prev_init_item: Optional[InitSectionData], curr_init_item: InitSectionData
     ) -> bool:
@@ -141,6 +149,8 @@ class SegmentDumper:
                 split_file = False
 
                 if isinstance(item, InitSectionData):
+                    if self._is_redundant(last_init_item, item):
+                        return
                     split_file = self._must_split_file(last_init_item, item)
                     last_init_item = item
 

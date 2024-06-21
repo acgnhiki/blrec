@@ -4,10 +4,11 @@ import io
 from copy import deepcopy
 from decimal import Decimal
 from pathlib import PurePath
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, cast
 
 import m3u8
 from loguru import logger
+from m3u8.model import InitializationSection
 from reactivex import Observable, Subject, abc
 from reactivex.disposable import CompositeDisposable, Disposable, SerialDisposable
 
@@ -139,7 +140,9 @@ class PlaylistDumper:
     ) -> m3u8.Segment:
         seg = deepcopy(segment)
         if init_section := getattr(seg, 'init_section', None):
+            init_section = cast(InitializationSection, init_section)
             init_section.uri = uri
+            init_section.base_uri = ''
             init_section.byterange = init_section_byterange
         seg.uri = uri
         seg.byterange = segment_byterange
