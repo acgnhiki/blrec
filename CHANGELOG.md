@@ -1,5 +1,14 @@
 # 更新日志
 
+## 2.0.0-beta.4
+
+- 添加只使用 ipv4 的命令行选项
+- 修复因直播间号较长而添加任务失败
+- 检测到 init seciton 改变就分割文件
+- 修复 remux 的进度条显示异常
+- 修复 remux 出现 `Found duplicated MOOV Atom. Skipped it`
+- 修复断网检测
+
 ## 2.0.0-beta.3
 
 - 修复 Python 3.8 运行出错
