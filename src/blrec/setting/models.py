@@ -315,7 +315,7 @@ class TaskOptions(BaseModel):
 
 class TaskSettings(TaskOptions):
     # must use the real room id rather than the short room id!
-    room_id: Annotated[int, Field(ge=1, lt=2**32)]
+    room_id: Annotated[int, Field(ge=1, lt=2**100)]
     enable_monitor: bool = True
     enable_recorder: bool = True
 
