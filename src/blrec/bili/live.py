@@ -308,8 +308,6 @@ class Live:
                 codecs = avc_codecs
             elif 10000 in hevc_current_qn:
                 codecs = hevc_codecs
-            else:
-                codecs = avc_codecs if avc_codecs else None  # 默认选择 avc 或其他逻辑
 
             # 按主机排序，优先选择 'gotcha201' 到 'gotcha208' 的主机，数字越小优先级越高
             def sort_by_host(info: Any) -> int:
