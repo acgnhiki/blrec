@@ -273,13 +273,13 @@ class Live:
         return extract_streams(play_infos)
 
     async def get_live_stream_url(
-            self,
-            qn: QualityNumber = 10000,
-            *,
-            api_platform: ApiPlatform = 'web',
-            stream_format: StreamFormat = 'flv',
-            stream_codec: StreamCodec = 'avc',
-            select_alternative: bool = False,
+        self,
+        qn: QualityNumber = 10000,
+        *,
+        api_platform: ApiPlatform = 'web',
+        stream_format: StreamFormat = 'flv',
+        stream_codec: StreamCodec = 'avc',
+        select_alternative: bool = False,
     ) -> str:
         streams = await self.get_live_streams(qn, api_platform=api_platform)
         if not streams:
