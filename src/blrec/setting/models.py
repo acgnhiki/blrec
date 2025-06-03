@@ -131,9 +131,7 @@ class HeaderOptions(BaseModel):
 
 class HeaderSettings(HeaderOptions):
     user_agent: str = (
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-        'AppleWebKit/537.36 (KHTML, like Gecko) '
-        'Chrome/89.0.4389.114 Safari/537.36'
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36'  # noqa
     )
     cookie: str = ''
 
@@ -198,9 +196,7 @@ class RecorderSettings(RecorderOptions):
     fmp4_stream_timeout: int = 10
     read_timeout: int = 3
     disconnection_timeout: int = 600
-    buffer_size: Annotated[
-        int, Field(ge=4096, le=1024**2 * 512, multiple_of=2)
-    ] = 8192
+    buffer_size: Annotated[int, Field(ge=4096, le=1024**2 * 512, multiple_of=2)] = 8192
     save_cover: bool = False
     cover_save_strategy: CoverSaveStrategy = CoverSaveStrategy.DEFAULT
 
