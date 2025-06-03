@@ -293,6 +293,45 @@ class Live:
         if not codecs:
             raise NoStreamCodecAvailable(stream_format, stream_codec, qn)
 
+        if stream_format == 'fmp4':
+            hevc_codecs = extract_codecs(formats, 'hevc')
+            avc_codecs = extract_codecs(formats, 'avc')
+            # 如果 codecs 为空，使用默认值
+            if not hevc_codecs:
+                hevc_codecs = []
+            if not avc_codecs:
+                avc_codecs = []
+            hevc_current_qn = [item.get('current_qn') for item in hevc_codecs if item.get('current_qn') is not None]
+            avc_current_qn = [item.get('current_qn') for item in avc_codecs if item.get('current_qn') is not None]
+
+            if 10000 in avc_current_qn:
+                codecs = avc_codecs
+            elif 10000 in hevc_current_qn:
+                codecs = hevc_codecs
+
+            # 按主机排序，优先选择 'gotcha201' 到 'gotcha208' 的主机，数字越小优先级越高
+            def sort_by_host(info: Any) -> int:
+                host = info['host']
+                if match := re.search(r'gotcha(\d+)', host):
+                    num = int(match.group(1))
+                    if 201 <= num <= 208:  # 只处理 gotcha201 到 gotcha208
+                        return num  # 数字越小，优先级越高
+                return 1000
+
+            # 排序后的 url 信息
+            url_infos = sorted(
+                ({**i, 'base_url': c['base_url']} for c in codecs for i in c['url_info']),
+                key=sort_by_host,
+            )
+            urls = [i['host'] + i['base_url'] + i['extra'] for i in url_infos]
+            if not select_alternative:
+                return urls[0]
+
+            try:
+                return urls[1]
+            except IndexError:
+                raise NoAlternativeStreamAvailable(stream_format, stream_codec, qn)
+
         accept_qns = jsonpath(codecs, '$[*].accept_qn[*]')
         current_qns = jsonpath(codecs, '$[*].current_qn')
         if qn not in accept_qns or not all(map(lambda q: q == qn, current_qns)):

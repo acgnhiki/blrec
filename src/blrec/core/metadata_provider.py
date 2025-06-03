@@ -53,6 +53,8 @@ class MetadataProvider:
             self._stream_recorder.real_quality_number,
             ', bluray' if '_bluray' in self._stream_recorder.stream_url else '',
         )
+        if '_prohevc' in self._stream_recorder.stream_url:
+            stream_quality = stream_quality.replace(')', ', prohevc)')
 
         return {
             'Title': self._live.room_info.title,
